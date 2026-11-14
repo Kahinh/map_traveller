@@ -21,7 +21,7 @@ npm run tauri build    # installateur NSIS (normalement fait par la CI)
 ## Architecture
 
 ```
-src/features/commands/   # PUR : clic gauche / clic droit
+src/features/commands/   # PUR : clic gauche / clic droit, zones d'une carte (cardParts)
 src/features/farm/       # PUR : parsing parcours + reprise par indice
 src/features/catalog/    # PUR : types, validation, recherche, tri
 src/lib/tauri/           # pont système (clipboard, stockage) avec fallback navigateur
@@ -36,10 +36,10 @@ tests/                   # Vitest
 ## Invariants (ne jamais enfreindre)
 
 1. `command` = texte brut. Jamais reconstruit, normalisé, réordonné ni tronqué silencieusement.
-2. Clic gauche : retire **uniquement** le premier segment s'il est `/zaap` (frontière de mot) + son `;`. Clic droit : intégral.
+2. Clic gauche : retire **uniquement** le premier segment s'il est `/zaap` (frontière de mot) + son `;`. Clic droit : intégral. Carte à deux étapes (PNJ/Donjons, `twoStep`) : même règle zone par zone, zone 1 = `command`, zone 2 = `command2`, toujours via `cardParts` / `partCommand`.
 3. Farm : reprise par **indice d'étape** ; clic sur l'étape i copie les segments originaux après i ; dernière étape → rien + signal ; « Démarrer » → commande complète.
 4. Logique de découpe = fonctions pures testées. Aucun import Tauri/React dans `src/features/`.
-5. Données utilisateur dans `app_data_dir` ; le seed n'écrase jamais `catalog.json` ; écriture atomique + `.bak` ; chemins d'image relatifs.
+5. Données utilisateur dans `app_data_dir` ; le seed n'écrase jamais `catalog.json` ; écriture atomique + `.bak` ; chemins d'image relatifs. Schéma 3 : `twoStep` / `command2` ; un catalogue v2 est accepté avec les valeurs par défaut ; `command2` n'est jamais normalisée ni effacée.
 6. Jamais de collage/saisie dans le jeu, lecture mémoire, sniffing, réseau, télémétrie.
 7. **Jamais de trajet réel inventé** : coordonnées fictives dans seed, tests et docs.
 8. Couleurs via `tokens.css` uniquement. Clics gauche/droit des cartes réservés à la copie / ouverture Farm.

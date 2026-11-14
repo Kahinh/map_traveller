@@ -5,7 +5,7 @@ import { FarmPanel } from '../components/FarmPanel';
 import { WindowHeader } from '../components/WindowHeader';
 import type { Destination } from '../features/catalog/schema';
 import { filterDestinations, type ViewFilter } from '../features/catalog/search';
-import { leftClickCommand, rightClickCommand } from '../features/commands/copyRules';
+import { cardParts, partCommand, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
 import { initImages } from '../lib/tauri/images';
 import {
@@ -91,18 +91,17 @@ export function App() {
   }, [farmId]);
 
   // Gestionnaires stables : nécessaires pour que la mémoïsation des cartes soit effective.
-  const onLeftClick = useCallback(
-    (d: Destination) => {
-      if (d.category === 'farm') setFarmId(d.id);
-      else void copy(d.id, leftClickCommand(d.command), NOTHING_TO_COPY);
-    },
-    [copy],
-  );
-
-  const onRightClick = useCallback(
-    (d: Destination) => {
-      if (d.category === 'farm') setFarmId(d.id); // V1 : même action que le clic gauche
-      else void copy(d.id, rightClickCommand(d.command), NOTHING_TO_COPY);
+  // Clic gauche ou droit sur une zone de carte (zone 1 pour une carte classique).
+  const onCardAction = useCallback(
+    (d: Destination, part: PartIndex, button: ClickButton) => {
+      if (d.category === 'farm') {
+        setFarmId(d.id); // V1 : clic gauche et droit ouvrent le parcours
+        return;
+      }
+      const parts = cardParts(d);
+      const target = parts[part - 1];
+      // La zone n'est transmise au retour visuel que pour une carte à deux étapes.
+      void copy(d.id, target ? partCommand(target, button) : null, NOTHING_TO_COPY, parts.length > 1 ? part : undefined);
     },
     [copy],
   );
@@ -174,8 +173,8 @@ export function App() {
               destination={d}
               favorite={favorites.has(d.id)}
               feedback={feedback?.key === d.id ? feedback.kind : null}
-              onLeftClick={onLeftClick}
-              onRightClick={onRightClick}
+              feedbackPart={feedback?.key === d.id ? (feedback.part ?? null) : null}
+              onAction={onCardAction}
               onToggleFavorite={onToggleFavorite}
             />
           ))}

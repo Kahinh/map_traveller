@@ -16,6 +16,8 @@
   --mt-danger: #c9485b;
   --mt-shadow: rgba(0, 0, 0, 0.35);
   --mt-hover: rgba(241, 241, 255, 0.08);
+  /* Fond de focus clavier des zones d'une carte à deux étapes. */
+  --mt-accent-soft: rgba(229, 240, 82, 0.28);
 
   --mt-card-size: 90px;
   --mt-gap: 6px;

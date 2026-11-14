@@ -23,7 +23,8 @@ Source : cahier des charges §6.3, §7, §8.
 - Toute écriture : `*.tmp` puis renommage, `.bak` du précédent.
 - Validation avant écriture et à la lecture (`validateCatalog`) : ids uniques non vides, catégorie ∈ `npc|dungeon|place|farm`, `command` string, `image` relatif ou `null`.
 - Un import corrompu ne touche pas au catalogue existant.
-- Changement de schéma → incrémenter `schemaVersion` + fonction de migration + test.
+- Schéma courant : **3**. Champs `twoStep: boolean` (PNJ et Donjons uniquement, sinon erreur) et `command2: string` (texte brut, jamais modifié, conservé même si `twoStep` est faux). Un catalogue v2 est accepté : les champs absents prennent `false` et `''`.
+- Changement de schéma → incrémenter `schemaVersion` + migration (valeurs par défaut dans `validateCatalog`, ou fonction dédiée si une transformation est nécessaire) + test.
 - Aucune URL distante, aucun chemin absolu dans le JSON.
 - Seed : coordonnées **fictives** uniquement.
 

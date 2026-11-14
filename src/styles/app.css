@@ -192,7 +192,7 @@ input:focus-visible {
   border-color: var(--mt-text-muted);
 }
 
-.card:has(.card__main:active) {
+.card:has(.card__main:active, .card__zone:active) {
   transform: scale(0.97);
 }
 
@@ -307,6 +307,120 @@ input:focus-visible {
   color: var(--mt-accent);
   background: var(--mt-card-band);
   animation: mt-pop 160ms ease-out;
+}
+
+/* ---------- Carte à deux étapes ----------
+   Une seule image ; deux boutons couvrant toute la carte, découpés en triangles par
+   `clip-path` (la découpe vaut aussi pour la zone qui reçoit les clics). Les variables
+   `--mt-zone-1` / `--mt-zone-2` sont la SEULE définition de la géométrie : tout calque
+   lié à une zone (retour de copie, surbrillance) doit les réutiliser. Les deux polygones
+   partagent exactement la diagonale bas-gauche → haut-droite. */
+.card--split {
+  --mt-zone-1: polygon(0 0, 100% 0, 0 100%); /* haut-gauche : étape 1 */
+  --mt-zone-2: polygon(100% 0, 100% 100%, 0 100%); /* bas-droite : étape 2 */
+}
+
+.card__zone {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.card__zone--1 {
+  clip-path: var(--mt-zone-1);
+}
+
+.card__zone--2 {
+  clip-path: var(--mt-zone-2);
+}
+
+/* `clip-path` rogne le contour de focus : un fond accentué le remplace. */
+.card__zone:focus-visible {
+  background: var(--mt-accent-soft);
+}
+
+/* Calques décoratifs frères des zones : ils ne doivent jamais intercepter un clic. */
+.card--split .card__img,
+.card--split .card__placeholder,
+.card--split .card__name,
+.card--split .card__check,
+.card__divider,
+.card__step {
+  pointer-events: none;
+}
+
+/* Trait diagonal : avec `to bottom right`, la ligne des 50 % relie le coin bas-gauche
+   au coin haut-droit. */
+.card__divider {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 0.5px),
+    var(--mt-card-border) calc(50% - 0.5px),
+    var(--mt-card-border) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+}
+
+/* Repères « 1 » et « 2 », au cœur de chaque triangle (au-dessus du bandeau du nom). */
+.card__step {
+  position: absolute;
+  font-size: 9px;
+  line-height: 1.4;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--mt-card-band);
+  color: var(--mt-text);
+}
+
+.card__step--1 {
+  left: 22%;
+  top: 22%;
+}
+
+.card__step--2 {
+  right: 22%;
+  bottom: 34%;
+}
+
+/* Retour de copie limité à la zone cliquée : même découpe que la zone. */
+.card--split .card__check {
+  inset: 0;
+  display: block;
+}
+
+.card--split.is-part-1::after,
+.card__check--1 {
+  clip-path: var(--mt-zone-1);
+}
+
+.card--split.is-part-2::after,
+.card__check--2 {
+  clip-path: var(--mt-zone-2);
+}
+
+/* Le repère de la zone copiée s'efface le temps de la coche, pour ne pas se superposer. */
+.card--split.is-copied.is-part-1 .card__step--1,
+.card--split.is-copied.is-part-2 .card__step--2 {
+  visibility: hidden;
+}
+
+.card__check-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  line-height: 1;
+}
+
+.card__check--1 .card__check-mark {
+  left: 33%;
+  top: 33%;
+}
+
+.card__check--2 .card__check-mark {
+  left: 67%;
+  top: 60%;
 }
 
 @keyframes mt-pop {

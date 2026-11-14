@@ -25,6 +25,25 @@ Exemple (coordonnées fictives) : `/zaap 5 -18;/travel 1 1;/travel 2 2`
 
 Seul le **premier** segment est retiré, et seulement s'il s'agit d'un `/zaap`. Le reste est copié exactement tel quel.
 
+### Trajet en deux étapes (PNJ, Donjons)
+
+Pour une destination qui demande un passage **manuel** par un portail ou un PNJ (par exemple l'entrée d'une dimension), une carte PNJ ou Donjon peut porter deux commandes. La carte garde une seule image, coupée par une diagonale du coin bas-gauche au coin haut-droit :
+
+| Zone | Repère | Commande |
+|---|---|---|
+| triangle **haut-gauche** | « 1 » | étape 1 : accès (`command`) |
+| triangle **bas-droite** | « 2 » | étape 2 : sur place (`command2`) |
+
+Chaque zone suit la même règle que les cartes classiques, appliquée à sa propre commande : **clic gauche** sans le `/zaap` initial, **clic droit** complet. La copie est immédiate et la coche n'apparaît que sur la zone cliquée.
+
+Exemple (coordonnées fictives) : étape 1 `/zaap 5 -18;/travel 1 1`, étape 2 `/travel 2 2;/travel 3 3`.
+
+1. Clic sur la zone 1, coller dans le chat du jeu : trajet jusqu'à l'accès.
+2. Franchir soi-même le portail ou parler au PNJ : l'application n'automatise pas ce passage.
+3. Clic sur la zone 2, coller dans le chat du jeu : trajet sur place.
+
+Ce que la commande `/travel` accepte de part et d'autre d'un passage est à vérifier en jeu. Tant que l'éditeur intégré n'existe pas, le mode se règle dans `catalog.json` (voir ci-dessous).
+
 ### Parcours Farm
 
 Un clic sur une carte Farm ouvre le parcours : une petite carte par position (`1,1`, `2,2`…).
@@ -77,6 +96,8 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `images/` | images importées (chemins relatifs dans le JSON) |
 
 - Au premier lancement, le catalogue d'exemple (`resources/catalog.seed.json`) est copié dans ce dossier.
+- Le catalogue est au **schéma 3**. Chaque destination peut porter `"twoStep": true` (PNJ et Donjons uniquement) et `"command2"` (commande de l'étape 2). Champs absents : `false` et `""`. `command2` est conservée même si `twoStep` vaut `false`. Un catalogue au schéma 2 est lu sans modification ; il est réécrit au schéma 3 à la prochaine sauvegarde.
+- Une version **0.1.x** refuse un `catalog.json` au schéma 3 (« version plus récente que l'application ») **sans le modifier**. Revenir à une version antérieure demande donc de restaurer une sauvegarde au schéma 2.
 - Les mises à jour **n'écrasent jamais** vos données.
 - Chaque écriture est atomique (fichier temporaire puis remplacement). La version précédente est gardée en `.bak`.
 - **Sauvegarde manuelle :** copier tout le dossier `%APPDATA%\MapTraveller\`.
@@ -113,7 +134,7 @@ npm run tauri build  # installateur NSIS local
 
 ```
 src/
-  features/commands/   # PUR — clic gauche / clic droit
+  features/commands/   # PUR — clic gauche / clic droit, zones d'une carte (cardParts)
   features/farm/       # PUR — parsing du parcours, reprise par indice
   features/catalog/    # PUR — schéma, validation, recherche, tri
   lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images

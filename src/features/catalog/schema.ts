@@ -1,10 +1,13 @@
 /**
  * Schéma du catalogue de destinations (cahier des charges §8).
  * Fonctions pures : validation et normalisation légère des champs facultatifs.
- * Le champ `command` n'est JAMAIS modifié.
+ * Les champs `command` et `command2` ne sont JAMAIS modifiés.
+ *
+ * Schéma 3 : ajout de `twoStep` et `command2` (trajet en deux étapes). Un catalogue v2
+ * est accepté tel quel : les champs absents prennent leur valeur par défaut.
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const CATEGORIES = ['npc', 'dungeon', 'place', 'farm'] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -16,6 +19,9 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   farm: 'Farm',
 };
 
+/** Catégories qui peuvent porter un trajet en deux étapes. */
+export const TWO_STEP_CATEGORIES: readonly Category[] = ['npc', 'dungeon'];
+
 export interface Destination {
   id: string;
   name: string;
@@ -25,9 +31,14 @@ export interface Destination {
   tags: string[];
   /** Chemin relatif `images/...` dans le dossier de données, ou `null`. */
   image: string | null;
+  /** Commande copiée (commande de l'étape 1 en mode deux étapes). Texte brut. */
   command: string;
   sortOrder: number;
   enabled: boolean;
+  /** Trajet en deux étapes (PNJ et Donjons). Décoché par défaut. */
+  twoStep: boolean;
+  /** Commande de l'étape 2. Texte brut, conservé même si `twoStep` est décoché. */
+  command2: string;
 }
 
 export interface Catalog {
@@ -102,6 +113,17 @@ export function validateCatalog(input: unknown): ValidationResult {
 
     if (typeof raw.command !== 'string') errors.push({ path: at('command'), message: 'command doit être du texte.' });
 
+    if (raw.twoStep !== undefined && typeof raw.twoStep !== 'boolean') {
+      errors.push({ path: at('twoStep'), message: 'twoStep doit valoir true ou false.' });
+    }
+    const twoStep = raw.twoStep === true;
+    if (twoStep && CATEGORIES.includes(category as Category) && !TWO_STEP_CATEGORIES.includes(category as Category)) {
+      errors.push({ path: at('twoStep'), message: 'Le trajet en deux étapes est réservé aux PNJ et aux Donjons.' });
+    }
+    if (raw.command2 !== undefined && typeof raw.command2 !== 'string') {
+      errors.push({ path: at('command2'), message: 'command2 doit être du texte.' });
+    }
+
     let image: string | null = null;
     if (raw.image != null && raw.image !== '') {
       if (typeof raw.image !== 'string' || !isSafeImagePath(raw.image)) {
@@ -125,6 +147,8 @@ export function validateCatalog(input: unknown): ValidationResult {
       command: typeof raw.command === 'string' ? raw.command : '',
       sortOrder: typeof raw.sortOrder === 'number' && Number.isFinite(raw.sortOrder) ? raw.sortOrder : 0,
       enabled: raw.enabled !== false,
+      twoStep,
+      command2: typeof raw.command2 === 'string' ? raw.command2 : '',
     });
   });
 

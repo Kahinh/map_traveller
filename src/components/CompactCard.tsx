@@ -1,16 +1,26 @@
 import { memo, useState, type MouseEvent } from 'react';
 import type { FeedbackKind } from '../app/useCopyFeedback';
 import type { Destination } from '../features/catalog/schema';
+import { isTwoStep, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { imageSrc } from '../lib/tauri/images';
 
 interface Props {
   destination: Destination;
   favorite: boolean;
   feedback: FeedbackKind | null;
-  onLeftClick: (d: Destination) => void;
-  onRightClick: (d: Destination) => void;
+  /** Zone concernée par le retour de copie (carte à deux étapes uniquement). */
+  feedbackPart: PartIndex | null;
+  onAction: (d: Destination, part: PartIndex, button: ClickButton) => void;
   onToggleFavorite: (d: Destination) => void;
 }
+
+/** Libellés des étapes : le passage entre les deux reste manuel. */
+const STEP_LABELS: Record<PartIndex, string> = {
+  1: 'étape 1 : accès',
+  2: 'étape 2 : sur place',
+};
+
+const COPY_HINT = 'clic gauche : sans Zaap · clic droit : complet';
 
 function initials(name: string): string {
   return name
@@ -21,29 +31,100 @@ function initials(name: string): string {
     .join('');
 }
 
+/** Illustration de la carte : image importée, ou initiales si absente ou illisible. */
+function CardVisual({ name, image }: { name: string; image: string | null }) {
+  const src = imageSrc(image);
+  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
+  return src && src !== brokenSrc ? (
+    <img
+      className="card__img"
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      onError={() => setBrokenSrc(src)}
+    />
+  ) : (
+    <span className="card__placeholder" aria-hidden>
+      {initials(name)}
+    </span>
+  );
+}
+
 /**
  * Carte carrée compacte. Clic gauche / droit réservés à la copie (ou à l'ouverture Farm) ;
  * l'étoile est un bouton frère, pas imbriqué. Mémoïsée : seules les cartes dont les props
  * changent sont re-rendues (retour de copie, favori).
+ *
+ * Carte à deux étapes : une seule image, deux boutons superposés découpés en triangles par
+ * `clip-path` (diagonale bas-gauche → haut-droite). Chaque zone applique les règles de copie
+ * à sa propre commande.
  */
 export const CompactCard = memo(function CompactCard({
   destination: d,
   favorite,
   feedback,
-  onLeftClick,
-  onRightClick,
+  feedbackPart,
+  onAction,
   onToggleFavorite,
 }: Props) {
-  const src = imageSrc(d.image);
-  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const isFarm = d.category === 'farm';
+  const split = isTwoStep(d);
 
-  const handleContextMenu = (e: MouseEvent) => {
+  const contextMenu = (part: PartIndex) => (e: MouseEvent) => {
     e.preventDefault(); // jamais de menu contextuel parasite (CdC §4)
-    onRightClick(d);
+    onAction(d, part, 'right');
   };
 
-  const hint = isFarm ? 'ouvrir le parcours' : 'clic gauche : sans Zaap · clic droit : complet';
+  const star = (
+    <button
+      type="button"
+      className={`card__star${favorite ? ' is-on' : ''}`}
+      title={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+      aria-label={favorite ? `Retirer ${d.name} des favoris` : `Ajouter ${d.name} aux favoris`}
+      aria-pressed={favorite}
+      onClick={() => onToggleFavorite(d)}
+    >
+      {favorite ? '★' : '☆'}
+    </button>
+  );
+
+  if (split) {
+    const part = feedback ? feedbackPart : null;
+    return (
+      <div className={`card card--split${feedback && part ? ` is-${feedback} is-part-${part}` : ''}`}>
+        <CardVisual name={d.name} image={d.image} />
+        {([1, 2] as const).map((p) => (
+          <button
+            key={p}
+            type="button"
+            className={`card__zone card__zone--${p}`}
+            title={`${d.name} — ${STEP_LABELS[p]} · ${COPY_HINT}`}
+            aria-label={`Copier l'étape ${p} de ${d.name}`}
+            onClick={() => onAction(d, p, 'left')}
+            onContextMenu={contextMenu(p)}
+          />
+        ))}
+        <span className="card__divider" aria-hidden />
+        <span className="card__step card__step--1" aria-hidden>
+          1
+        </span>
+        <span className="card__step card__step--2" aria-hidden>
+          2
+        </span>
+        <span className="card__name">{d.name}</span>
+        {feedback === 'copied' && part && (
+          <span className={`card__check card__check--${part}`} aria-hidden>
+            <span className="card__check-mark">✓</span>
+          </span>
+        )}
+        {star}
+      </div>
+    );
+  }
+
+  const hint = isFarm ? 'ouvrir le parcours' : COPY_HINT;
 
   return (
     <div className={`card${feedback ? ` is-${feedback}` : ''}`}>
@@ -51,24 +132,10 @@ export const CompactCard = memo(function CompactCard({
         type="button"
         className="card__main"
         title={`${d.name} — ${hint}`}
-        onClick={() => onLeftClick(d)}
-        onContextMenu={handleContextMenu}
+        onClick={() => onAction(d, 1, 'left')}
+        onContextMenu={contextMenu(1)}
       >
-        {src && src !== brokenSrc ? (
-          <img
-            className="card__img"
-            src={src}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-            onError={() => setBrokenSrc(src)}
-          />
-        ) : (
-          <span className="card__placeholder" aria-hidden>
-            {initials(d.name)}
-          </span>
-        )}
+        <CardVisual name={d.name} image={d.image} />
         {isFarm && <span className="card__badge">Farm</span>}
         {feedback === 'copied' && (
           <span className="card__check" aria-hidden>
@@ -77,16 +144,7 @@ export const CompactCard = memo(function CompactCard({
         )}
         <span className="card__name">{d.name}</span>
       </button>
-      <button
-        type="button"
-        className={`card__star${favorite ? ' is-on' : ''}`}
-        title={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-        aria-label={favorite ? `Retirer ${d.name} des favoris` : `Ajouter ${d.name} aux favoris`}
-        aria-pressed={favorite}
-        onClick={() => onToggleFavorite(d)}
-      >
-        {favorite ? '★' : '☆'}
-      </button>
+      {star}
     </div>
   );
 });

@@ -36,6 +36,7 @@ Barre de titre custom (drag region) : icône, « Map Traveller », épingle, par
 - Cartes mémoïsées (`memo`) : garder des gestionnaires stables (`useCallback`) dans `App`.
 - Étapes Farm : classe `.step` ; `is-current` = dernière position cliquée, `is-done` = positions dépassées.
 - Icônes : SVG de `src/components/icons.tsx` (pas d'emoji).
+- Carte à deux étapes : `.card--split` contient une seule image, deux boutons `.card__zone--1` / `--2` découpés par `clip-path`, `.card__divider`, deux repères `.card__step`. La géométrie n'est définie **que** par `--mt-zone-1` / `--mt-zone-2` : tout calque lié à une zone (coche, contour, surbrillance) réutilise ces variables. Focus clavier des zones : fond `--mt-accent-soft` (le contour est rogné par `clip-path`).
 - États : image absente (initiales), catalogue vide, recherche sans résultat, chargement.
 
 ## Vérification

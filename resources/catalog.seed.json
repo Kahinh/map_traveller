@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "destinations": [
     {
       "id": "exemple-pnj",
@@ -24,6 +24,20 @@
       "command": "/zaap 1 2;/travel 3 4",
       "sortOrder": 10,
       "enabled": true
+    },
+    {
+      "id": "exemple-donjon-deux-etapes",
+      "name": "Exemple Donjon en deux étapes",
+      "category": "dungeon",
+      "zone": "Exemple fictif",
+      "aliases": [],
+      "tags": ["exemple", "boss", "deux étapes"],
+      "image": null,
+      "command": "/zaap 5 -18;/travel 1 1",
+      "sortOrder": 10,
+      "enabled": true,
+      "twoStep": true,
+      "command2": "/travel 2 2;/travel 3 3"
     },
     {
       "id": "exemple-lieu-dit",

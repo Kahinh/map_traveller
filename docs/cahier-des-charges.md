@@ -164,6 +164,8 @@ Prévoir contrôle de format réel, taille maximale configurable (valeur initial
 }
 ```
 
+> **Addendum — schéma 3 (trajet en deux étapes).** Deux champs s'ajoutent à chaque destination : `twoStep` (booléen, `false` par défaut) et `command2` (texte brut, `""` par défaut). `twoStep: true` n'est autorisé que pour les catégories `npc` et `dungeon`. La carte affiche alors une seule image coupée par une diagonale du coin bas-gauche au coin haut-droit : le triangle haut-gauche copie `command` (étape 1 : accès), le triangle bas-droite copie `command2` (étape 2 : sur place), chacun avec les règles du §4 (clic gauche sans `/zaap` initial, clic droit complet). Les zones de clic sont les deux triangles, pas deux rectangles. Le passage entre les deux étapes (portail, PNJ, dimension) reste manuel. `command2` n'est jamais normalisée et reste conservée si `twoStep` est décoché. Un catalogue au schéma 2 est accepté tel quel, les champs absents prenant leur valeur par défaut. Exemple fictif : `"twoStep": true`, `"command": "/zaap 5 -18;/travel 1 1"`, `"command2": "/travel 2 2;/travel 3 3"`.
+
 **Toutes les coordonnées sont fictives.** Les commandes sont des chaînes brutes saisies par l'utilisateur. L'application n'invente pas les trajets et ne déduit pas les Zaaps depuis les coordonnées. Les segments Farm sont analysés uniquement pour construire les cartes et découper la suite à copier.
 
 ### 8.2 Persistance

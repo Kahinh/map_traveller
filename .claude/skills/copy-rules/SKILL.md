@@ -12,6 +12,7 @@ Source de vérité : cahier des charges §4 et §5 (`docs/cahier-des-charges.md`
 1. Le champ `command` est du **texte brut** saisi par l'utilisateur. On ne le reconstruit jamais, on ne le normalise jamais.
 2. **Clic gauche** (`leftClickCommand`) : si le **premier segment** (jusqu'au premier `;`) est une commande `/zaap` (frontière de mot : `/zaap` suivi d'un espace, d'une fin ou d'un `;` — pas `/zaapi`), retirer ce segment **et** son `;`. Le reste est copié octet pour octet. Sinon : copie intégrale. Jamais de `replace` global sur `/zaap`.
 3. **Clic droit** (`rightClickCommand`) : copie intégrale.
+   - **Carte à deux étapes** (`twoStep`, PNJ et Donjons) : `cardParts(d)` renvoie les zones (1 = `command`, 2 = `command2`) et `partCommand(part, bouton)` applique les règles 2 et 3 à la commande de la zone. Ne jamais réécrire la règle Zaap ailleurs que dans `copyRules.ts`.
 4. Commande vide / blanche → `null` (rien copié, avertissement UI).
 5. **Farm** (`parseFarmRoute`, `farmResumeCommand`) :
    - découpage en segments sur `;` en conservant le texte original de chaque segment ;

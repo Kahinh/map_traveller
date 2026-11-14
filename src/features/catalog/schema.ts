@@ -1,0 +1,149 @@
+/**
+ * Schéma du catalogue de destinations (cahier des charges §8).
+ * Fonctions pures : validation et normalisation légère des champs facultatifs.
+ * Le champ `command` n'est JAMAIS modifié.
+ */
+
+export const SCHEMA_VERSION = 2;
+
+export const CATEGORIES = ['npc', 'dungeon', 'place', 'farm'] as const;
+export type Category = (typeof CATEGORIES)[number];
+
+export const CATEGORY_LABELS: Record<Category, string> = {
+  npc: 'PNJ',
+  dungeon: 'Donjons',
+  place: 'Lieux-dits',
+  farm: 'Farm',
+};
+
+export interface Destination {
+  id: string;
+  name: string;
+  category: Category;
+  zone: string;
+  aliases: string[];
+  tags: string[];
+  /** Chemin relatif `images/...` dans le dossier de données, ou `null`. */
+  image: string | null;
+  command: string;
+  sortOrder: number;
+  enabled: boolean;
+}
+
+export interface Catalog {
+  schemaVersion: number;
+  destinations: Destination[];
+}
+
+export interface ValidationError {
+  path: string;
+  message: string;
+}
+
+export type ValidationResult =
+  | { ok: true; catalog: Catalog }
+  | { ok: false; errors: ValidationError[] };
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+function stringArray(v: unknown): string[] | null {
+  if (v === undefined) return [];
+  if (!Array.isArray(v) || !v.every((s) => typeof s === 'string')) return null;
+  return v as string[];
+}
+
+/** Chemin d'image accepté : relatif, sous `images/`, sans remontée ni schéma d'URL. */
+export function isSafeImagePath(p: string): boolean {
+  return /^images\/[A-Za-z0-9._-]+$/.test(p) && !p.includes('..');
+}
+
+/**
+ * Valide un objet inconnu (JSON importé ou lu sur disque).
+ * Ne lève jamais : retourne la liste exhaustive des erreurs.
+ */
+export function validateCatalog(input: unknown): ValidationResult {
+  const errors: ValidationError[] = [];
+  if (!isRecord(input)) return { ok: false, errors: [{ path: '', message: 'Le catalogue doit être un objet JSON.' }] };
+
+  const version = input.schemaVersion;
+  if (typeof version !== 'number' || !Number.isInteger(version)) {
+    errors.push({ path: 'schemaVersion', message: 'schemaVersion manquant ou invalide.' });
+  } else if (version > SCHEMA_VERSION) {
+    errors.push({ path: 'schemaVersion', message: `Version ${version} plus récente que l'application (${SCHEMA_VERSION}).` });
+  }
+
+  if (!Array.isArray(input.destinations)) {
+    errors.push({ path: 'destinations', message: 'destinations doit être un tableau.' });
+    return { ok: false, errors };
+  }
+
+  const seen = new Set<string>();
+  const destinations: Destination[] = [];
+  input.destinations.forEach((raw, i) => {
+    const at = (f: string) => `destinations[${i}].${f}`;
+    if (!isRecord(raw)) {
+      errors.push({ path: `destinations[${i}]`, message: 'Entrée invalide.' });
+      return;
+    }
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+    if (!id) errors.push({ path: at('id'), message: 'Identifiant requis.' });
+    else if (seen.has(id)) errors.push({ path: at('id'), message: `Identifiant en double : ${id}.` });
+    seen.add(id);
+
+    const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+    if (!name) errors.push({ path: at('name'), message: 'Nom requis.' });
+
+    const category = raw.category;
+    if (!CATEGORIES.includes(category as Category)) {
+      errors.push({ path: at('category'), message: `Catégorie inconnue : ${String(category)}.` });
+    }
+
+    if (typeof raw.command !== 'string') errors.push({ path: at('command'), message: 'command doit être du texte.' });
+
+    let image: string | null = null;
+    if (raw.image != null && raw.image !== '') {
+      if (typeof raw.image !== 'string' || !isSafeImagePath(raw.image)) {
+        errors.push({ path: at('image'), message: 'Chemin d\'image invalide (attendu : images/<fichier>).' });
+      } else image = raw.image;
+    }
+
+    const aliases = stringArray(raw.aliases);
+    const tags = stringArray(raw.tags);
+    if (aliases === null) errors.push({ path: at('aliases'), message: 'aliases doit être une liste de textes.' });
+    if (tags === null) errors.push({ path: at('tags'), message: 'tags doit être une liste de textes.' });
+
+    destinations.push({
+      id,
+      name,
+      category: category as Category,
+      zone: typeof raw.zone === 'string' ? raw.zone : '',
+      aliases: aliases ?? [],
+      tags: tags ?? [],
+      image,
+      command: typeof raw.command === 'string' ? raw.command : '',
+      sortOrder: typeof raw.sortOrder === 'number' && Number.isFinite(raw.sortOrder) ? raw.sortOrder : 0,
+      enabled: raw.enabled !== false,
+    });
+  });
+
+  if (errors.length > 0) return { ok: false, errors };
+  return { ok: true, catalog: { schemaVersion: SCHEMA_VERSION, destinations } };
+}
+
+/** Génère un identifiant stable et lisible à partir d'un nom, unique dans `existing`. */
+export function makeDestinationId(name: string, existing: Iterable<string>): string {
+  const base =
+    name
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'destination';
+  const taken = new Set(existing);
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}

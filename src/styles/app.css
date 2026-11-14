@@ -1,0 +1,353 @@
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--dt-bg);
+  color: var(--dt-text);
+  font-family: var(--dt-font);
+  font-size: var(--dt-font-size);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--dt-accent);
+  outline-offset: 1px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+/* ---------- Barre de titre ---------- */
+.titlebar {
+  flex: none;
+  height: var(--dt-titlebar-h);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 8px;
+  background: linear-gradient(90deg, var(--dt-titlebar-from), var(--dt-titlebar-to));
+}
+
+.titlebar__title {
+  flex: 1;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titlebar__logo {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--dt-accent);
+  color: var(--dt-accent-ink);
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-right: 6px;
+  flex: none;
+}
+
+.icon-btn {
+  width: 24px;
+  height: 22px;
+  border-radius: var(--dt-radius-sm);
+  display: grid;
+  place-items: center;
+  color: var(--dt-text-muted);
+  line-height: 1;
+}
+
+.icon-btn:hover {
+  background: var(--dt-hover);
+  color: var(--dt-text);
+}
+
+.icon-btn.is-active {
+  color: var(--dt-accent);
+}
+
+/* ---------- Barre d'outils ---------- */
+.toolbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px 4px;
+}
+
+.search {
+  width: 100%;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--dt-radius-sm);
+  border: 1px solid var(--dt-card-border);
+  background: var(--dt-bg-raised);
+  color: var(--dt-text);
+  font: inherit;
+  outline: none;
+}
+
+.search::placeholder {
+  color: var(--dt-text-muted);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  padding: 3px 8px;
+  border-radius: var(--dt-radius-sm);
+  color: var(--dt-text-muted);
+  font-size: var(--dt-font-size-sm);
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: var(--dt-hover);
+}
+
+.tab.is-active {
+  background: var(--dt-card-bg);
+  color: var(--dt-accent);
+}
+
+/* ---------- Grille ---------- */
+.grid-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 8px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dt-card-border) transparent;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--dt-card-size), 1fr));
+  gap: var(--dt-gap);
+}
+
+.card {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--dt-radius);
+  border: 1px solid var(--dt-card-border);
+  background: var(--dt-card-bg);
+  overflow: hidden;
+  padding: 0;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.card:hover {
+  border-color: var(--dt-text-muted);
+}
+
+.card:active {
+  transform: scale(0.97);
+}
+
+.card.is-copied {
+  border-color: var(--dt-accent);
+  box-shadow: 0 0 0 1px var(--dt-accent);
+}
+
+.card.is-warning {
+  border-color: var(--dt-warning);
+}
+
+.card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card__placeholder {
+  position: absolute;
+  inset: 0 0 18px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--dt-text-muted);
+  opacity: 0.6;
+}
+
+.card__name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px 4px;
+  background: var(--dt-card-band);
+  font-size: var(--dt-font-size-sm);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__badge {
+  position: absolute;
+  left: 4px;
+  top: 3px;
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--dt-card-band);
+  color: var(--dt-accent);
+}
+
+.card__star {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--dt-text-muted);
+  opacity: 0.55;
+  font-size: 13px;
+}
+
+.card:hover .card__star,
+.card__star.is-on {
+  opacity: 1;
+}
+
+.card__star.is-on {
+  color: var(--dt-accent);
+}
+
+.card__check {
+  position: absolute;
+  inset: 0 0 18px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  color: var(--dt-accent);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* Étape Farm : carte compacte portant seulement les coordonnées. */
+.card--step {
+  aspect-ratio: auto;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+}
+
+.card--step .card__index {
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  font-size: 9px;
+  color: var(--dt-text-muted);
+}
+
+.card--start {
+  color: var(--dt-accent);
+}
+
+/* ---------- États ---------- */
+.empty {
+  padding: 24px 8px;
+  text-align: center;
+  color: var(--dt-text-muted);
+}
+
+.status {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: var(--dt-radius-sm);
+  background: var(--dt-bg-raised);
+  border: 1px solid var(--dt-card-border);
+  font-size: var(--dt-font-size-sm);
+  pointer-events: none;
+  max-width: calc(100% - 16px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status.is-warning {
+  border-color: var(--dt-warning);
+  color: var(--dt-warning);
+}
+
+/* ---------- Panneau Farm ---------- */
+.farm-panel {
+  position: absolute;
+  inset: var(--dt-titlebar-h) 0 0;
+  background: var(--dt-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.farm-panel__header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.farm-panel__title {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.farm-panel__issues {
+  margin: 0 8px 4px;
+  padding: 4px 6px;
+  border-radius: var(--dt-radius-sm);
+  border: 1px solid var(--dt-warning);
+  color: var(--dt-warning);
+  font-size: var(--dt-font-size-sm);
+}
+
+.grid--steps {
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+}

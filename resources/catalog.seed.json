@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "destinations": [
+    {
+      "id": "exemple-pnj",
+      "name": "Exemple PNJ",
+      "category": "npc",
+      "zone": "Exemple fictif",
+      "aliases": ["demo"],
+      "tags": ["exemple"],
+      "image": null,
+      "command": "/zaap 5 -18;/travel 1 1;/travel 2 2;/travel 3 3",
+      "sortOrder": 10,
+      "enabled": true
+    },
+    {
+      "id": "exemple-donjon",
+      "name": "Exemple Donjon",
+      "category": "dungeon",
+      "zone": "Exemple fictif",
+      "aliases": [],
+      "tags": ["exemple", "boss"],
+      "image": null,
+      "command": "/zaap 1 2;/travel 3 4",
+      "sortOrder": 10,
+      "enabled": true
+    },
+    {
+      "id": "exemple-lieu-dit",
+      "name": "Exemple Lieu-dit",
+      "category": "place",
+      "zone": "Exemple fictif",
+      "aliases": [],
+      "tags": ["exemple"],
+      "image": null,
+      "command": "/travel 7 7",
+      "sortOrder": 10,
+      "enabled": true
+    },
+    {
+      "id": "exemple-circuit-farm",
+      "name": "Exemple circuit Farm",
+      "category": "farm",
+      "zone": "Exemple fictif",
+      "aliases": [],
+      "tags": ["exemple"],
+      "image": null,
+      "command": "/travel 1 1;/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5;/travel 6 6",
+      "sortOrder": 20,
+      "enabled": true
+    }
+  ]
+}

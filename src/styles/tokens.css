@@ -7,7 +7,6 @@
   --mt-titlebar-to: #4b4d77;
   --mt-card-bg: #393b58;
   --mt-card-border: #505273;
-  --mt-card-band: rgba(20, 21, 34, 0.82);
   --mt-text: #f1f1ff;
   --mt-text-muted: #b8b9d0;
   --mt-accent: #e5f052;
@@ -19,6 +18,33 @@
   /* Fond de focus clavier des zones d'une carte à deux étapes. */
   --mt-accent-soft: rgba(229, 240, 82, 0.28);
 
+  /* Surbrillance des cartes (issue n°2) : voile porté par le bouton cliquable. */
+  --mt-highlight: rgba(241, 241, 255, 0.16); /* voile clair au survol */
+  --mt-highlight-zone: rgba(241, 241, 255, 0.28); /* voile d'un triangle : plus marqué, la surface est plus petite */
+  --mt-highlight-edge: rgba(241, 241, 255, 0.55); /* liseré interne */
+  --mt-focus: rgba(229, 240, 82, 0.3); /* voile accent au focus clavier */
+  --mt-press: rgba(20, 21, 34, 0.25); /* voile sombre à l'appui */
+  --mt-transition: 120ms ease;
+
+  /* Carte : nom en surimpression sur un dégradé (scrim) qui part du transparent. */
+  --mt-scrim-strong: rgba(14, 15, 26, 0.9);
+  --mt-scrim-mid: rgba(14, 15, 26, 0.7);
+  --mt-scrim-soft: rgba(14, 15, 26, 0.3);
+  --mt-scrim-clear: rgba(14, 15, 26, 0);
+  --mt-text-shadow: rgba(8, 8, 16, 0.85);
+  /* Finitions : reflet haut et liseré intérieur, posés par-dessus l'image. */
+  --mt-card-sheen: rgba(255, 255, 255, 0.12);
+  --mt-card-inner: rgba(255, 255, 255, 0.05);
+  /* Petites pastilles sur image (Farm, repères d'étape, crayon) et étoile. */
+  --mt-chip-bg: rgba(14, 15, 26, 0.72);
+  --mt-chip-ring: rgba(241, 241, 255, 0.28);
+  --mt-icon-halo: rgba(14, 15, 26, 0.7);
+  /* Trait diagonal d'une carte à deux étapes : cœur clair, halo sombre. */
+  --mt-divider: rgba(241, 241, 255, 0.7);
+  --mt-divider-halo: rgba(14, 15, 26, 0.45);
+  /* Retour de copie : léger lavis d'accent sous la pastille cochée. */
+  --mt-copied-wash: rgba(229, 240, 82, 0.14);
+
   --mt-card-size: 90px;
   --mt-gap: 6px;
   --mt-radius: 10px;
@@ -28,4 +54,16 @@
   --mt-font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mt-font-size: 12px;
   --mt-font-size-sm: 11px;
+}
+
+/* Carte sans image : la teinte `--card-hue` (0–359) est posée en `style` par le composant,
+   dérivée du nom. Les tons sont déclarés ici, sur l'élément qui porte la teinte : une
+   variable dérivée se calcule là où elle est déclarée, pas sur `:root`. Saturation et
+   luminosité basses pour rester sobre et cohérent avec le thème. */
+.card__placeholder {
+  --mt-ph-top: hsl(var(--card-hue, 240) 24% 35%);
+  --mt-ph-bottom: hsl(var(--card-hue, 240) 30% 17%);
+  --mt-ph-glow: hsl(var(--card-hue, 240) 45% 62% / 0.3);
+  --mt-ph-ink: hsl(var(--card-hue, 240) 35% 88% / 0.5);
+  --mt-ph-ink-faint: hsl(var(--card-hue, 240) 35% 88% / 0.22);
 }

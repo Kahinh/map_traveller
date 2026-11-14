@@ -34,16 +34,21 @@ Barre de titre custom (drag region) : icône, « Map Traveller », épingle, par
 
 ## Carte
 
-- Image `object-fit: cover`, nom dans un bandeau sombre en bas, tronqué + `title`.
-- Étoile favori en coin (bouton distinct, `stopPropagation`).
+- Image pleine carte (`object-fit: cover`). Nom **en surimpression** : `.card__name` (dégradé `--mt-scrim-*` partant du transparent, au moins 50 % de la hauteur) contient `.card__label` (11 px en 600, `line-clamp: 2`, ombre `--mt-text-shadow`). Composant `CardName`. Jamais de bandeau opaque.
+- Sans image : `.card__placeholder`, dégradé teinté. Le composant pose seulement `--card-hue` (0–359, `cardHue(name)` dans `src/features/catalog/cardHue.ts`, pure et testée) ; les tons `--mt-ph-*` sont déclarés dans `tokens.css`.
+- Étoile : SVG `StarIcon` détourée (`--mt-icon-halo`), bouton distinct. Opacité 0.45 au repos, 0.9 au survol de la carte, accent si favorite.
+- Pastilles (Farm, repères 1 / 2, crayon) : rondes, `--mt-chip-bg` + anneau `--mt-chip-ring`. Le repère « 1 » est à 29 % / 29 %, hors du crayon du mode gestion.
+- Surbrillance au survol : voile `::after` porté par le bouton cliquable (`.card__main`, `.card__zone`), **opacité seule**, aucun JavaScript. `--mt-highlight` pour la carte, `--mt-highlight-zone` (plus marqué) pour un triangle, `--mt-press` à l'appui. Carte classique : liseré `.card__main::before` (`--mt-highlight-edge`, accent 2 px au focus). Règles `:hover` toujours sous `@media (hover: hover)`. Le survol de l'étoile ou du crayon ne surligne pas la carte.
+- Empilement : image < voile < trait < pastilles et nom (1) < liseré et reflet (2) < copie (3) < étoile et crayon (4). Tout calque décoratif est en `pointer-events: none`.
+- Interdits : ombre ou contour externes (`content-visibility` les rogne), `filter`, `backdrop-filter`, `will-change` permanent, `transform` au survol sur une zone ou sur la carte.
 - Clic gauche / droit = copie (ou ouverture Farm) ; `contextmenu` toujours `preventDefault`.
 - Crayon visible uniquement en mode gestion.
-- Retour : classe `is-copied` ~800 ms (coche + contour accent, en calque interne `::after`), `is-warning` si commande vide.
+- Retour : classe `is-copied` ~800 ms (contour accent `.card::after`, lavis `--mt-copied-wash`, pastille accent avec `CheckIcon`), `is-warning` si commande vide. Sur une carte à deux zones, le tout est découpé par la zone.
 - Structure : `.card` (div) contient `.card__main` (bouton de copie) et `.card__star` (bouton frère) — jamais de bouton imbriqué.
 - Cartes mémoïsées (`memo`) : garder des gestionnaires stables (`useCallback`) dans `App`.
 - Étapes Farm : classe `.step` ; `is-current` = dernière position cliquée, `is-done` = positions dépassées.
 - Icônes : SVG de `src/components/icons.tsx` (pas d'emoji).
-- Carte à deux étapes : `.card--split` contient une seule image, deux boutons `.card__zone--1` / `--2` découpés par `clip-path`, `.card__divider`, deux repères `.card__step`. La géométrie n'est définie **que** par `--mt-zone-1` / `--mt-zone-2` : tout calque lié à une zone (coche, contour, surbrillance) réutilise ces variables. Focus clavier des zones : fond `--mt-accent-soft` (le contour est rogné par `clip-path`).
+- Carte à deux étapes : `.card--split` contient une seule image, deux boutons `.card__zone--1` / `--2` découpés par `clip-path`, `.card__divider`, deux repères `.card__step`. La géométrie n'est définie **que** par `--mt-zone-1` / `--mt-zone-2` : tout calque lié à une zone (coche, contour, surbrillance) réutilise ces variables. Focus clavier des zones : voile `--mt-focus`, liseré accent et repère en accent (le contour est rogné par `clip-path`).
 - États : image absente (initiales), catalogue vide, recherche sans résultat, chargement.
 
 ## Vérification

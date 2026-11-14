@@ -1,7 +1,15 @@
 /** Icônes SVG originales, héritent de `currentColor` (rendu net à 100 % et 150 %). */
 import type { ReactNode } from 'react';
 
-function Icon({ children, filled = false }: { children: ReactNode; filled?: boolean }) {
+function Icon({
+  children,
+  filled = false,
+  strokeWidth = 1.5,
+}: {
+  children: ReactNode;
+  filled?: boolean;
+  strokeWidth?: number;
+}) {
   return (
     <svg
       width="14"
@@ -9,7 +17,7 @@ function Icon({ children, filled = false }: { children: ReactNode; filled?: bool
       viewBox="0 0 16 16"
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -54,5 +62,25 @@ export const PencilIcon = () => (
   <Icon>
     <path d="M10.5 2.5l3 3-8 8H2.5v-3l8-8z" />
     <path d="M9 4l3 3" />
+  </Icon>
+);
+
+/** Coche du retour de copie. */
+export const CheckIcon = () => (
+  <Icon strokeWidth={2.2}>
+    <path d="M3.5 8.5l3 3 6-7" />
+  </Icon>
+);
+
+const STAR_PATH = 'M8 1.8l1.85 3.9 4.25.55-3.1 2.95.8 4.2L8 11.35 4.2 13.4l.8-4.2-3.1-2.95 4.25-.55z';
+
+/**
+ * Étoile de favori. Un premier tracé épais, coloré par la feuille de style (`.icon-halo`),
+ * détoure l'étoile pour qu'elle reste lisible sur une image claire comme sombre.
+ */
+export const StarIcon = ({ filled }: { filled: boolean }) => (
+  <Icon filled={filled}>
+    <path className="icon-halo" d={STAR_PATH} />
+    <path d={STAR_PATH} />
   </Icon>
 );

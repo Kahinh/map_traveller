@@ -248,6 +248,19 @@ textarea:focus-visible {
   gap: var(--mt-gap);
 }
 
+/* ---------- Carte ----------
+   `content-visibility` fait de `.card` un contexte d'empilement et rogne tout ce qui dépasse :
+   aucun effet ne sort du cadre (ni ombre ni contour externes). Empilement, du fond vers le
+   dessus :
+     image ou dégradé teinté (auto)
+     → voile de survol / appui `::after` du bouton ou de la zone (auto, après l'image)
+     → trait diagonal (auto)
+     → pastille Farm, repères 1 / 2, nom sur son dégradé (z 1)
+     → liseré de survol / focus de la carte classique, reflet `.card::before` (z 2)
+     → contour et coche de copie (z 3)
+     → étoile, crayon (z 4).
+   Seuls le bouton de copie (ou les deux zones), l'étoile et le crayon reçoivent les clics ;
+   tous les autres calques sont en `pointer-events: none`. */
 .card {
   position: relative;
   aspect-ratio: 1;
@@ -255,29 +268,47 @@ textarea:focus-visible {
   border: 1px solid var(--mt-card-border);
   background: var(--mt-card-bg);
   overflow: hidden;
-  transition: border-color 120ms ease, transform 120ms ease;
+  transition: transform var(--mt-transition);
   /* Les cartes hors écran ne sont ni mises en page ni peintes : gros catalogues fluides. */
   content-visibility: auto;
   contain-intrinsic-size: var(--mt-card-size);
 }
 
-.card:hover {
-  border-color: var(--mt-text-muted);
+/* Finition : reflet sur l'arête haute et liseré intérieur, posés sur l'image. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: calc(var(--mt-radius) - 1px);
+  box-shadow:
+    inset 0 1px 0 var(--mt-card-sheen),
+    inset 0 0 0 1px var(--mt-card-inner);
+  pointer-events: none;
+}
+
+/* Bordure éclaircie seulement au survol d'une zone de copie (pas de l'étoile ni du crayon). */
+@media (hover: hover) {
+  .card:has(.card__main:hover, .card__zone:hover) {
+    border-color: var(--mt-text-muted);
+  }
 }
 
 .card:has(.card__main:active, .card__zone:active) {
   transform: scale(0.97);
 }
 
-/* Le contour de retour est un calque interne : `content-visibility` rogne ce qui dépasse. */
+/* Contour de retour : calque interne (au-dessus du nom, sous l'étoile). */
 .card.is-copied::after,
 .card.is-warning::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 3;
   border: 2px solid var(--mt-accent);
   border-radius: calc(var(--mt-radius) - 1px);
   pointer-events: none;
+  animation: mt-fade 160ms ease-out;
 }
 
 .card.is-warning::after {
@@ -289,11 +320,55 @@ textarea:focus-visible {
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: inherit;
+  border-radius: calc(var(--mt-radius) - 1px);
 }
 
+/* Le contour de focus serait recouvert par le nom : le liseré `::before` le remplace. */
 .card__main:focus-visible {
-  outline-offset: -2px;
+  outline: none;
+}
+
+/* ---------- Surbrillance (issue n°2) ----------
+   Voile porté par le bouton cliquable lui-même : il a par construction la forme exacte de
+   la zone de clic (le `clip-path` d'une zone découpe aussi son `::after`). Seule l'opacité
+   est animée ; aucun JavaScript. Les règles `:hover` sont réservées aux pointeurs qui
+   survolent réellement, pour ne pas laisser de voile « collé » après un appui tactile. */
+.card__main::after,
+.card__zone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--mt-radius) - 1px);
+  background-color: var(--mt-highlight);
+  opacity: 0;
+  transition: opacity var(--mt-transition);
+  pointer-events: none;
+}
+
+/* Liseré de la carte classique : au-dessus du nom, pour faire le tour complet de la carte. */
+.card__main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: calc(var(--mt-radius) - 1px);
+  box-shadow: inset 0 0 0 1px var(--mt-highlight-edge);
+  opacity: 0;
+  transition: opacity var(--mt-transition);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .card__main:hover::before,
+  .card__main:hover::after,
+  .card__zone:hover::after {
+    opacity: 1;
+  }
+}
+
+.card__main:focus-visible::before {
+  box-shadow: inset 0 0 0 2px var(--mt-accent);
+  opacity: 1;
 }
 
 .card__img {
@@ -304,109 +379,211 @@ textarea:focus-visible {
   object-fit: cover;
 }
 
+/* Carte sans image : dégradé teinté d'après le nom (tons dans `tokens.css`) + monogramme. */
 .card__placeholder {
   position: absolute;
-  inset: 0 0 18px;
+  inset: 0;
   display: grid;
   place-items: center;
-  font-size: 22px;
+  padding-bottom: 26%;
+  background:
+    radial-gradient(circle at 26% 16%, var(--mt-ph-glow), transparent 62%),
+    linear-gradient(155deg, var(--mt-ph-top), var(--mt-ph-bottom));
+  color: var(--mt-ph-ink);
+  font-size: 26px;
   font-weight: 700;
-  color: var(--mt-text-muted);
-  opacity: 0.6;
+  line-height: 1;
+  letter-spacing: 0.04em;
 }
 
+/* Nom en surimpression : dégradé qui part du transparent, hauteur minimale fixe quel que
+   soit le nombre de lignes, texte en bas sur deux lignes au plus. */
 .card__name {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 2px 4px;
-  background: var(--mt-card-band);
-  font-size: var(--mt-font-size-sm);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  z-index: 1;
+  min-height: 50%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 5px 4px;
+  background: linear-gradient(
+    to top,
+    var(--mt-scrim-strong) 0%,
+    var(--mt-scrim-mid) 36%,
+    var(--mt-scrim-soft) 66%,
+    var(--mt-scrim-clear) 100%
+  );
 }
 
+.card__label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  /* `min-width: 0` : un mot très long se coupe au lieu d'élargir l'élément hors du cadre. */
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  font-size: var(--mt-font-size-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--mt-text);
+  text-shadow: 0 1px 2px var(--mt-text-shadow);
+}
+
+/* Pastille Farm : petite capsule nette, en haut à gauche. */
 .card__badge {
   position: absolute;
   left: 4px;
-  top: 3px;
-  font-size: 9px;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: var(--mt-card-band);
+  top: 4px;
+  z-index: 1;
+  height: 14px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  border-radius: 7px;
+  background: var(--mt-chip-bg);
+  box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
   color: var(--mt-accent);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
+/* Étoile : discrète au repos, nette au survol, accent quand active. Le tracé `.icon-halo`
+   la détoure en sombre pour rester lisible sur une image claire. */
 .card__star {
   position: absolute;
-  top: 1px;
-  right: 1px;
+  top: 2px;
+  right: 2px;
+  z-index: 4;
   width: 22px;
   height: 22px;
   display: grid;
   place-items: center;
-  border-radius: var(--mt-radius-sm);
-  color: var(--mt-text-muted);
-  opacity: 0.55;
-  font-size: 13px;
-  line-height: 1;
-  transition: opacity 120ms ease, color 120ms ease, transform 120ms ease;
+  border-radius: 50%;
+  color: var(--mt-text);
+  opacity: 0.45;
+  transition: opacity var(--mt-transition), transform var(--mt-transition);
 }
 
-.card:hover .card__star,
+.card__star svg {
+  overflow: visible;
+}
+
+.card__star .icon-halo {
+  stroke: var(--mt-icon-halo);
+  stroke-width: 3.5;
+}
+
 .card__star:focus-visible,
 .card__star.is-on {
   opacity: 1;
 }
 
-.card__star:hover {
-  color: var(--mt-accent);
-  transform: scale(1.15);
-}
-
 .card__star.is-on {
   color: var(--mt-accent);
+}
+
+@media (hover: hover) {
+  .card:hover .card__star:not(.is-on) {
+    opacity: 0.9;
+  }
+
+  .card__star:hover {
+    color: var(--mt-accent);
+    transform: scale(1.15);
+  }
+
+  .card__star:hover:not(.is-on) {
+    opacity: 1;
+  }
+}
+
+/* Écran tactile : pas de survol pour révéler l'étoile. */
+@media (hover: none) {
+  .card__star:not(.is-on) {
+    opacity: 0.75;
+  }
 }
 
 /* Crayon du mode gestion : bouton frère des zones de copie, en haut à gauche. */
 .card__edit {
   position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 22px;
-  height: 22px;
+  top: 2px;
+  left: 2px;
+  z-index: 4;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
-  border-radius: var(--mt-radius-sm);
-  background: var(--mt-card-band);
+  border-radius: 50%;
+  background: var(--mt-chip-bg);
+  box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
   color: var(--mt-accent);
-  transition: transform 120ms ease;
+  transition: transform var(--mt-transition);
 }
 
-.card__edit:hover {
-  transform: scale(1.1);
+.card__edit svg {
+  width: 12px;
+  height: 12px;
 }
 
+@media (hover: hover) {
+  .card__edit:hover {
+    transform: scale(1.1);
+  }
+}
+
+/* Retour de copie : lavis d'accent + pastille cochée, au-dessus du nom. */
 .card__check {
   position: absolute;
-  inset: 0 0 18px;
+  inset: 0;
+  z-index: 3;
   display: grid;
   place-items: center;
-  font-size: 30px;
-  color: var(--mt-accent);
-  background: var(--mt-card-band);
-  animation: mt-pop 160ms ease-out;
+  padding-bottom: 24%;
+  background: var(--mt-copied-wash);
+  animation: mt-fade 160ms ease-out;
+}
+
+.card__check-mark {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mt-accent);
+  color: var(--mt-accent-ink);
+  /* Anneau sombre : la pastille reste détachée sur une image claire. Interne à la carte. */
+  box-shadow: 0 0 0 2px var(--mt-chip-bg);
+  animation: mt-pop 200ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+/* Calques décoratifs : ils ne doivent jamais intercepter un clic. */
+.card--split .card__img,
+.card--split .card__placeholder,
+.card__name,
+.card__badge,
+.card__check,
+.card__divider,
+.card__step {
+  pointer-events: none;
 }
 
 /* ---------- Carte à deux étapes ----------
    Une seule image ; deux boutons couvrant toute la carte, découpés en triangles par
-   `clip-path` (la découpe vaut aussi pour la zone qui reçoit les clics). Les variables
-   `--mt-zone-1` / `--mt-zone-2` sont la SEULE définition de la géométrie : tout calque
-   lié à une zone (retour de copie, surbrillance) doit les réutiliser. Les deux polygones
-   partagent exactement la diagonale bas-gauche → haut-droite. */
+   `clip-path` (la découpe vaut aussi pour la zone qui reçoit les clics et pour son voile
+   `::after`). Les variables `--mt-zone-1` / `--mt-zone-2` sont la SEULE définition de la
+   géométrie : tout calque lié à une zone (retour de copie, surbrillance) doit les
+   réutiliser. Les deux polygones partagent exactement la diagonale bas-gauche → haut-droite.
+   Aucune transformation au survol sur les zones ni sur la carte : la frontière bougerait. */
 .card--split {
   --mt-zone-1: polygon(0 0, 100% 0, 0 100%); /* haut-gauche : étape 1 */
   --mt-zone-2: polygon(100% 0, 100% 100%, 0 100%); /* bas-droite : étape 2 */
@@ -427,60 +604,104 @@ textarea:focus-visible {
   clip-path: var(--mt-zone-2);
 }
 
-/* `clip-path` rogne le contour de focus : un fond accentué le remplace. */
+/* Liseré du triangle : le `clip-path` ne garde que ses deux côtés extérieurs ; le trait
+   diagonal, au-dessus, marque le troisième. */
+.card__zone::after {
+  background-color: var(--mt-highlight-zone);
+  box-shadow: inset 0 0 0 1px var(--mt-highlight-edge);
+}
+
+/* `clip-path` rogne le contour de focus : voile et liseré accent le remplacent, nettement
+   distincts du voile clair de survol. */
 .card__zone:focus-visible {
-  background: var(--mt-accent-soft);
+  outline: none;
 }
 
-/* Calques décoratifs frères des zones : ils ne doivent jamais intercepter un clic. */
-.card--split .card__img,
-.card--split .card__placeholder,
-.card--split .card__name,
-.card--split .card__check,
-.card__divider,
-.card__step {
-  pointer-events: none;
+.card__zone:focus-visible::after {
+  background-color: var(--mt-focus);
+  box-shadow: inset 0 0 0 2px var(--mt-accent);
+  opacity: 1;
 }
 
-/* Trait diagonal : avec `to bottom right`, la ligne des 50 % relie le coin bas-gauche
-   au coin haut-droit. */
+/* Appui : voile sombre (déclaré après le focus pour l'emporter). */
+.card__main:active::after,
+.card__zone:active::after {
+  background-color: var(--mt-press);
+  opacity: 1;
+}
+
+.card--split .card__placeholder {
+  padding-bottom: 0;
+  color: var(--mt-ph-ink-faint);
+}
+
+/* Trait diagonal : avec `to bottom right`, la ligne des 50 % relie le coin bas-gauche au
+   coin haut-droit. Cœur clair bordé d'un halo sombre, lisible sur image claire ou sombre. */
 .card__divider {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom right,
-    transparent calc(50% - 0.5px),
-    var(--mt-card-border) calc(50% - 0.5px),
-    var(--mt-card-border) calc(50% + 0.5px),
-    transparent calc(50% + 0.5px)
+    transparent calc(50% - 1.5px),
+    var(--mt-divider-halo) calc(50% - 1px),
+    var(--mt-divider) calc(50% - 0.25px),
+    var(--mt-divider) calc(50% + 0.25px),
+    var(--mt-divider-halo) calc(50% + 1px),
+    transparent calc(50% + 1.5px)
   );
 }
 
-/* Repères « 1 » et « 2 », au cœur de chaque triangle (au-dessus du bandeau du nom). */
+/* Repères « 1 » et « 2 » : petites pastilles rondes au cœur de chaque triangle. Le « 1 »
+   est assez loin du coin pour ne pas passer sous le crayon du mode gestion (20 px) ; le
+   « 2 » reste au-dessus d'un nom sur deux lignes. */
 .card__step {
   position: absolute;
-  font-size: 9px;
-  line-height: 1.4;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: var(--mt-card-band);
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mt-chip-bg);
+  box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
   color: var(--mt-text);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .card__step--1 {
-  left: 22%;
-  top: 22%;
+  left: 29%;
+  top: 29%;
 }
 
 .card__step--2 {
-  right: 22%;
-  bottom: 34%;
+  right: 16%;
+  bottom: 38%;
+}
+
+/* Repère de la zone survolée ou focalisée : passe en accent. */
+.card--split:has(.card__zone--1:focus-visible) .card__step--1,
+.card--split:has(.card__zone--2:focus-visible) .card__step--2 {
+  background: var(--mt-accent);
+  box-shadow: none;
+  color: var(--mt-accent-ink);
+}
+
+@media (hover: hover) {
+  .card--split:has(.card__zone--1:hover) .card__step--1,
+  .card--split:has(.card__zone--2:hover) .card__step--2 {
+    background: var(--mt-accent);
+    box-shadow: none;
+    color: var(--mt-accent-ink);
+  }
 }
 
 /* Retour de copie limité à la zone cliquée : même découpe que la zone. */
 .card--split .card__check {
-  inset: 0;
   display: block;
+  padding-bottom: 0;
 }
 
 .card--split.is-part-1::after,
@@ -493,32 +714,41 @@ textarea:focus-visible {
   clip-path: var(--mt-zone-2);
 }
 
-/* Le repère de la zone copiée s'efface le temps de la coche, pour ne pas se superposer. */
+/* Le repère de la zone copiée s'efface le temps de la coche, qui prend sa place. */
 .card--split.is-copied.is-part-1 .card__step--1,
 .card--split.is-copied.is-part-2 .card__step--2 {
   visibility: hidden;
 }
 
-.card__check-mark {
+/* Pastille positionnée par marges négatives : `transform` reste libre pour l'animation.
+   Centrée sur le repère qu'elle remplace. */
+.card--split .card__check-mark {
   position: absolute;
-  transform: translate(-50%, -50%);
-  line-height: 1;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
 }
 
 .card__check--1 .card__check-mark {
-  left: 33%;
-  top: 33%;
+  left: calc(29% + 7px);
+  top: calc(29% + 7px);
 }
 
 .card__check--2 .card__check-mark {
-  left: 67%;
-  top: 60%;
+  left: calc(84% - 7px);
+  top: calc(62% - 7px);
 }
 
 @keyframes mt-pop {
   from {
     opacity: 0;
-    transform: scale(0.7);
+    transform: scale(0.6);
+  }
+}
+
+@keyframes mt-fade {
+  from {
+    opacity: 0;
   }
 }
 
@@ -916,6 +1146,7 @@ textarea:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   *,
+  *::before,
   *::after {
     transition: none !important;
     animation: none !important;

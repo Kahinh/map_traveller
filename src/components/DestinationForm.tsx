@@ -11,7 +11,7 @@ import {
 } from '../features/catalog/editor';
 import { CATEGORIES, TWO_STEP_CATEGORIES, type Category } from '../features/catalog/schema';
 import { canImportImages, pickAndImportImage } from '../lib/tauri/images';
-import { CardVisual } from './CompactCard';
+import { CardName, CardVisual } from './CompactCard';
 import { Panel } from './Panel';
 
 interface Props {
@@ -316,7 +316,7 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
                   </>
                 )}
                 {draft.category === 'farm' && <span className="card__badge">Farm</span>}
-                <span className="card__name">{draft.name.trim() || 'Sans nom'}</span>
+                <CardName name={draft.name.trim() || 'Sans nom'} />
               </div>
               <div className="form__image-actions">
                 <button

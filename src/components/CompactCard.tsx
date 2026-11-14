@@ -1,9 +1,10 @@
-import { memo, useState, type MouseEvent } from 'react';
+import { memo, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { FeedbackKind } from '../app/useCopyFeedback';
+import { cardHue } from '../features/catalog/cardHue';
 import type { Destination } from '../features/catalog/schema';
 import { isTwoStep, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { imageSrc } from '../lib/tauri/images';
-import { PencilIcon } from './icons';
+import { CheckIcon, PencilIcon, StarIcon } from './icons';
 
 interface Props {
   destination: Destination;
@@ -35,7 +36,20 @@ function initials(name: string): string {
     .join('');
 }
 
-/** Illustration de la carte : image importée, ou initiales si absente ou illisible. */
+/** Nom en surimpression : le conteneur porte le dégradé, le texte est coupé à deux lignes. */
+export function CardName({ name }: { name: string }) {
+  return (
+    <span className="card__name">
+      <span className="card__label">{name}</span>
+    </span>
+  );
+}
+
+/**
+ * Illustration de la carte : image importée, ou initiales sur un dégradé teinté si absente ou
+ * illisible. Seule la teinte numérique `--card-hue` est posée ici ; les couleurs sont dans
+ * `tokens.css`.
+ */
 export function CardVisual({ name, image }: { name: string; image: string | null }) {
   const src = imageSrc(image);
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
@@ -50,7 +64,11 @@ export function CardVisual({ name, image }: { name: string; image: string | null
       onError={() => setBrokenSrc(src)}
     />
   ) : (
-    <span className="card__placeholder" aria-hidden>
+    <span
+      className="card__placeholder"
+      style={{ '--card-hue': String(cardHue(name)) } as CSSProperties}
+      aria-hidden
+    >
       {initials(name)}
     </span>
   );
@@ -92,7 +110,7 @@ export const CompactCard = memo(function CompactCard({
       aria-pressed={favorite}
       onClick={() => onToggleFavorite(d)}
     >
-      {favorite ? '★' : '☆'}
+      <StarIcon filled={favorite} />
     </button>
   );
 
@@ -132,10 +150,12 @@ export const CompactCard = memo(function CompactCard({
         <span className="card__step card__step--2" aria-hidden>
           2
         </span>
-        <span className="card__name">{d.name}</span>
+        <CardName name={d.name} />
         {feedback === 'copied' && part && (
           <span className={`card__check card__check--${part}`} aria-hidden>
-            <span className="card__check-mark">✓</span>
+            <span className="card__check-mark">
+              <CheckIcon />
+            </span>
           </span>
         )}
         {star}
@@ -157,12 +177,14 @@ export const CompactCard = memo(function CompactCard({
       >
         <CardVisual name={d.name} image={d.image} />
         {isFarm && !manage && <span className="card__badge">Farm</span>}
+        <CardName name={d.name} />
         {feedback === 'copied' && (
           <span className="card__check" aria-hidden>
-            ✓
+            <span className="card__check-mark">
+              <CheckIcon />
+            </span>
           </span>
         )}
-        <span className="card__name">{d.name}</span>
       </button>
       {star}
       {edit}

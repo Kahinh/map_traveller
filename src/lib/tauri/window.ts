@@ -1,20 +1,17 @@
 /** Actions de fenêtre ; sans effet dans le navigateur. */
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { isTauri } from './env';
 
-async function current() {
-  if (!isTauri()) return null;
-  const { getCurrentWindow } = await import('@tauri-apps/api/window');
-  return getCurrentWindow();
-}
+const win = () => (isTauri() ? getCurrentWindow() : null);
 
 export async function setAlwaysOnTop(value: boolean): Promise<void> {
-  await (await current())?.setAlwaysOnTop(value);
+  await win()?.setAlwaysOnTop(value);
 }
 
 export async function minimizeWindow(): Promise<void> {
-  await (await current())?.minimize();
+  await win()?.minimize();
 }
 
 export async function closeWindow(): Promise<void> {
-  await (await current())?.close();
+  await win()?.close();
 }

@@ -13,10 +13,10 @@ body,
 }
 
 body {
-  background: var(--dt-bg);
-  color: var(--dt-text);
-  font-family: var(--dt-font);
-  font-size: var(--dt-font-size);
+  background: var(--mt-bg);
+  color: var(--mt-text);
+  font-family: var(--mt-font);
+  font-size: var(--mt-font-size);
   user-select: none;
   -webkit-font-smoothing: antialiased;
 }
@@ -26,12 +26,13 @@ button {
   color: inherit;
   background: none;
   border: 0;
+  padding: 0;
   cursor: pointer;
 }
 
 button:focus-visible,
 input:focus-visible {
-  outline: 1px solid var(--dt-accent);
+  outline: 1px solid var(--mt-accent);
   outline-offset: 1px;
 }
 
@@ -45,12 +46,12 @@ input:focus-visible {
 /* ---------- Barre de titre ---------- */
 .titlebar {
   flex: none;
-  height: var(--dt-titlebar-h);
+  height: var(--mt-titlebar-h);
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 0 4px 0 8px;
-  background: linear-gradient(90deg, var(--dt-titlebar-from), var(--dt-titlebar-to));
+  background: linear-gradient(90deg, var(--mt-titlebar-from), var(--mt-titlebar-to));
 }
 
 .titlebar__title {
@@ -66,33 +67,40 @@ input:focus-visible {
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  background: var(--dt-accent);
-  color: var(--dt-accent-ink);
-  font-size: 10px;
+  background: var(--mt-accent);
+  color: var(--mt-accent-ink);
+  font-size: 9px;
   font-weight: 700;
   display: grid;
   place-items: center;
   margin-right: 6px;
   flex: none;
+  pointer-events: none;
 }
 
 .icon-btn {
   width: 24px;
   height: 22px;
-  border-radius: var(--dt-radius-sm);
+  border-radius: var(--mt-radius-sm);
   display: grid;
   place-items: center;
-  color: var(--dt-text-muted);
-  line-height: 1;
+  color: var(--mt-text-muted);
+  flex: none;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .icon-btn:hover {
-  background: var(--dt-hover);
-  color: var(--dt-text);
+  background: var(--mt-hover);
+  color: var(--mt-text);
 }
 
 .icon-btn.is-active {
-  color: var(--dt-accent);
+  color: var(--mt-accent);
+}
+
+.icon-btn--close:hover {
+  background: var(--mt-danger);
+  color: var(--mt-text);
 }
 
 /* ---------- Barre d'outils ---------- */
@@ -108,16 +116,22 @@ input:focus-visible {
   width: 100%;
   height: 24px;
   padding: 0 8px;
-  border-radius: var(--dt-radius-sm);
-  border: 1px solid var(--dt-card-border);
-  background: var(--dt-bg-raised);
-  color: var(--dt-text);
+  border-radius: var(--mt-radius-sm);
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-bg-raised);
+  color: var(--mt-text);
   font: inherit;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.search:focus {
+  border-color: var(--mt-accent);
   outline: none;
 }
 
 .search::placeholder {
-  color: var(--dt-text-muted);
+  color: var(--mt-text-muted);
 }
 
 .tabs {
@@ -129,19 +143,21 @@ input:focus-visible {
 
 .tab {
   padding: 3px 8px;
-  border-radius: var(--dt-radius-sm);
-  color: var(--dt-text-muted);
-  font-size: var(--dt-font-size-sm);
+  border-radius: var(--mt-radius-sm);
+  color: var(--mt-text-muted);
+  font-size: var(--mt-font-size-sm);
   white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .tab:hover {
-  background: var(--dt-hover);
+  background: var(--mt-hover);
+  color: var(--mt-text);
 }
 
 .tab.is-active {
-  background: var(--dt-card-bg);
-  color: var(--dt-accent);
+  background: var(--mt-card-bg);
+  color: var(--mt-accent);
 }
 
 /* ---------- Grille ---------- */
@@ -150,41 +166,61 @@ input:focus-visible {
   overflow-y: auto;
   padding: 2px 8px 8px;
   scrollbar-width: thin;
-  scrollbar-color: var(--dt-card-border) transparent;
+  scrollbar-color: var(--mt-card-border) transparent;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--dt-card-size), 1fr));
-  gap: var(--dt-gap);
+  grid-template-columns: repeat(auto-fill, minmax(var(--mt-card-size), 1fr));
+  gap: var(--mt-gap);
 }
 
 .card {
   position: relative;
   aspect-ratio: 1;
-  border-radius: var(--dt-radius);
-  border: 1px solid var(--dt-card-border);
-  background: var(--dt-card-bg);
+  border-radius: var(--mt-radius);
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-card-bg);
   overflow: hidden;
-  padding: 0;
   transition: border-color 120ms ease, transform 120ms ease;
+  /* Les cartes hors écran ne sont ni mises en page ni peintes : gros catalogues fluides. */
+  content-visibility: auto;
+  contain-intrinsic-size: var(--mt-card-size);
 }
 
 .card:hover {
-  border-color: var(--dt-text-muted);
+  border-color: var(--mt-text-muted);
 }
 
-.card:active {
+.card:has(.card__main:active) {
   transform: scale(0.97);
 }
 
-.card.is-copied {
-  border-color: var(--dt-accent);
-  box-shadow: 0 0 0 1px var(--dt-accent);
+/* Le contour de retour est un calque interne : `content-visibility` rogne ce qui dépasse. */
+.card.is-copied::after,
+.card.is-warning::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--mt-accent);
+  border-radius: calc(var(--mt-radius) - 1px);
+  pointer-events: none;
 }
 
-.card.is-warning {
-  border-color: var(--dt-warning);
+.card.is-warning::after {
+  border-color: var(--mt-warning);
+}
+
+.card__main {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.card__main:focus-visible {
+  outline-offset: -2px;
 }
 
 .card__img {
@@ -202,7 +238,7 @@ input:focus-visible {
   place-items: center;
   font-size: 22px;
   font-weight: 700;
-  color: var(--dt-text-muted);
+  color: var(--mt-text-muted);
   opacity: 0.6;
 }
 
@@ -212,8 +248,8 @@ input:focus-visible {
   right: 0;
   bottom: 0;
   padding: 2px 4px;
-  background: var(--dt-card-band);
-  font-size: var(--dt-font-size-sm);
+  background: var(--mt-card-band);
+  font-size: var(--mt-font-size-sm);
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -227,30 +263,39 @@ input:focus-visible {
   font-size: 9px;
   padding: 0 4px;
   border-radius: 4px;
-  background: var(--dt-card-band);
-  color: var(--dt-accent);
+  background: var(--mt-card-band);
+  color: var(--mt-accent);
 }
 
 .card__star {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 20px;
-  height: 20px;
+  top: 1px;
+  right: 1px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  color: var(--dt-text-muted);
+  border-radius: var(--mt-radius-sm);
+  color: var(--mt-text-muted);
   opacity: 0.55;
   font-size: 13px;
+  line-height: 1;
+  transition: opacity 120ms ease, color 120ms ease, transform 120ms ease;
 }
 
 .card:hover .card__star,
+.card__star:focus-visible,
 .card__star.is-on {
   opacity: 1;
 }
 
+.card__star:hover {
+  color: var(--mt-accent);
+  transform: scale(1.15);
+}
+
 .card__star.is-on {
-  color: var(--dt-accent);
+  color: var(--mt-accent);
 }
 
 .card__check {
@@ -259,37 +304,24 @@ input:focus-visible {
   display: grid;
   place-items: center;
   font-size: 30px;
-  color: var(--dt-accent);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-  pointer-events: none;
+  color: var(--mt-accent);
+  background: var(--mt-card-band);
+  animation: mt-pop 160ms ease-out;
 }
 
-/* Étape Farm : carte compacte portant seulement les coordonnées. */
-.card--step {
-  aspect-ratio: auto;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  font-weight: 600;
-}
-
-.card--step .card__index {
-  position: absolute;
-  top: 2px;
-  left: 5px;
-  font-size: 9px;
-  color: var(--dt-text-muted);
-}
-
-.card--start {
-  color: var(--dt-accent);
+@keyframes mt-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
 }
 
 /* ---------- États ---------- */
 .empty {
+  margin: 0;
   padding: 24px 8px;
   text-align: center;
-  color: var(--dt-text-muted);
+  color: var(--mt-text-muted);
 }
 
 .status {
@@ -298,27 +330,28 @@ input:focus-visible {
   bottom: 8px;
   transform: translateX(-50%);
   padding: 4px 10px;
-  border-radius: var(--dt-radius-sm);
-  background: var(--dt-bg-raised);
-  border: 1px solid var(--dt-card-border);
-  font-size: var(--dt-font-size-sm);
+  border-radius: var(--mt-radius-sm);
+  background: var(--mt-bg-raised);
+  border: 1px solid var(--mt-card-border);
+  font-size: var(--mt-font-size-sm);
   pointer-events: none;
   max-width: calc(100% - 16px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: 0 2px 8px var(--mt-shadow);
 }
 
 .status.is-warning {
-  border-color: var(--dt-warning);
-  color: var(--dt-warning);
+  border-color: var(--mt-warning);
+  color: var(--mt-warning);
 }
 
 /* ---------- Panneau Farm ---------- */
 .farm-panel {
   position: absolute;
-  inset: var(--dt-titlebar-h) 0 0;
-  background: var(--dt-bg);
+  inset: var(--mt-titlebar-h) 0 0;
+  background: var(--mt-bg);
   display: flex;
   flex-direction: column;
 }
@@ -339,15 +372,93 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+.farm-panel__progress {
+  flex: none;
+  color: var(--mt-text-muted);
+  font-size: var(--mt-font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 .farm-panel__issues {
   margin: 0 8px 4px;
   padding: 4px 6px;
-  border-radius: var(--dt-radius-sm);
-  border: 1px solid var(--dt-warning);
-  color: var(--dt-warning);
-  font-size: var(--dt-font-size-sm);
+  border-radius: var(--mt-radius-sm);
+  border: 1px solid var(--mt-warning);
+  color: var(--mt-warning);
+  font-size: var(--mt-font-size-sm);
 }
 
 .grid--steps {
   grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+}
+
+/* Étape Farm : carte compacte portant seulement les coordonnées. */
+.step {
+  position: relative;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--mt-radius);
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-card-bg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.step:hover {
+  border-color: var(--mt-text-muted);
+  opacity: 1;
+}
+
+.step:active {
+  transform: scale(0.97);
+}
+
+.step__index {
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--mt-text-muted);
+}
+
+.step--start {
+  color: var(--mt-accent);
+}
+
+/* Positions déjà dépassées : estompées mais toujours cliquables. */
+.step.is-done:not(:hover) {
+  opacity: 0.45;
+}
+
+/* Dernière position cliquée. */
+.step.is-current {
+  border-color: var(--mt-accent);
+  color: var(--mt-accent);
+}
+
+.step.is-copied {
+  background: var(--mt-accent);
+  border-color: var(--mt-accent);
+  color: var(--mt-accent-ink);
+}
+
+.step.is-copied .step__index {
+  color: var(--mt-accent-ink);
+}
+
+.step.is-warning {
+  border-color: var(--mt-warning);
+  color: var(--mt-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

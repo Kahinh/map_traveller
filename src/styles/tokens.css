@@ -1,27 +1,29 @@
 /* Tokens DA Map Traveller — seule source des couleurs et dimensions (CdC §3.1).
    Inspiration ergonomique PNJ ; aucune ressource propriétaire reprise. */
 :root {
-  --dt-bg: #252739;
-  --dt-bg-raised: #2e3047;
-  --dt-titlebar-from: #646392;
-  --dt-titlebar-to: #4b4d77;
-  --dt-card-bg: #393b58;
-  --dt-card-border: #505273;
-  --dt-card-band: rgba(20, 21, 34, 0.82);
-  --dt-text: #f1f1ff;
-  --dt-text-muted: #b8b9d0;
-  --dt-accent: #e5f052;
-  --dt-accent-ink: #252739;
-  --dt-warning: #f0a052;
-  --dt-hover: rgba(241, 241, 255, 0.08);
+  --mt-bg: #252739;
+  --mt-bg-raised: #2e3047;
+  --mt-titlebar-from: #646392;
+  --mt-titlebar-to: #4b4d77;
+  --mt-card-bg: #393b58;
+  --mt-card-border: #505273;
+  --mt-card-band: rgba(20, 21, 34, 0.82);
+  --mt-text: #f1f1ff;
+  --mt-text-muted: #b8b9d0;
+  --mt-accent: #e5f052;
+  --mt-accent-ink: #252739;
+  --mt-warning: #f0a052;
+  --mt-danger: #c9485b;
+  --mt-shadow: rgba(0, 0, 0, 0.35);
+  --mt-hover: rgba(241, 241, 255, 0.08);
 
-  --dt-card-size: 90px;
-  --dt-gap: 6px;
-  --dt-radius: 10px;
-  --dt-radius-sm: 6px;
-  --dt-titlebar-h: 30px;
+  --mt-card-size: 90px;
+  --mt-gap: 6px;
+  --mt-radius: 10px;
+  --mt-radius-sm: 6px;
+  --mt-titlebar-h: 30px;
 
-  --dt-font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --dt-font-size: 12px;
-  --dt-font-size-sm: 11px;
+  --mt-font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mt-font-size: 12px;
+  --mt-font-size-sm: 11px;
 }

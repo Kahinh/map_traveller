@@ -33,12 +33,16 @@ Un clic sur une carte Farm ouvre le parcours : une petite carte par position (`1
 - **Clic sur une position** : c'est la **dernière position atteinte**. La suite du parcours est copiée immédiatement, sans second clic.
 - **Dernière position** : rien n'est copié, un message signale la fin du parcours.
 
+La dernière position cliquée reste surlignée et les précédentes sont estompées, le temps de la session.
+
 La reprise se fait par **numéro d'étape**. Un parcours qui repasse par les mêmes coordonnées fonctionne donc correctement.
 
 ### Raccourcis
 
 - `Ctrl+Alt+T` : afficher ou masquer la fenêtre (raccourci global).
-- 📌 : activer ou désactiver « toujours au premier plan ». Le réglage est mémorisé.
+- Épingle : activer ou désactiver « toujours au premier plan ». Le réglage est mémorisé.
+- Taper directement du texte lance la recherche ; `Ctrl+F` y place le curseur.
+- `Échap` : fermer le parcours Farm ouvert, sinon effacer la recherche.
 - Relancer l'application réaffiche la fenêtre déjà ouverte (une seule instance).
 
 ---

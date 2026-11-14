@@ -1,52 +1,64 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { CategoryTabs } from '../components/CategoryTabs';
-import { CompactCard, type Feedback } from '../components/CompactCard';
+import { CompactCard } from '../components/CompactCard';
 import { FarmPanel } from '../components/FarmPanel';
 import { WindowHeader } from '../components/WindowHeader';
 import type { Destination } from '../features/catalog/schema';
 import { filterDestinations, type ViewFilter } from '../features/catalog/search';
 import { leftClickCommand, rightClickCommand } from '../features/commands/copyRules';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
-import { copyText } from '../lib/tauri/clipboard';
+import { initImages } from '../lib/tauri/images';
 import {
+  DEFAULT_SETTINGS,
   loadCatalog,
   loadFavorites,
   loadSettings,
   saveFavorites,
   saveSettings,
-  DEFAULT_SETTINGS,
   type Settings,
 } from '../lib/tauri/storage';
 import { setAlwaysOnTop } from '../lib/tauri/window';
-
-const FEEDBACK_MS = 800;
+import { useCopyFeedback } from './useCopyFeedback';
 
 type LoadState = { status: 'loading' } | { status: 'ready' } | { status: 'error'; message: string };
 
-interface Status {
-  text: string;
-  warning: boolean;
+const NOTHING_TO_COPY = 'Aucune commande à copier.';
+const FARM_KEY = 'farm:';
+
+/** Le menu contextuel du navigateur n'a pas sa place dans l'app, sauf dans les champs de saisie. */
+function blockContextMenu(e: MouseEvent) {
+  if (!(e.target instanceof HTMLInputElement)) e.preventDefault();
+}
+
+function emptyMessage(total: number, view: ViewFilter, query: string): string {
+  if (total === 0) return 'Catalogue vide.';
+  if (query.trim()) return `Aucun résultat pour « ${query.trim()} ».`;
+  if (view === 'favorites') return 'Aucun favori : cliquez sur ☆ pour en ajouter.';
+  return 'Aucune destination dans cette catégorie.';
 }
 
 export function App() {
   const [load, setLoad] = useState<LoadState>({ status: 'loading' });
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [view, setView] = useState<ViewFilter>('all');
   const [query, setQuery] = useState('');
-  const [farm, setFarm] = useState<Destination | null>(null);
-  const [feedback, setFeedback] = useState<{ key: string; kind: Exclude<Feedback, null> } | null>(null);
-  const [status, setStatus] = useState<Status | null>(null);
-  const timer = useRef<number | undefined>(undefined);
+  const [farmId, setFarmId] = useState<string | null>(null);
+  /** Dernière position cliquée par parcours (session uniquement) ; -1 = début. */
+  const [farmProgress, setFarmProgress] = useState<Record<string, number>>({});
+  const { feedback, copy } = useCopyFeedback();
+  const searchRef = useRef<HTMLInputElement>(null);
+  const favoritesRef = useRef(favorites);
 
   useEffect(() => {
     void (async () => {
-      const [cat, favs, sets] = await Promise.all([loadCatalog(), loadFavorites(), loadSettings()]);
+      const [cat, favs, sets] = await Promise.all([loadCatalog(), loadFavorites(), loadSettings(), initImages()]);
       if (!cat.ok) {
         setLoad({ status: 'error', message: cat.errors.map((e) => `${e.path} ${e.message}`.trim()).join(' · ') });
         return;
       }
+      favoritesRef.current = favs;
       setDestinations(cat.catalog.destinations);
       setFavorites(favs);
       setSettings(sets);
@@ -55,52 +67,53 @@ export function App() {
     })().catch((e: unknown) => setLoad({ status: 'error', message: String(e) }));
   }, []);
 
-  const flash = useCallback((key: string, kind: Exclude<Feedback, null>, text: string) => {
-    window.clearTimeout(timer.current);
-    setFeedback({ key, kind });
-    setStatus({ text, warning: kind === 'warning' });
-    timer.current = window.setTimeout(() => {
-      setFeedback(null);
-      setStatus(null);
-    }, FEEDBACK_MS + (kind === 'warning' ? 700 : 0));
-  }, []);
-
-  /** Copie `text` (ou signale qu'il n'y a rien à copier) et affiche un retour non bloquant. */
-  const copyWithFeedback = useCallback(
-    async (key: string, text: string | null, emptyMessage: string) => {
-      if (text === null) {
-        flash(key, 'warning', emptyMessage);
+  // Raccourcis : Échap (retour / effacer), Ctrl+F (recherche), frappe directe → recherche.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const search = searchRef.current;
+      if (e.key === 'Escape') {
+        if (farmId !== null) setFarmId(null);
+        else setQuery('');
         return;
       }
-      try {
-        await copyText(text);
-        flash(key, 'copied', `Copié : ${text}`);
-      } catch (e) {
-        flash(key, 'warning', `Copie impossible : ${String(e)}`);
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setFarmId(null);
+        search?.focus();
+        search?.select();
+        return;
       }
+      const printable = e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey;
+      if (printable && farmId === null && document.activeElement !== search) search?.focus();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [farmId]);
+
+  // Gestionnaires stables : nécessaires pour que la mémoïsation des cartes soit effective.
+  const onLeftClick = useCallback(
+    (d: Destination) => {
+      if (d.category === 'farm') setFarmId(d.id);
+      else void copy(d.id, leftClickCommand(d.command), NOTHING_TO_COPY);
     },
-    [flash],
+    [copy],
   );
 
-  const onLeftClick = (d: Destination) => {
-    if (d.category === 'farm') return setFarm(d);
-    void copyWithFeedback(d.id, leftClickCommand(d.command), 'Aucune commande à copier.');
-  };
+  const onRightClick = useCallback(
+    (d: Destination) => {
+      if (d.category === 'farm') setFarmId(d.id); // V1 : même action que le clic gauche
+      else void copy(d.id, rightClickCommand(d.command), NOTHING_TO_COPY);
+    },
+    [copy],
+  );
 
-  const onRightClick = (d: Destination) => {
-    if (d.category === 'farm') return setFarm(d); // V1 : même action que le clic gauche
-    void copyWithFeedback(d.id, rightClickCommand(d.command), 'Aucune commande à copier.');
-  };
-
-  const onToggleFavorite = (d: Destination) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(d.id)) next.delete(d.id);
-      else next.add(d.id);
-      void saveFavorites(next);
-      return next;
-    });
-  };
+  const onToggleFavorite = useCallback((d: Destination) => {
+    const next = new Set(favoritesRef.current);
+    if (!next.delete(d.id)) next.add(d.id);
+    favoritesRef.current = next;
+    setFavorites(next);
+    void saveFavorites(next);
+  }, []);
 
   const onToggleAlwaysOnTop = () => {
     const next = { ...settings, alwaysOnTop: !settings.alwaysOnTop };
@@ -109,25 +122,35 @@ export function App() {
     void saveSettings(next);
   };
 
+  // La saisie reste fluide sur un gros catalogue : le filtrage suit avec une priorité basse.
+  const deferredQuery = useDeferredValue(query);
   const visible = useMemo(
-    () => filterDestinations(destinations, view, query, favorites),
-    [destinations, view, query, favorites],
+    () => filterDestinations(destinations, view, deferredQuery, favorites),
+    [destinations, view, deferredQuery, favorites],
   );
 
+  const farm = useMemo(() => destinations.find((d) => d.id === farmId) ?? null, [destinations, farmId]);
   const farmRoute = useMemo(() => (farm ? parseFarmRoute(farm.command) : null), [farm]);
 
+  const setFarmStep = (id: string, step: number) => setFarmProgress((p) => ({ ...p, [id]: step }));
+  const farmStep = farm ? (farmProgress[farm.id] ?? -1) : -1;
+
   return (
-    <div className="app">
+    <div className="app" onContextMenu={blockContextMenu}>
       <WindowHeader alwaysOnTop={settings.alwaysOnTop} onToggleAlwaysOnTop={onToggleAlwaysOnTop} />
 
       <div className="toolbar">
         <input
+          ref={searchRef}
           className="search"
           type="search"
           placeholder="Rechercher une destination…"
+          aria-label="Rechercher une destination"
+          title="Tapez directement pour rechercher · Échap pour effacer"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           spellCheck={false}
+          autoComplete="off"
         />
         <CategoryTabs value={view} onChange={setView} />
       </div>
@@ -142,13 +165,7 @@ export function App() {
           </p>
         )}
         {load.status === 'ready' && visible.length === 0 && (
-          <p className="empty">
-            {destinations.length === 0
-              ? 'Catalogue vide.'
-              : view === 'favorites' && !query
-                ? 'Aucun favori : cliquez sur ☆ pour en ajouter.'
-                : 'Aucune destination ne correspond.'}
-          </p>
+          <p className="empty">{emptyMessage(destinations.length, view, deferredQuery)}</p>
         )}
         <div className="grid">
           {visible.map((d) => (
@@ -167,15 +184,27 @@ export function App() {
 
       {farm && farmRoute && (
         <FarmPanel
-          destination={farm}
-          feedbackKey={feedback && feedback.key.startsWith('farm:') ? feedback.key.slice(5) : null}
-          onClose={() => setFarm(null)}
-          onStart={() => void copyWithFeedback('farm:start', farmStartCommand(farmRoute), 'Parcours vide.')}
-          onStep={(i) => void copyWithFeedback(`farm:${i}`, farmResumeCommand(farmRoute, i), 'Fin de parcours : rien à copier.')}
+          name={farm.name}
+          route={farmRoute}
+          currentStep={farmStep >= 0 ? farmStep : null}
+          feedbackKey={feedback?.key.startsWith(FARM_KEY) ? feedback.key.slice(FARM_KEY.length) : null}
+          onClose={() => setFarmId(null)}
+          onStart={() => {
+            setFarmStep(farm.id, -1);
+            void copy(`${FARM_KEY}start`, farmStartCommand(farmRoute), 'Parcours vide.');
+          }}
+          onStep={(i) => {
+            setFarmStep(farm.id, i);
+            void copy(`${FARM_KEY}${i}`, farmResumeCommand(farmRoute, i), 'Fin de parcours : rien à copier.');
+          }}
         />
       )}
 
-      {status && <div className={`status${status.warning ? ' is-warning' : ''}`}>{status.text}</div>}
+      {feedback && (
+        <div className={`status${feedback.kind === 'warning' ? ' is-warning' : ''}`} role="status">
+          {feedback.text}
+        </div>
+      )}
     </div>
   );
 }

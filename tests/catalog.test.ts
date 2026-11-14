@@ -90,6 +90,31 @@ describe('recherche et tri (CdC §7)', () => {
     expect(filterDestinations(list, 'all', '', new Set()).map((d) => d.id)).toEqual(['b', 'v', 'm']);
   });
 
+  it('tri par nom : accents et casse ignorés, nombres dans l\'ordre naturel', () => {
+    const names = ['Zone 10', 'zone 2', 'Écurie', 'eau', 'Zone 1'];
+    const sorted = filterDestinations(
+      names.map((name, i) => dest({ id: `n${i}`, name })),
+      'all',
+      '',
+      new Set(),
+    ).map((d) => d.name);
+    expect(sorted).toEqual(['eau', 'Écurie', 'Zone 1', 'zone 2', 'Zone 10']);
+  });
+
+  it('recherche multi-mots (ET) et résultat identique au second appel (cache)', () => {
+    const run = () => filterDestinations(list, 'all', 'ILE  mer', new Set()).map((d) => d.id);
+    expect(run()).toEqual(['m']);
+    expect(run()).toEqual(['m']);
+    expect(filterDestinations(list, 'all', 'ile vortex', new Set())).toEqual([]);
+  });
+
+  it('une destination modifiée (nouvel objet) est réindexée', () => {
+    const before = dest({ id: 'x', name: 'Ancien nom' });
+    const after = { ...before, name: 'Nouveau nom' };
+    expect(filterDestinations([before], 'all', 'nouveau', new Set())).toEqual([]);
+    expect(filterDestinations([after], 'all', 'nouveau', new Set()).map((d) => d.id)).toEqual(['x']);
+  });
+
   it('vues catégorie et favoris (Farm inclus)', () => {
     expect(filterDestinations(list, 'farm', '', new Set()).map((d) => d.id)).toEqual(['b']);
     expect(filterDestinations(list, 'favorites', '', new Set(['b', 'm'])).map((d) => d.id)).toEqual(['b', 'm']);

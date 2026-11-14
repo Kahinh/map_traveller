@@ -3,8 +3,9 @@
  * qui écrivent de façon atomique dans `%APPDATA%\MapTraveller\`. Dans le navigateur
  * (`npm run dev`), retombe sur localStorage + seed pour itérer sur l'UI.
  */
+import { invoke } from '@tauri-apps/api/core';
 import seed from '../../../resources/catalog.seed.json';
-import { validateCatalog, type Catalog, type ValidationError } from '../../features/catalog/schema';
+import { validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
 import { isTauri } from './env';
 
 export type StoreName = 'catalog' | 'favorites' | 'settings';
@@ -12,10 +13,7 @@ export type StoreName = 'catalog' | 'favorites' | 'settings';
 const LS_PREFIX = 'map-traveller:';
 
 async function readRaw(name: StoreName): Promise<string | null> {
-  if (isTauri()) {
-    const { invoke } = await import('@tauri-apps/api/core');
-    return invoke<string | null>('load_store', { name });
-  }
+  if (isTauri()) return invoke<string | null>('load_store', { name });
   try {
     return localStorage.getItem(LS_PREFIX + name);
   } catch {
@@ -24,11 +22,7 @@ async function readRaw(name: StoreName): Promise<string | null> {
 }
 
 async function writeRaw(name: StoreName, json: string): Promise<void> {
-  if (isTauri()) {
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('save_store', { name, json });
-    return;
-  }
+  if (isTauri()) return invoke('save_store', { name, json });
   try {
     localStorage.setItem(LS_PREFIX + name, json);
   } catch {
@@ -36,45 +30,46 @@ async function writeRaw(name: StoreName, json: string): Promise<void> {
   }
 }
 
-export type LoadCatalogResult =
-  | { ok: true; catalog: Catalog }
-  | { ok: false; errors: ValidationError[] };
+/** Contenu JSON d'un stockage ; `undefined` s'il n'existe pas encore. Lève si le JSON est invalide. */
+async function readJson(name: StoreName): Promise<unknown> {
+  const raw = await readRaw(name);
+  return raw == null ? undefined : JSON.parse(raw);
+}
+
+const writeJson = (name: StoreName, data: unknown) => writeRaw(name, JSON.stringify(data, null, 2));
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
 
 /** Charge et valide le catalogue utilisateur (le seed est copié par Rust au premier lancement). */
-export async function loadCatalog(): Promise<LoadCatalogResult> {
-  const raw = await readRaw('catalog');
-  let data: unknown = seed;
-  if (raw != null) {
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      return { ok: false, errors: [{ path: '', message: 'catalog.json illisible (JSON invalide).' }] };
-    }
+export async function loadCatalog(): Promise<ValidationResult> {
+  let data: unknown;
+  try {
+    data = await readJson('catalog');
+  } catch (e) {
+    if (!(e instanceof SyntaxError)) throw e;
+    return { ok: false, errors: [{ path: '', message: 'catalog.json illisible (JSON invalide).' }] };
   }
-  return validateCatalog(data);
+  return validateCatalog(data ?? seed);
 }
 
 /** Valide puis enregistre. Refuse d'écrire un catalogue invalide. */
 export async function saveCatalog(catalog: Catalog): Promise<void> {
   const check = validateCatalog(catalog);
   if (!check.ok) throw new Error(check.errors.map((e) => `${e.path}: ${e.message}`).join('\n'));
-  await writeRaw('catalog', JSON.stringify(check.catalog, null, 2));
+  await writeJson('catalog', check.catalog);
 }
 
+/** Favoris par identifiant stable. Un fichier absent ou illisible donne un ensemble vide. */
 export async function loadFavorites(): Promise<Set<string>> {
-  const raw = await readRaw('favorites');
-  if (!raw) return new Set();
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    const ids = (parsed as { ids?: unknown }).ids;
-    return new Set(Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string') : []);
-  } catch {
-    return new Set();
-  }
+  const data = await readJson('favorites').catch(() => undefined);
+  const ids = isRecord(data) && Array.isArray(data.ids) ? data.ids : [];
+  return new Set(ids.filter((x): x is string => typeof x === 'string'));
 }
 
-export async function saveFavorites(ids: ReadonlySet<string>): Promise<void> {
-  await writeRaw('favorites', JSON.stringify({ ids: [...ids].sort() }, null, 2));
+export function saveFavorites(ids: ReadonlySet<string>): Promise<void> {
+  return writeJson('favorites', { ids: [...ids].sort() });
 }
 
 export interface Settings {
@@ -84,16 +79,11 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = { alwaysOnTop: true };
 
 export async function loadSettings(): Promise<Settings> {
-  const raw = await readRaw('settings');
-  if (!raw) return { ...DEFAULT_SETTINGS };
-  try {
-    const parsed = JSON.parse(raw) as Partial<Settings>;
-    return { ...DEFAULT_SETTINGS, alwaysOnTop: parsed.alwaysOnTop !== false };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
+  const data = await readJson('settings').catch(() => undefined);
+  if (!isRecord(data)) return { ...DEFAULT_SETTINGS };
+  return { ...DEFAULT_SETTINGS, alwaysOnTop: data.alwaysOnTop !== false };
 }
 
-export async function saveSettings(settings: Settings): Promise<void> {
-  await writeRaw('settings', JSON.stringify(settings, null, 2));
+export function saveSettings(settings: Settings): Promise<void> {
+  return writeJson('settings', settings);
 }

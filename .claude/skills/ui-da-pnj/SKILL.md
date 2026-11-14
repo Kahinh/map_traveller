@@ -11,13 +11,13 @@ Source : cahier des charges §3, §5.1, §6, §9.
 
 | Token | Valeur |
 |---|---|
-| `--dt-bg` | `#252739` |
-| `--dt-titlebar-from` / `--dt-titlebar-to` | `#646392` → `#4B4D77` |
-| `--dt-card-bg` / `--dt-card-border` | `#393B58` / `#505273` |
-| `--dt-text` / `--dt-text-muted` | `#F1F1FF` / `#B8B9D0` |
-| `--dt-accent` | `#E5F052` |
-| `--dt-card-size` | `90px` |
-| `--dt-radius` | `10px` |
+| `--mt-bg` | `#252739` |
+| `--mt-titlebar-from` / `--mt-titlebar-to` | `#646392` → `#4B4D77` |
+| `--mt-card-bg` / `--mt-card-border` | `#393B58` / `#505273` |
+| `--mt-text` / `--mt-text-muted` | `#F1F1FF` / `#B8B9D0` |
+| `--mt-accent` | `#E5F052` |
+| `--mt-card-size` | `90px` |
+| `--mt-radius` | `10px` |
 
 Ne jamais écrire une couleur en dur dans un composant.
 
@@ -31,7 +31,11 @@ Barre de titre custom (drag region) : icône, « Map Traveller », épingle, par
 - Étoile favori en coin (bouton distinct, `stopPropagation`).
 - Clic gauche / droit = copie (ou ouverture Farm) ; `contextmenu` toujours `preventDefault`.
 - Crayon visible uniquement en mode gestion.
-- Retour : classe `is-copied` ~700 ms (coche + contour accent), avertissement discret si commande vide.
+- Retour : classe `is-copied` ~800 ms (coche + contour accent, en calque interne `::after`), `is-warning` si commande vide.
+- Structure : `.card` (div) contient `.card__main` (bouton de copie) et `.card__star` (bouton frère) — jamais de bouton imbriqué.
+- Cartes mémoïsées (`memo`) : garder des gestionnaires stables (`useCallback`) dans `App`.
+- Étapes Farm : classe `.step` ; `is-current` = dernière position cliquée, `is-done` = positions dépassées.
+- Icônes : SVG de `src/components/icons.tsx` (pas d'emoji).
 - États : image absente (initiales), catalogue vide, recherche sans résultat, chargement.
 
 ## Vérification

@@ -19,6 +19,7 @@ description: Orchestrer une nouvelle fonctionnalité de Map Traveller du cahier 
 6. Mettre à jour README / `docs/` si le comportement visible change ; cocher la case de la roadmap du README.
 7. Agent `reviewer` pour toute tâche moyenne ou complexe.
 8. Signaler explicitement ce qui n'a pas pu être vérifié (Rust sans `cargo` local, rendu Windows réel, essai réel en jeu).
+9. Si la livraison est poussée sur `main` : monter la version et taguer pour publier le `.exe` (règle du skill `ci-release-windows`).
 
 ## Hors périmètre V1 (refuser ou demander)
 

@@ -16,7 +16,22 @@ Source : cahier des charges §11.
 
 ## Versionnement
 
-La version vit dans `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` (+ `package-lock.json`). Ne jamais les éditer à la main : `npm run version:set -- X.Y.Z`, commit, `git tag vX.Y.Z`, `git push origin main vX.Y.Z`. Tagger/pousser uniquement sur demande explicite de l'utilisateur.
+La version vit dans `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` (+ `package-lock.json`). Ne jamais les éditer à la main : `npm run version:set -- X.Y.Z`.
+
+## Règle : toute livraison poussée sur `main` est versionnée et taguée
+
+Un simple push sur `main` lance un build de contrôle, mais **ne publie pas de `.exe`** : seul un tag `vX.Y.Z` crée la Release téléchargeable. Donc, chaque fois qu'un changement visible par l'utilisateur est poussé sur `main` (issue livrée, correctif), **terminer par une montée de version et un tag**, sans attendre qu'on le demande. La demande de pousser vaut demande de publier.
+
+1. Choisir le numéro : **correctif** (`0.2.0` → `0.2.1`) pour un bug, **mineur** (`0.2.1` → `0.3.0`) pour une fonctionnalité, **majeur** pour une rupture (format de données non relisible, par exemple). Plusieurs issues livrées ensemble = une seule version.
+2. `npm run version:set -- X.Y.Z`, puis commit dédié `Version X.Y.Z`.
+3. `git tag vX.Y.Z` puis `git push origin main vX.Y.Z`.
+4. Vérifier que le build du tag est vert et que la Release contient `MapTraveller_X.Y.Z_x64-setup.exe` (`gh release view vX.Y.Z`).
+
+Cas particuliers :
+- **Rust non compilé en local** (pas de `cargo`) : pousser d'abord `main` **sans tag**, attendre que le build soit vert, corriger si besoin, et seulement ensuite faire les étapes 2 à 4. Un tag sur un commit qui ne compile pas ne publie rien et oblige à retaguer.
+- Changement sans effet sur l'application (documentation, `.claude/`, CI seule) : pas de nouvelle version.
+- Ne jamais déplacer ni réutiliser un tag déjà publié : en cas d'erreur, publier le numéro suivant.
+- Le commit et le push eux-mêmes restent soumis à la demande explicite de l'utilisateur (`commit-and-push-on-request`).
 
 ## Mises à jour
 

@@ -14,6 +14,9 @@ export interface CopyFeedback {
   part?: PartIndex;
 }
 
+/** Clé des messages généraux : `:` n'apparaît jamais dans un identifiant généré. */
+const NOTICE_KEY = 'app:notice';
+
 const COPIED_MS = 800;
 const WARNING_MS = 1500;
 
@@ -50,5 +53,11 @@ export function useCopyFeedback() {
     [flash],
   );
 
-  return { feedback, copy };
+  /** Message bref dans la bulle d'état, sans lien avec une carte (ex. « Destination enregistrée »). */
+  const notify = useCallback(
+    (text: string, kind: FeedbackKind = 'copied') => flash({ key: NOTICE_KEY, kind, text }),
+    [flash],
+  );
+
+  return { feedback, copy, notify };
 }

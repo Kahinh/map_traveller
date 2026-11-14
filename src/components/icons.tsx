@@ -43,3 +43,16 @@ export const BackIcon = () => (
     <path d="M9.5 3.5L5 8l4.5 4.5" />
   </Icon>
 );
+
+export const PlusIcon = () => (
+  <Icon>
+    <path d="M8 3v10M3 8h10" />
+  </Icon>
+);
+
+export const PencilIcon = () => (
+  <Icon>
+    <path d="M10.5 2.5l3 3-8 8H2.5v-3l8-8z" />
+    <path d="M9 4l3 3" />
+  </Icon>
+);

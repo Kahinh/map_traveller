@@ -3,6 +3,7 @@ import type { FeedbackKind } from '../app/useCopyFeedback';
 import type { Destination } from '../features/catalog/schema';
 import { isTwoStep, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { imageSrc } from '../lib/tauri/images';
+import { PencilIcon } from './icons';
 
 interface Props {
   destination: Destination;
@@ -12,6 +13,9 @@ interface Props {
   feedbackPart: PartIndex | null;
   onAction: (d: Destination, part: PartIndex, button: ClickButton) => void;
   onToggleFavorite: (d: Destination) => void;
+  /** Mode gestion : affiche le crayon qui ouvre le formulaire. Les clics de copie sont inchangés. */
+  manage: boolean;
+  onEdit: (d: Destination) => void;
 }
 
 /** Libellés des étapes : le passage entre les deux reste manuel. */
@@ -32,7 +36,7 @@ function initials(name: string): string {
 }
 
 /** Illustration de la carte : image importée, ou initiales si absente ou illisible. */
-function CardVisual({ name, image }: { name: string; image: string | null }) {
+export function CardVisual({ name, image }: { name: string; image: string | null }) {
   const src = imageSrc(image);
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   return src && src !== brokenSrc ? (
@@ -68,6 +72,8 @@ export const CompactCard = memo(function CompactCard({
   feedbackPart,
   onAction,
   onToggleFavorite,
+  manage,
+  onEdit,
 }: Props) {
   const isFarm = d.category === 'farm';
   const split = isTwoStep(d);
@@ -90,10 +96,23 @@ export const CompactCard = memo(function CompactCard({
     </button>
   );
 
+  // Bouton frère des zones de copie (jamais imbriqué) : seul lui ouvre le formulaire.
+  const edit = manage && (
+    <button
+      type="button"
+      className="card__edit"
+      title={`Modifier ${d.name}`}
+      aria-label={`Modifier ${d.name}`}
+      onClick={() => onEdit(d)}
+    >
+      <PencilIcon />
+    </button>
+  );
+
   if (split) {
     const part = feedback ? feedbackPart : null;
     return (
-      <div className={`card card--split${feedback && part ? ` is-${feedback} is-part-${part}` : ''}`}>
+      <div className={`card card--split${feedback && part ? ` is-${feedback} is-part-${part}` : ''}`} data-id={d.id}>
         <CardVisual name={d.name} image={d.image} />
         {([1, 2] as const).map((p) => (
           <button
@@ -120,6 +139,7 @@ export const CompactCard = memo(function CompactCard({
           </span>
         )}
         {star}
+        {edit}
       </div>
     );
   }
@@ -127,7 +147,7 @@ export const CompactCard = memo(function CompactCard({
   const hint = isFarm ? 'ouvrir le parcours' : COPY_HINT;
 
   return (
-    <div className={`card${feedback ? ` is-${feedback}` : ''}`}>
+    <div className={`card${feedback ? ` is-${feedback}` : ''}`} data-id={d.id}>
       <button
         type="button"
         className="card__main"
@@ -136,7 +156,7 @@ export const CompactCard = memo(function CompactCard({
         onContextMenu={contextMenu(1)}
       >
         <CardVisual name={d.name} image={d.image} />
-        {isFarm && <span className="card__badge">Farm</span>}
+        {isFarm && !manage && <span className="card__badge">Farm</span>}
         {feedback === 'copied' && (
           <span className="card__check" aria-hidden>
             ✓
@@ -145,6 +165,7 @@ export const CompactCard = memo(function CompactCard({
         <span className="card__name">{d.name}</span>
       </button>
       {star}
+      {edit}
     </div>
   );
 });

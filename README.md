@@ -42,7 +42,7 @@ Exemple (coordonnées fictives) : étape 1 `/zaap 5 -18;/travel 1 1`, étape 2 `
 2. Franchir soi-même le portail ou parler au PNJ : l'application n'automatise pas ce passage.
 3. Clic sur la zone 2, coller dans le chat du jeu : trajet sur place.
 
-Ce que la commande `/travel` accepte de part et d'autre d'un passage est à vérifier en jeu. Tant que l'éditeur intégré n'existe pas, le mode se règle dans `catalog.json` (voir ci-dessous).
+Ce que la commande `/travel` accepte de part et d'autre d'un passage est à vérifier en jeu. Le mode se règle dans le formulaire de la destination (case « Trajet en deux étapes », voir ci-dessous).
 
 ### Parcours Farm
 
@@ -56,12 +56,37 @@ La dernière position cliquée reste surlignée et les précédentes sont estomp
 
 La reprise se fait par **numéro d'étape**. Un parcours qui repasse par les mêmes coordonnées fonctionne donc correctement.
 
+### Créer et gérer ses destinations
+
+- **`+`** (à droite des onglets) : ouvre le formulaire « Nouvelle destination ». Si un onglet de catégorie est actif, elle est présélectionnée.
+- **Crayon** (à côté du `+`) : active le **mode gestion**. Un crayon apparaît sur chaque carte et ouvre son formulaire. Les clics gauche et droit des cartes **copient toujours**, dans ce mode comme en dehors. `Échap` quitte le mode gestion.
+
+Le formulaire :
+
+| Champ | Remarque |
+|---|---|
+| **Nom** | obligatoire |
+| **Catégorie** | PNJ, Donjon, Lieu-dit ou Farm ; changer de catégorie n'efface rien |
+| **Image** | facultative ; sans image, la carte affiche les initiales |
+| **Trajet en deux étapes** | PNJ et Donjons uniquement, décoché par défaut ; affiche « Commande 1 » et « Commande 2 » |
+| **Commande** | obligatoire, texte libre sur plusieurs lignes, **enregistré exactement tel que saisi** |
+| **Plus d'options** | zone, alias et tags (séparés par des virgules), ordre d'affichage (entier, vide = 0) |
+
+- L'**aperçu** sous la commande montre ce que copiera chaque clic (gauche / droit, et par étape pour une carte double). Pour un parcours Farm, il montre le nombre et l'ordre des positions reconnues, et signale tout segment non reconnu.
+- **Enregistrer** (`Ctrl+Entrée`) écrit aussitôt sur le disque ; la carte apparaît dans la grille sans redémarrage.
+- **Dupliquer** crée une copie (même image, mêmes commandes) ; **Supprimer** demande une confirmation. Supprimer une carte la retire aussi des favoris. Le fichier image n'est jamais supprimé.
+- `Échap` ou **Annuler** ferme le formulaire ; s'il y a des modifications non enregistrées, une confirmation est demandée.
+- Si l'enregistrement échoue, le formulaire reste ouvert avec le message d'erreur et rien n'est modifié.
+
+**Images** (application installée uniquement) : le bouton « Choisir… » ouvre le dialogue Windows (PNG, JPEG, WebP, 10 Mo maximum). Le fichier est **copié** dans `images/` sous un nom interne ; l'original peut ensuite être déplacé ou supprimé. Le format réel du fichier est contrôlé : un fichier refusé ne remplace pas l'image existante. « Retirer » enlève l'image de la carte sans supprimer de fichier. Dans `npm run dev` (navigateur), l'import d'images est désactivé.
+
 ### Raccourcis
 
 - `Ctrl+Alt+T` : afficher ou masquer la fenêtre (raccourci global).
 - Épingle : activer ou désactiver « toujours au premier plan ». Le réglage est mémorisé.
 - Taper directement du texte lance la recherche ; `Ctrl+F` y place le curseur.
-- `Échap` : fermer le parcours Farm ouvert, sinon effacer la recherche.
+- `Échap` : fermer le parcours Farm ouvert, sinon effacer la recherche, sinon quitter le mode gestion.
+- Dans le formulaire : `Ctrl+Entrée` enregistre, `Échap` annule. La frappe directe vers la recherche est alors inactive.
 - Relancer l'application réaffiche la fenêtre déjà ouverte (une seule instance).
 
 ---
@@ -93,12 +118,13 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `catalog.json.bak` | version précédente, restaurable |
 | `favorites.json` | identifiants des favoris |
 | `settings.json` | préférences (premier plan…) |
-| `images/` | images importées (chemins relatifs dans le JSON) |
+| `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON) |
 
 - Au premier lancement, le catalogue d'exemple (`resources/catalog.seed.json`) est copié dans ce dossier.
 - Le catalogue est au **schéma 3**. Chaque destination peut porter `"twoStep": true` (PNJ et Donjons uniquement) et `"command2"` (commande de l'étape 2). Champs absents : `false` et `""`. `command2` est conservée même si `twoStep` vaut `false`. Un catalogue au schéma 2 est lu sans modification ; il est réécrit au schéma 3 à la prochaine sauvegarde.
 - Une version **0.1.x** refuse un `catalog.json` au schéma 3 (« version plus récente que l'application ») **sans le modifier**. Revenir à une version antérieure demande donc de restaurer une sauvegarde au schéma 2.
 - Les mises à jour **n'écrasent jamais** vos données.
+- Une image retirée d'une carte, ou importée dans un formulaire annulé, reste dans `images/` : aucun fichier n'est supprimé automatiquement.
 - Chaque écriture est atomique (fichier temporaire puis remplacement). La version précédente est gardée en `.bak`.
 - **Sauvegarde manuelle :** copier tout le dossier `%APPDATA%\MapTraveller\`.
 - **Restauration :** recopier ce dossier, application fermée.
@@ -124,7 +150,7 @@ npm run dev          # UI seule dans le navigateur (http://localhost:1420)
 npm run tauri dev    # application native complète (Rust requis)
 npm run typecheck    # TypeScript
 npm run lint         # ESLint
-npm test             # Vitest (règles de copie, Farm, catalogue)
+npm test             # Vitest (règles de copie, Farm, catalogue, éditeur)
 npm run tauri build  # installateur NSIS local
 ```
 
@@ -136,14 +162,15 @@ npm run tauri build  # installateur NSIS local
 src/
   features/commands/   # PUR — clic gauche / clic droit, zones d'une carte (cardParts)
   features/farm/       # PUR — parsing du parcours, reprise par indice
-  features/catalog/    # PUR — schéma, validation, recherche, tri
+  features/catalog/    # PUR — schéma, validation, recherche, tri, éditeur (editor.ts)
   lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images
-  components/          # React : WindowHeader, CategoryTabs, CompactCard, FarmPanel
-  app/                 # App (état, câblage)
+  components/          # React : WindowHeader, CategoryTabs, CompactCard, Panel, FarmPanel, DestinationForm
+  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useCopyFeedback
   styles/              # tokens.css (DA) + app.css
 src-tauri/
   src/lib.rs           # plugins, raccourci global, instance unique
   src/storage.rs       # %APPDATA%\MapTraveller, écriture atomique + .bak
+  src/images.rs        # import d'images : taille, format réel, copie sous nom unique
   capabilities/        # permissions minimales
   tauri.conf.json
 resources/catalog.seed.json   # seed lecture seule (fictif)
@@ -195,8 +222,9 @@ Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](http
 - [x] Stockage Rust atomique + `.bak`, seed au premier lancement
 - [x] Toujours au premier plan, raccourci global, instance unique, mémorisation de la position
 - [x] Workflow GitHub Actions + installateur NSIS
-- [ ] Éditeur intégré : créer / modifier / dupliquer / supprimer, aperçu clic gauche/droit et étapes Farm
-- [ ] Import d'images (dialogue Windows, contrôle du format, copie dans `images/`)
+- [x] Éditeur intégré : créer / modifier / dupliquer / supprimer, aperçu clic gauche/droit et étapes Farm
+- [x] Import d'images (dialogue Windows, contrôle du format, copie dans `images/`)
+- [ ] Vignettes réduites à l'import (images lourdes) et nettoyage explicite des images orphelines
 - [ ] Import / export ZIP complet, import JSON seul
 - [ ] Raccourci global configurable, paramètres
 - [ ] Validation sur Windows 11 propre, mise à l'échelle 100 % / 150 %, multi-écrans

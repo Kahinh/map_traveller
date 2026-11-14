@@ -3,6 +3,7 @@
 //! Le Rust gère uniquement : stockage local (JSON, images), fenêtre et intégration Windows.
 //! Les règles de copie sont des fonctions pures côté TypeScript (`src/features/`).
 
+mod images;
 mod storage;
 
 use tauri::{AppHandle, Manager};
@@ -63,6 +64,7 @@ pub fn run() {
             storage::load_store,
             storage::save_store,
             storage::data_dir,
+            images::import_image,
         ])
         .run(tauri::generate_context!())
         .expect("échec du démarrage de Map Traveller");

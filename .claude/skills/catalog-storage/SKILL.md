@@ -28,6 +28,12 @@ Source : cahier des charges §6.3, §7, §8.
 - Aucune URL distante, aucun chemin absolu dans le JSON.
 - Seed : coordonnées **fictives** uniquement.
 
+## Éditeur et images
+
+- Toute modification passe par `upsertDestination` / `removeDestination` (`src/features/catalog/editor.ts`), puis `saveCatalog`, puis l'état (`useCatalog`). Jamais l'inverse.
+- `command` / `command2` sont enregistrées octet pour octet ; seuls `name`, `zone`, alias et tags sont nettoyés. Hors PNJ/Donjons, `twoStep` est enregistré à `false` mais `command2` est conservée.
+- Images : `import_image` (`src-tauri/src/images.rs`) contrôle la taille (10 Mo, `MAX_IMAGE_BYTES`) avant lecture et le format réel par signature (PNG, JPEG, WebP), copie sous `images/img-<horodatage>-<pid>-<compteur>.<ext>` sans jamais écraser, et renvoie un chemin relatif. Retirer ou remplacer une image ne supprime aucun fichier ; les orphelines ne seront nettoyées que par une action explicite.
+
 ## Procédure
 
 1. Adapter `src/features/catalog/schema.ts` (+ tests).

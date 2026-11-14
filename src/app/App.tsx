@@ -1,16 +1,22 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { CategoryTabs } from '../components/CategoryTabs';
 import { CompactCard } from '../components/CompactCard';
+import { DestinationForm } from '../components/DestinationForm';
 import { FarmPanel } from '../components/FarmPanel';
+import { PencilIcon, PlusIcon } from '../components/icons';
 import { WindowHeader } from '../components/WindowHeader';
-import type { Destination } from '../features/catalog/schema';
+import {
+  draftFromDestination,
+  duplicateDraft,
+  emptyDraft,
+  type DestinationDraft,
+} from '../features/catalog/editor';
+import { CATEGORIES, type Category, type Destination } from '../features/catalog/schema';
 import { filterDestinations, type ViewFilter } from '../features/catalog/search';
 import { cardParts, partCommand, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
-import { initImages } from '../lib/tauri/images';
 import {
   DEFAULT_SETTINGS,
-  loadCatalog,
   loadFavorites,
   loadSettings,
   saveFavorites,
@@ -18,84 +24,105 @@ import {
   type Settings,
 } from '../lib/tauri/storage';
 import { setAlwaysOnTop } from '../lib/tauri/window';
+import { useCatalog } from './useCatalog';
 import { useCopyFeedback } from './useCopyFeedback';
 
-type LoadState = { status: 'loading' } | { status: 'ready' } | { status: 'error'; message: string };
+/** Un seul panneau ouvert à la fois. `key` remonte le formulaire à chaque ouverture. */
+type PanelState = null | { type: 'farm'; id: string } | { type: 'editor'; draft: DestinationDraft; key: number };
 
 const NOTHING_TO_COPY = 'Aucune commande à copier.';
 const FARM_KEY = 'farm:';
 
 /** Le menu contextuel du navigateur n'a pas sa place dans l'app, sauf dans les champs de saisie. */
 function blockContextMenu(e: MouseEvent) {
-  if (!(e.target instanceof HTMLInputElement)) e.preventDefault();
+  if (!(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) e.preventDefault();
 }
 
-function emptyMessage(total: number, view: ViewFilter, query: string): string {
-  if (total === 0) return 'Catalogue vide.';
+/** Vrai si la cible d'un évènement clavier est un champ de saisie. */
+function isEditableTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
+  );
+}
+
+const isCategory = (v: ViewFilter): v is Category => CATEGORIES.includes(v as Category);
+
+function emptyMessage(view: ViewFilter, query: string): string {
   if (query.trim()) return `Aucun résultat pour « ${query.trim()} ».`;
   if (view === 'favorites') return 'Aucun favori : cliquez sur ☆ pour en ajouter.';
   return 'Aucune destination dans cette catégorie.';
 }
 
 export function App() {
-  const [load, setLoad] = useState<LoadState>({ status: 'loading' });
-  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const { load, destinations, save, remove } = useCatalog();
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [view, setView] = useState<ViewFilter>('all');
   const [query, setQuery] = useState('');
-  const [farmId, setFarmId] = useState<string | null>(null);
+  const [panel, setPanel] = useState<PanelState>(null);
+  /** Mode gestion : un crayon sur chaque carte ouvre le formulaire (non persistant). */
+  const [manageMode, setManageMode] = useState(false);
   /** Dernière position cliquée par parcours (session uniquement) ; -1 = début. */
   const [farmProgress, setFarmProgress] = useState<Record<string, number>>({});
-  const { feedback, copy } = useCopyFeedback();
+  const { feedback, copy, notify } = useCopyFeedback();
   const searchRef = useRef<HTMLInputElement>(null);
   const favoritesRef = useRef(favorites);
+  const editorSeq = useRef(0);
+  /** Destination à faire défiler jusqu'à l'écran dès qu'elle est rendue (après enregistrement). */
+  const revealRef = useRef<string | null>(null);
+
+  const ready = load.status === 'ready';
+  const editorOpen = panel?.type === 'editor';
 
   useEffect(() => {
     void (async () => {
-      const [cat, favs, sets] = await Promise.all([loadCatalog(), loadFavorites(), loadSettings(), initImages()]);
-      if (!cat.ok) {
-        setLoad({ status: 'error', message: cat.errors.map((e) => `${e.path} ${e.message}`.trim()).join(' · ') });
-        return;
-      }
+      const [favs, sets] = await Promise.all([loadFavorites(), loadSettings()]);
       favoritesRef.current = favs;
-      setDestinations(cat.catalog.destinations);
       setFavorites(favs);
       setSettings(sets);
       void setAlwaysOnTop(sets.alwaysOnTop);
-      setLoad({ status: 'ready' });
-    })().catch((e: unknown) => setLoad({ status: 'error', message: String(e) }));
+    })();
   }, []);
 
-  // Raccourcis : Échap (retour / effacer), Ctrl+F (recherche), frappe directe → recherche.
+  // Raccourcis : Échap (retour / effacer / quitter le mode gestion), Ctrl+F (recherche),
+  // frappe directe → recherche. Le formulaire gère son propre clavier : rien ici quand il est ouvert.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (editorOpen) return;
       const search = searchRef.current;
+      // Une saisie dans un champ (autre que la recherche) ne doit jamais être détournée.
+      if (isEditableTarget(e.target) && e.target !== search) return;
       if (e.key === 'Escape') {
-        if (farmId !== null) setFarmId(null);
-        else setQuery('');
+        if (panel !== null) setPanel(null);
+        else if (query !== '') setQuery('');
+        else setManageMode(false);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
-        setFarmId(null);
+        setPanel(null);
         search?.focus();
         search?.select();
         return;
       }
       const printable = e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey;
-      if (printable && farmId === null && document.activeElement !== search) search?.focus();
+      if (printable && panel === null && document.activeElement !== search) search?.focus();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [farmId]);
+  }, [panel, editorOpen, query]);
+
+  const openEditor = useCallback((draft: DestinationDraft) => {
+    editorSeq.current += 1;
+    setPanel({ type: 'editor', draft, key: editorSeq.current });
+  }, []);
 
   // Gestionnaires stables : nécessaires pour que la mémoïsation des cartes soit effective.
   // Clic gauche ou droit sur une zone de carte (zone 1 pour une carte classique).
   const onCardAction = useCallback(
     (d: Destination, part: PartIndex, button: ClickButton) => {
       if (d.category === 'farm') {
-        setFarmId(d.id); // V1 : clic gauche et droit ouvrent le parcours
+        setPanel({ type: 'farm', id: d.id }); // V1 : clic gauche et droit ouvrent le parcours
         return;
       }
       const parts = cardParts(d);
@@ -114,11 +141,52 @@ export function App() {
     void saveFavorites(next);
   }, []);
 
+  const onEdit = useCallback((d: Destination) => openEditor(draftFromDestination(d)), [openEditor]);
+
+  const onNew = () => openEditor(emptyDraft(isCategory(view) ? view : undefined));
+
   const onToggleAlwaysOnTop = () => {
     const next = { ...settings, alwaysOnTop: !settings.alwaysOnTop };
     setSettings(next);
     void setAlwaysOnTop(next.alwaysOnTop);
     void saveSettings(next);
+  };
+
+  // L'état n'est mis à jour qu'après l'écriture sur disque (`useCatalog`) ; une erreur remonte au formulaire.
+  const onSaveDraft = async (draft: DestinationDraft) => {
+    const saved = await save(draft);
+    setPanel(null);
+    // Si la vue courante masque la destination, basculer sur sa catégorie et vider la recherche.
+    if (saved.enabled && filterDestinations([saved], view, query, favorites).length === 0) {
+      setView(saved.category);
+      setQuery('');
+    }
+    revealRef.current = saved.enabled ? saved.id : null;
+    notify('Destination enregistrée.');
+  };
+
+  const onDeleteDestination = async (id: string) => {
+    await remove(id);
+    setPanel(null);
+    if (favoritesRef.current.has(id)) {
+      const next = new Set(favoritesRef.current);
+      next.delete(id);
+      favoritesRef.current = next;
+      setFavorites(next);
+      void saveFavorites(next);
+    }
+    setFarmProgress((p) => {
+      if (!(id in p)) return p;
+      const next = { ...p };
+      delete next[id];
+      return next;
+    });
+    notify('Destination supprimée.');
+  };
+
+  const onDuplicate = (id: string) => {
+    const d = destinations.find((x) => x.id === id);
+    if (d) openEditor(duplicateDraft(d));
   };
 
   // La saisie reste fluide sur un gros catalogue : le filtrage suit avec une priorité basse.
@@ -128,17 +196,29 @@ export function App() {
     [destinations, view, deferredQuery, favorites],
   );
 
+  // Après un enregistrement : amener la carte à l'écran dès qu'elle fait partie de la grille.
+  useEffect(() => {
+    const id = revealRef.current;
+    if (id === null || !visible.some((d) => d.id === id)) return;
+    revealRef.current = null;
+    document.querySelector(`[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [visible]);
+
+  const farmId = panel?.type === 'farm' ? panel.id : null;
   const farm = useMemo(() => destinations.find((d) => d.id === farmId) ?? null, [destinations, farmId]);
   const farmRoute = useMemo(() => (farm ? parseFarmRoute(farm.command) : null), [farm]);
 
   const setFarmStep = (id: string, step: number) => setFarmProgress((p) => ({ ...p, [id]: step }));
   const farmStep = farm ? (farmProgress[farm.id] ?? -1) : -1;
 
+  const manageLabel = manageMode ? 'Quitter le mode gestion (Échap)' : 'Gérer les destinations';
+
   return (
     <div className="app" onContextMenu={blockContextMenu}>
       <WindowHeader alwaysOnTop={settings.alwaysOnTop} onToggleAlwaysOnTop={onToggleAlwaysOnTop} />
 
-      <div className="toolbar">
+      {/* Sous le formulaire, rien ne doit recevoir le focus clavier ni les clics. */}
+      <div className="toolbar" inert={editorOpen}>
         <input
           ref={searchRef}
           className="search"
@@ -151,10 +231,33 @@ export function App() {
           spellCheck={false}
           autoComplete="off"
         />
-        <CategoryTabs value={view} onChange={setView} />
+        <div className="toolbar__row">
+          <CategoryTabs value={view} onChange={setView} />
+          <button
+            type="button"
+            className="icon-btn"
+            title="Nouvelle destination"
+            aria-label="Nouvelle destination"
+            disabled={!ready}
+            onClick={onNew}
+          >
+            <PlusIcon />
+          </button>
+          <button
+            type="button"
+            className={`icon-btn${manageMode ? ' is-active' : ''}`}
+            title={manageLabel}
+            aria-label="Gérer les destinations"
+            aria-pressed={manageMode}
+            disabled={!ready}
+            onClick={() => setManageMode((m) => !m)}
+          >
+            <PencilIcon />
+          </button>
+        </div>
       </div>
 
-      <main className="grid-scroll">
+      <main className={`grid-scroll${manageMode ? ' is-managing' : ''}`} inert={editorOpen}>
         {load.status === 'loading' && <p className="empty">Chargement…</p>}
         {load.status === 'error' && (
           <p className="empty">
@@ -163,8 +266,16 @@ export function App() {
             {load.message}
           </p>
         )}
-        {load.status === 'ready' && visible.length === 0 && (
-          <p className="empty">{emptyMessage(destinations.length, view, deferredQuery)}</p>
+        {ready && destinations.length === 0 && (
+          <div className="empty">
+            <p className="empty__text">Aucune destination pour l'instant.</p>
+            <button type="button" className="btn btn--primary" onClick={onNew}>
+              Créer une destination
+            </button>
+          </div>
+        )}
+        {ready && destinations.length > 0 && visible.length === 0 && (
+          <p className="empty">{emptyMessage(view, deferredQuery)}</p>
         )}
         <div className="grid">
           {visible.map((d) => (
@@ -176,6 +287,8 @@ export function App() {
               feedbackPart={feedback?.key === d.id ? (feedback.part ?? null) : null}
               onAction={onCardAction}
               onToggleFavorite={onToggleFavorite}
+              manage={manageMode}
+              onEdit={onEdit}
             />
           ))}
         </div>
@@ -187,7 +300,7 @@ export function App() {
           route={farmRoute}
           currentStep={farmStep >= 0 ? farmStep : null}
           feedbackKey={feedback?.key.startsWith(FARM_KEY) ? feedback.key.slice(FARM_KEY.length) : null}
-          onClose={() => setFarmId(null)}
+          onClose={() => setPanel(null)}
           onStart={() => {
             setFarmStep(farm.id, -1);
             void copy(`${FARM_KEY}start`, farmStartCommand(farmRoute), 'Parcours vide.');
@@ -196,6 +309,17 @@ export function App() {
             setFarmStep(farm.id, i);
             void copy(`${FARM_KEY}${i}`, farmResumeCommand(farmRoute, i), 'Fin de parcours : rien à copier.');
           }}
+        />
+      )}
+
+      {panel?.type === 'editor' && (
+        <DestinationForm
+          key={panel.key}
+          initial={panel.draft}
+          onSave={onSaveDraft}
+          onDelete={onDeleteDestination}
+          onDuplicate={onDuplicate}
+          onClose={() => setPanel(null)}
         />
       )}
 

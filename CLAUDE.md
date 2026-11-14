@@ -23,12 +23,12 @@ npm run tauri build    # installateur NSIS (normalement fait par la CI)
 ```
 src/features/commands/   # PUR : clic gauche / clic droit, zones d'une carte (cardParts)
 src/features/farm/       # PUR : parsing parcours + reprise par indice
-src/features/catalog/    # PUR : types, validation, recherche, tri
+src/features/catalog/    # PUR : types, validation, recherche, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove)
 src/lib/tauri/           # pont système (clipboard, stockage) avec fallback navigateur
-src/components/          # composants React (rendu + interactions uniquement)
-src/app/                 # App, état global
+src/components/          # composants React (rendu + interactions uniquement) : Panel, FarmPanel, DestinationForm…
+src/app/                 # App, état global, useCatalog (écriture disque AVANT mise à jour de l'état), useCopyFeedback
 src/styles/tokens.css    # tokens DA — seule source des couleurs
-src-tauri/src/           # Rust : stockage atomique, images, fenêtre, plugins
+src-tauri/src/           # Rust : stockage atomique (storage.rs), import d'images (images.rs), fenêtre, plugins
 resources/catalog.seed.json  # seed lecture seule, coordonnées FICTIVES
 tests/                   # Vitest
 ```
@@ -44,6 +44,8 @@ tests/                   # Vitest
 7. **Jamais de trajet réel inventé** : coordonnées fictives dans seed, tests et docs.
 8. Couleurs via `tokens.css` uniquement. Clics gauche/droit des cartes réservés à la copie / ouverture Farm.
 9. Permissions Tauri minimales.
+10. Éditeur : aucune mutation d'une `Destination` ni du tableau (nouveaux objets, identité conservée pour les autres) ; l'identifiant ne change jamais en modification ; l'état n'est mis à jour qu'APRÈS `saveCatalog` ; aucun fichier image n'est supprimé automatiquement.
+11. Le raccourci clavier global ignore les champs de saisie et ne fait rien quand le formulaire est ouvert.
 
 ## Workflow Claude
 
@@ -51,4 +53,5 @@ tests/                   # Vitest
 - Skills projet : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request`.
 - Agents : `architecte` (cadrage) → `implementation` → `reviewer` (tâche moyenne/complexe). Spécialistes : `tauri-rust`, `ui-da`.
 - Ne jamais committer ni pousser sans demande explicite.
+- **Toute livraison poussée sur `main` se termine par une version et un tag** (`npm run version:set -- X.Y.Z`, commit `Version X.Y.Z`, `git tag vX.Y.Z`, push) : sans tag, GitHub ne publie pas de `.exe`. Détail et cas particuliers : skill `ci-release-windows`.
 - Langue : français pour la doc, les messages UI et les commits.

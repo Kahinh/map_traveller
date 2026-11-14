@@ -21,6 +21,13 @@ Source : cahier des charges §3, §5.1, §6, §9.
 
 Ne jamais écrire une couleur en dur dans un composant.
 
+## Éditeur
+
+- Barre d'outils : `.toolbar__row` = onglets (défilants) + `icon-btn` « + » (Nouvelle destination) + crayon (mode gestion, `aria-pressed`, `is-active`).
+- Mode gestion : `.card__edit` (crayon, haut-gauche, bouton frère des zones de copie) ; la pastille Farm est masquée ; liseré `.grid-scroll.is-managing`. Les clics de copie ne changent pas.
+- Panneaux : composant `Panel` (`.panel`, `.panel__header`, `.panel__title`), un seul ouvert à la fois (`PanelState`). Formulaire : `.form__body` défilant, `.form__actions` fixées en bas, catégorie en `.segmented`, boutons `.btn` / `.btn--primary` / `.btn--danger` / `.btn--danger-ghost`. Confirmations (abandon, suppression) dans la barre d'actions, jamais de dialogue natif.
+- Pendant le formulaire, la grille et la barre d'outils sont `inert`.
+
 ## Disposition
 
 Barre de titre custom (drag region) : icône, « Map Traveller », épingle, paramètres, réduire, fermer → recherche compacte → onglets Tout / PNJ / Donjons / Lieux-dits / Farm / Favoris + bouton `+` → grille `auto-fill` à défilement vertical.

@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react';
 import type { FarmRoute } from '../features/farm/farmRoute';
-import { BackIcon } from './icons';
+import { Panel } from './Panel';
 
 interface Props {
   name: string;
@@ -33,19 +33,16 @@ export function FarmPanel({ name, route, currentStep, feedbackKey, onStart, onSt
   const current = currentStep === null ? undefined : route.steps[currentStep];
 
   return (
-    <section className="farm-panel" aria-label={`Parcours ${name}`}>
-      <div className="farm-panel__header">
-        <button type="button" className="icon-btn" title="Retour (Échap)" aria-label="Retour" onClick={onClose}>
-          <BackIcon />
-        </button>
-        <span className="farm-panel__title" title={name}>
-          {name}
-        </span>
+    <Panel
+      label={`Parcours ${name}`}
+      title={name}
+      onBack={onClose}
+      aside={
         <span className="farm-panel__progress">
           {current ? `Position ${current.label} · ${current.index + 1}/${total}` : `${total} étape${total > 1 ? 's' : ''}`}
         </span>
-      </div>
-
+      }
+    >
       {route.issues.length > 0 && (
         <div className="farm-panel__issues">
           {route.issues.length} segment(s) non reconnu(s), absents des étapes :{' '}
@@ -94,6 +91,6 @@ export function FarmPanel({ name, route, currentStep, feedbackKey, onStart, onSt
           </div>
         )}
       </div>
-    </section>
+    </Panel>
   );
 }

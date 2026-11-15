@@ -105,20 +105,32 @@ L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enre
 
 - **Mises à jour** : la version installée, le mode, Manuel (par défaut : rien n'est contacté sans votre action) ou Automatique, et le bouton « Rechercher des mises à jour ». Détails dans [Mises à jour](#mises-à-jour).
 - **Données** : l'emplacement réel de vos données, avec « Ouvrir le dossier » et « Copier le chemin ». Pour sauvegarder vos données, copiez ce dossier. Fermez l'application avant de modifier ces fichiers à la main.
-- **Affichage** : toujours au premier plan (même réglage que l'épingle).
+- **Affichage** : toujours au premier plan (même réglage que l'épingle) ; **Réduire dans la zone de notification** (activé par défaut), voir ci-dessous.
 - **Alias** : le dictionnaire de la recherche, commun à la fenêtre et à la palette. Un alias remplace un mot de la recherche par sa signification, pour toutes les destinations : il se saisit **une seule fois** ici, pas carte par carte. Les alias fournis avec l'application (`hdv`, `rdv`) peuvent être désactivés ou remplacés ; les vôtres s'ajoutent, se modifient et se suppriment. Chaque ligne indique combien de destinations l'alias trouve.
 - **Raccourcis** : les deux raccourcis globaux.
 
+### Zone de notification
+
+Map Traveller a une icône dans la zone de notification (à droite de la barre des tâches, éventuellement parmi les icônes cachées).
+
+- **Clic gauche** sur l'icône : afficher ou masquer la fenêtre. **Clic droit** : menu **Afficher**, **Ouvrir la palette**, **Quitter**.
+- Réglage **Réduire dans la zone de notification** activé (par défaut) : le bouton réduire et le raccourci « afficher / masquer » ferment la fenêtre et laissent l'application dans la zone de notification, sans entrée dans la barre des tâches. La fenêtre n'est alors plus chargée en mémoire ; elle revient à sa position par l'icône, le menu, son raccourci ou en relançant l'application, après un court chargement.
+- Réglage désactivé : réduire renvoie la fenêtre dans la barre des tâches et le raccourci la masque, comme avant.
+- Pendant la saisie d'une destination (formulaire ouvert), la fenêtre n'est jamais fermée : elle est seulement réduite ou masquée, la saisie est conservée.
+- Le bouton **fermer** quitte toujours l'application, tout comme **Quitter** dans le menu de l'icône.
+- La palette reste prête en permanence (créée dès le lancement, masquée) : son raccourci fonctionne aussi quand l'application est dans la zone de notification.
+- **Limites** : le retour de la fenêtre demande un court chargement (la page, la grille et les images sont rechargées). Windows range souvent une nouvelle icône parmi les icônes cachées (flèche ^) ; on peut la faire glisser dans la barre des tâches. Dans la grille, la touche Tab ne parcourt que les cartes affichées à l'écran.
+
 ### Raccourcis
 
-- `Ctrl+Alt+T` : afficher ou masquer la fenêtre (raccourci global).
+- `Ctrl+Alt+T` : afficher ou masquer la fenêtre (raccourci global). Masquer envoie l'application dans la zone de notification si le réglage est activé.
 - `Ctrl+Alt+Espace` : ouvrir ou fermer la palette de recherche (raccourci global).
 - Les deux raccourcis globaux se règlent dans **Paramètres** (engrenage de la barre de titre) → Raccourcis : cliquer sur le champ, puis appuyer sur la combinaison voulue (Ctrl ou Alt, plus une lettre, un chiffre, F1 à F12 ou Espace). Si un raccourci est déjà pris par une autre application, l'ancien est conservé et un message l'indique.
 - Épingle : activer ou désactiver « toujours au premier plan ». Le réglage est mémorisé.
 - Taper directement du texte lance la recherche ; `Ctrl+F` y place le curseur.
 - `Échap` : fermer le parcours Farm ouvert, sinon effacer la recherche, sinon quitter le mode gestion.
 - Dans le formulaire : `Ctrl+Entrée` enregistre, `Échap` annule. La frappe directe vers la recherche est alors inactive.
-- Relancer l'application réaffiche la fenêtre déjà ouverte (une seule instance).
+- Relancer l'application réaffiche la fenêtre déjà ouverte (une seule instance), ou la rouvre si elle est dans la zone de notification.
 
 ---
 
@@ -141,7 +153,7 @@ Le mode se choisit dans **Paramètres → Mises à jour** :
 | Mode | Comportement |
 |---|---|
 | **Manuel** (par défaut) | Aucune connexion au lancement, aucune en arrière-plan : **rien ne part sans votre clic**. « Rechercher des mises à jour » indique si vous avez la dernière version ou propose la nouvelle avec « Installer et redémarrer » ; rien n'est téléchargé avant ce second clic. |
-| **Automatique** | Quelques secondes après chaque lancement, une vérification a lieu. Si une nouvelle version existe, elle est téléchargée (indication discrète en bas de la fenêtre), puis installée, et l'application redémarre. Si un formulaire de destination est ouvert, l'installation attend sa fermeture. Sans réseau, ou si GitHub ne répond pas, rien ne s'affiche et l'application reste utilisable ; le résultat reste consultable dans les Paramètres. |
+| **Automatique** | Quelques secondes après chaque ouverture de la fenêtre (lancement, ou retour depuis la zone de notification, au plus une fois toutes les deux minutes), une vérification a lieu. Tant que l'application est dans la zone de notification, rien n'est vérifié. Si une nouvelle version existe, elle est téléchargée (indication discrète en bas de la fenêtre), puis installée, et l'application redémarre. Si un formulaire de destination est ouvert, l'installation attend sa fermeture. Sans réseau, ou si GitHub ne répond pas, rien ne s'affiche et l'application reste utilisable ; le résultat reste consultable dans les Paramètres. |
 
 - **Ce qui est envoyé à GitHub** : une vérification est une simple requête HTTPS vers la page des Releases du dépôt (`latest.json`), suivie, s'il y a une nouvelle version et que vous l'installez, du téléchargement de l'installateur. GitHub voit votre adresse IP et le fichier demandé (l'index, puis l'installateur de la version annoncée), comme pour tout téléchargement, ainsi que l'en-tête technique standard du composant de mise à jour (son nom et sa version, pas ceux de l'application ni les vôtres). Aucun identifiant, aucune statistique, aucune donnée de votre catalogue n'est envoyé ; il n'y a pas de télémétrie.
 - **Sécurité** : chaque installateur publié est signé. L'application vérifie cette signature avant d'installer et refuse un fichier non signé ou modifié ; rien n'est alors installé.
@@ -168,7 +180,7 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `catalog.json` | vos destinations (éditable) |
 | `catalog.json.bak` | version précédente, restaurable |
 | `favorites.json` | identifiants des favoris |
-| `settings.json` | préférences (premier plan, raccourcis, mode de mise à jour et date de la dernière vérification…) |
+| `settings.json` | préférences (premier plan, réduction dans la zone de notification `tray.minimizeToTray`, raccourcis, mode de mise à jour et date de la dernière vérification…) |
 | `aliases.json` | vos alias de recherche et les alias fournis que vous avez désactivés (créé à la première personnalisation). Ce que l'application ne comprend pas dans ce fichier est conservé tel quel ; un fichier illisible ou d'une version plus récente n'est jamais réécrit |
 | `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON) |
 
@@ -225,7 +237,10 @@ src/
   app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useAliases, useCopyFeedback, useUpdater, useGridWindow (rangées visibles seulement)
   styles/              # tokens.css (DA) + app.css
 src-tauri/
-  src/lib.rs           # plugins, raccourci global, instance unique
+  src/lib.rs           # plugins, raccourci global, instance unique, sorties explicites seulement
+  src/main_window.rs   # fenêtre principale : afficher, masquer, réduire dans la zone de notification (fenêtre détruite puis recréée)
+  src/tray.rs          # icône et menu de la zone de notification
+  src/palette.rs       # palette, créée masquée dès le lancement
   src/storage.rs       # %APPDATA%\MapTraveller, écriture atomique + .bak
   src/images.rs        # import d'images : taille, format réel, copie sous nom unique
   capabilities/        # permissions minimales

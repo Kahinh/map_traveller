@@ -18,6 +18,7 @@ import { cardParts, partCommand, type ClickButton, type PartIndex } from '../fea
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
 import { describeUpdateState } from '../features/updates/types';
 import { loadFavorites, saveFavorites } from '../lib/tauri/storage';
+import { setMainBusy } from '../lib/tauri/window';
 import { useAliases } from './useAliases';
 import { useCatalog } from './useCatalog';
 import { useCopyFeedback } from './useCopyFeedback';
@@ -102,6 +103,12 @@ export function App() {
   const updateBusy =
     updateState.status === 'downloading' || updateState.status === 'ready' || updateState.status === 'installing';
   const updateIndicator = updateBusy && !settingsOpen ? describeUpdateState(updateState, null) : null;
+
+  // Formulaire ouvert : Rust ne détruit jamais la fenêtre (zone de notification), la saisie
+  // en cours n'est jamais perdue.
+  useEffect(() => {
+    setMainBusy(editorOpen).catch((e: unknown) => console.error('État « occupé » non transmis', e));
+  }, [editorOpen]);
 
   useEffect(() => {
     void loadFavorites().then((favs) => {

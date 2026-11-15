@@ -60,7 +60,7 @@ describe('mergeSettings', () => {
       shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P', autre: 'x' },
     };
     const merged = mergeSettings(raw, { ...DEFAULT_SETTINGS, alwaysOnTop: false });
-    expect(merged).toEqual({ ...raw, alwaysOnTop: false });
+    expect(merged).toEqual({ ...raw, alwaysOnTop: false, tray: { minimizeToTray: true } });
     // L'objet lu n'est pas modifié.
     expect(raw.alwaysOnTop).toBe(true);
   });
@@ -69,19 +69,29 @@ describe('mergeSettings', () => {
     const settings: Settings = {
       alwaysOnTop: true,
       updates: { mode: 'manual' },
+      tray: { minimizeToTray: true },
       shortcuts: { toggleMain: 'Ctrl+Alt+Z', palette: 'Ctrl+Alt+Y' },
     };
-    expect(mergeSettings({ alwaysOnTop: false }, settings)).toEqual({ alwaysOnTop: true, updates: { mode: 'manual' } });
+    expect(mergeSettings({ alwaysOnTop: false }, settings)).toEqual({
+      alwaysOnTop: true,
+      updates: { mode: 'manual' },
+      tray: { minimizeToTray: true },
+    });
     expect(mergeSettings({ shortcuts: { palette: 'Ctrl+Alt+P' } }, settings)).toEqual({
       shortcuts: { palette: 'Ctrl+Alt+P' },
       alwaysOnTop: true,
       updates: { mode: 'manual' },
+      tray: { minimizeToTray: true },
     });
   });
 
   it('fichier absent ou illisible : seules les clés de l’interface', () => {
     for (const raw of [undefined, null, 'texte', [1]]) {
-      expect(mergeSettings(raw, DEFAULT_SETTINGS)).toEqual({ alwaysOnTop: true, updates: { mode: 'manual' } });
+      expect(mergeSettings(raw, DEFAULT_SETTINGS)).toEqual({
+        alwaysOnTop: true,
+        updates: { mode: 'manual' },
+        tray: { minimizeToTray: true },
+      });
     }
   });
 
@@ -91,6 +101,7 @@ describe('mergeSettings', () => {
     expect(parseSettings(written)).toEqual({
       alwaysOnTop: false,
       updates: { mode: 'manual' },
+      tray: { minimizeToTray: true },
       shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
     });
   });
@@ -221,6 +232,7 @@ describe('applySettingsPatch', () => {
   const base: Settings = {
     alwaysOnTop: true,
     updates: { mode: 'manual' },
+    tray: { minimizeToTray: true },
     shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
   };
 
@@ -239,11 +251,58 @@ describe('applySettingsPatch', () => {
     const next = applySettingsPatch(base, { alwaysOnTop: false, updates: { mode: 'auto' } });
     expect(next).not.toBe(base);
     expect(next.updates).not.toBe(base.updates);
+    expect(next.tray).not.toBe(base.tray);
     expect(base).toEqual({
       alwaysOnTop: true,
       updates: { mode: 'manual' },
+      tray: { minimizeToTray: true },
       shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
     });
     expect(next.shortcuts).toEqual(base.shortcuts);
+  });
+});
+
+describe('réglage de la zone de notification (tray.minimizeToTray)', () => {
+  it('activé par défaut : fichier, clé ou objet absent', () => {
+    expect(DEFAULT_SETTINGS.tray).toEqual({ minimizeToTray: true });
+    expect(parseSettings({}).tray).toEqual({ minimizeToTray: true });
+    expect(parseSettings({ tray: {} }).tray).toEqual({ minimizeToTray: true });
+  });
+
+  it('lecture tolérante : seul un booléen est lu, sinon activé (même règle que Rust)', () => {
+    expect(parseSettings({ tray: { minimizeToTray: false } }).tray.minimizeToTray).toBe(false);
+    expect(parseSettings({ tray: { minimizeToTray: true } }).tray.minimizeToTray).toBe(true);
+    for (const value of ['false', 0, null, [], {}]) {
+      expect(parseSettings({ tray: { minimizeToTray: value } }).tray.minimizeToTray).toBe(true);
+    }
+    for (const tray of ['non', 42, null, [false]]) {
+      expect(parseSettings({ tray }).tray.minimizeToTray).toBe(true);
+    }
+  });
+
+  it('applySettingsPatch : change le réglage sans toucher aux autres ; undefined ne remplace rien', () => {
+    const next = applySettingsPatch(DEFAULT_SETTINGS, { tray: { minimizeToTray: false } });
+    expect(next).toEqual({ ...DEFAULT_SETTINGS, tray: { minimizeToTray: false } });
+    expect(DEFAULT_SETTINGS.tray.minimizeToTray).toBe(true);
+    expect(applySettingsPatch(next, { tray: {} })).toEqual(next);
+    expect(applySettingsPatch(next, { tray: { minimizeToTray: undefined } })).toEqual(next);
+    expect(applySettingsPatch(next, { alwaysOnTop: false }).tray).toEqual({ minimizeToTray: false });
+  });
+
+  it('mergeSettings conserve les clés inconnues DANS tray et ne remplace que minimizeToTray', () => {
+    const raw = { tray: { minimizeToTray: true, futur: 'x' }, shortcuts: { palette: 'Ctrl+Alt+P' } };
+    const settings = applySettingsPatch(parseSettings(raw), { tray: { minimizeToTray: false } });
+    expect(mergeSettings(raw, settings).tray).toEqual({ minimizeToTray: false, futur: 'x' });
+    expect(mergeSettings(raw, settings).shortcuts).toEqual({ palette: 'Ctrl+Alt+P' });
+    expect(raw.tray.minimizeToTray).toBe(true);
+  });
+
+  it('mergeSettings remplace un tray invalide du fichier par un objet propre', () => {
+    expect(mergeSettings({ tray: 'cassé' }, DEFAULT_SETTINGS).tray).toEqual({ minimizeToTray: true });
+  });
+
+  it('relecture : ce qui est écrit se relit à l’identique', () => {
+    const next = applySettingsPatch(DEFAULT_SETTINGS, { tray: { minimizeToTray: false } });
+    expect(parseSettings(mergeSettings({ tray: { futur: 1 } }, next)).tray).toEqual(next.tray);
   });
 });

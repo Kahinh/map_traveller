@@ -14,7 +14,7 @@ Source : cahier des charges §6.3, §7, §8.
 | `catalog.json` | catalogue éditable (`schemaVersion`, `destinations[]`) |
 | `catalog.json.bak` | version précédente, restaurable |
 | `favorites.json` | `{ "ids": [...] }` par identifiant stable |
-| `settings.json` | toujours devant, raccourci, position/taille |
+| `settings.json` | toujours devant, réduction dans la zone de notification (`tray`), mises à jour (`updates`), raccourcis (`shortcuts`, Rust seul) |
 | `aliases.json` | alias de recherche personnalisés (`custom`) et alias livrés désactivés (`disabledDefaults`) ; créé à la première personnalisation |
 | `images/` | images copiées, nom interne unique, référencées en `images/<nom>` |
 
@@ -40,7 +40,7 @@ Source : cahier des charges §6.3, §7, §8.
 - La palette relit `catalog.json`, `aliases.json` et `favorites.json` à chaque affichage ; un fichier dont le texte n'a pas changé n'est ni revalidé ni réindexé. Elle n'écrit jamais.
 - `settings.json` : modèle pur dans `src/features/settings/settings.ts` (`parseSettings` tolérant, `mergeSettings` conserve les clés inconnues). La clé `shortcuts` est écrite uniquement par Rust (`shortcuts.rs`, verrou partagé avec `save_store`).
 
-- `settings.json` contient `alwaysOnTop`, `updates.mode` (`manual` par défaut) et `shortcuts` (Rust seul). Les réglages passent par `useSettings` (rien n'est écrit avant la fin du chargement ; écritures l'une après l'autre).
+- `settings.json` contient `alwaysOnTop`, `updates.mode` (`manual` par défaut), `tray.minimizeToTray` (`true` par défaut, écrit par l'interface, lu par Rust dans `main_window.rs` au moment de réduire, lecture tolérante des deux côtés ; clés inconnues de `tray` conservées) et `shortcuts` (Rust seul). La position et la taille de la fenêtre ne sont pas dans `settings.json` : le plugin window-state les garde dans `%APPDATA%\app.maptraveller`. Les réglages passent par `useSettings` (rien n'est écrit avant la fin du chargement ; écritures l'une après l'autre).
 - Le chemin du dossier de données ne s'écrit jamais dans l'interface : il vient de la commande `data_dir`, mise en cache par `src/lib/tauri/dataDir.ts`. `open_data_dir` l'ouvre, sans paramètre.
 
 ## Éditeur et images

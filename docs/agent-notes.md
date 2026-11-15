@@ -88,3 +88,18 @@ Le script de captures relancé avec l'étiquette `avant` après les modification
 ### 2026-11-15 — `violation-principe` — « Amener la carte à l'écran » ne fonctionnait pas
 Après un enregistrement, la grille était déjà rendue avec la nouvelle destination quand `revealRef` était posé : l'effet qui fait défiler ne se relançait plus, la carte créée restait hors de l'écran (constaté sur `main` à 6 500 destinations, issue n°14). Aucun test ne le voyait.
 **Garde-fou :** compteur `revealTick` qui relance l'effet ; le défilement est calculé (`scrollTopToReveal`, `tests/gridWindow.test.ts`) car la carte n'est plus forcément dans le DOM. Contrôle navigateur : `/home/claude/scratch/t14/create.mjs` (hors dépôt), à refaire dans tout changement de la grille.
+
+### 2026-11-15 — `non-vérifié` — Zone de notification et palette préchargée (issue n°14)
+Tout le Rust (`main_window.rs`, `tray.rs`, `palette.rs`, `lib.rs`, fonctionnalité `tray-icon`) a été écrit sans être compilé ni exécuté : `cargo` n'a pas pu construire le projet en local (bibliothèques système absentes). Signatures relues dans les sources de Tauri 2.12.5, syntaxe contrôlée par `rustfmt`, rien de plus. La CI Windows doit d'abord compiler et passer `cargo test`.
+À dérouler sur l'application installée :
+1. Icône présente dans la zone de notification, infobulle « Map Traveller », icône de l'application (pas un carré vide).
+2. Clic gauche : masque / affiche la fenêtre ; clic droit : menu Afficher, Ouvrir la palette, Quitter ; aucun menu au clic gauche.
+3. Réduire (réglage actif) : fenêtre disparue, absente de la barre des tâches ; le Gestionnaire des tâches montre moins de processus `msedgewebview2.exe` (seule la palette reste chargée).
+4. Retour par l'icône, par « Afficher », par `Ctrl+Alt+T`, par un second lancement : la fenêtre revient à sa position et à sa taille d'avant, épingle et catalogue corrects.
+5. `Ctrl+Alt+T` fenêtre visible : zone de notification (réglage actif) ; réglage désactivé : simple masquage, et réduire va dans la barre des tâches.
+6. Formulaire ouvert avec une saisie : réduire et `Ctrl+Alt+T` ne détruisent pas la fenêtre ; la saisie est intacte au retour.
+7. Fermer (croix) et « Quitter » terminent le processus (plus aucun `MapTraveller.exe`). Fenêtre détruite : le processus reste vivant (icône, raccourcis).
+8. Palette : première ouverture immédiate après le lancement ; fonctionne fenêtre principale détruite ; « Ouvrir la palette » du menu l'affiche et lui donne le focus.
+9. Mise à jour (mode automatique) : la relance après installation fonctionne toujours (sortie avec code, non bloquée).
+10. Appuis très rapides (réduire puis `Ctrl+Alt+T` immédiatement) : pas d'erreur, pas de deux fenêtres.
+**Garde-fou :** cette liste, à reporter dans le commentaire de clôture de l'issue n°14 ; à retirer d'ici quand l'utilisateur l'aura déroulée.

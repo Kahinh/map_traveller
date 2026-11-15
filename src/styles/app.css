@@ -1149,6 +1149,7 @@ textarea:focus-visible {
    Onglets de rubriques (même style que les catégories), contenu défilant (`.form__body`). */
 .settings__tabs {
   flex: none;
+  min-width: 0;
   padding: 0 8px 6px;
 }
 
@@ -1163,7 +1164,65 @@ textarea:focus-visible {
 .settings__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
+}
+
+/* Valeur affichée (version, chemin) : sélectionnable, jamais plus large que le panneau. */
+.settings__value {
+  color: var(--mt-text);
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+
+.settings__path {
+  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+}
+
+/* Groupe de boutons radio (mode de mise à jour) : sans le cadre natif du fieldset. */
+.settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings__group legend {
+  padding: 0;
+  margin-bottom: 3px;
+}
+
+/* Option : bouton radio + libellé, explication sur la ligne suivante, alignée sur le libellé. */
+.settings__option {
+  align-items: baseline;
+  row-gap: 1px;
+}
+
+.settings__option-hint {
+  flex-basis: 100%;
+  padding-left: 19px;
+}
+
+.settings__notes {
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.settings__list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.settings__body code {
+  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  color: var(--mt-text);
+  user-select: text;
 }
 
 /* Champ de capture d'un raccourci : un bouton (pas un champ de texte), pour que Échap

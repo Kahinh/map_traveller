@@ -25,11 +25,12 @@ src/features/commands/   # PUR : clic gauche / clic droit, zones d'une carte (ca
 src/features/farm/       # PUR : parsing parcours + reprise par indice
 src/features/catalog/    # PUR : types, validation, recherche, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove)
 src/features/palette/    # PUR : lignes de palette (entries.ts), position tapée + lignes Farm (farmQuery.ts), sélection (navigation.ts)
-src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), capture d'un raccourci (accelerator.ts)
+src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), capture d'un raccourci (accelerator.ts), path.ts
+src/features/updates/    # PUR : contrat du moteur de mise à jour (UpdateState, UpdaterBinding)
 src/palette/             # fenêtre palette (entrée palette.html) : Palette, PaletteRow — n'importe rien de la grille
 src/lib/tauri/           # pont système (clipboard, stockage, palette, raccourcis) avec fallback navigateur
 src/components/          # composants React (rendu + interactions uniquement) : Panel, FarmPanel, DestinationForm…
-src/app/                 # App, état global, useCatalog (écriture disque AVANT mise à jour de l'état), useCopyFeedback
+src/app/                 # App, état global, useCatalog (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useCopyFeedback
 src/styles/tokens.css    # tokens DA — seule source des couleurs
 src-tauri/src/           # Rust : stockage atomique (storage.rs), import d'images (images.rs), fenêtre palette (palette.rs), raccourcis globaux (shortcuts.rs), plugins
 resources/catalog.seed.json  # seed lecture seule, coordonnées FICTIVES
@@ -46,11 +47,11 @@ tests/                   # Vitest
 6. Jamais de collage/saisie dans le jeu, lecture mémoire, sniffing, réseau, télémétrie.
 7. **Jamais de trajet réel inventé** : coordonnées fictives dans seed, tests et docs.
 8. Couleurs via `tokens.css` uniquement. Clics gauche/droit des cartes réservés à la copie / ouverture Farm.
-9. Permissions Tauri minimales.
+9. Permissions Tauri minimales. Seule exécution de programme autorisée : `open_data_dir` (`storage.rs`), qui lance l'Explorateur Windows (chemin complet sous `SystemRoot`) sur `app_data_dir()` : aucun paramètre, chemin passé comme argument distinct, sans attendre le processus, sous `cfg(windows)` uniquement. Pas de plugin opener ni shell.
 10. Éditeur : aucune mutation d'une `Destination` ni du tableau (nouveaux objets, identité conservée pour les autres) ; l'identifiant ne change jamais en modification ; l'état n'est mis à jour qu'APRÈS `saveCatalog` ; aucun fichier image n'est supprimé automatiquement.
 11. Le raccourci clavier global ignore les champs de saisie et ne fait rien quand le formulaire est ouvert.
 12. Palette : aucune règle de copie réécrite (`cardParts` / `partCommand` / `parseFarmRoute` / `farmStartCommand` / `farmResumeCommand`). Les coordonnées tapées ne servent qu'à retrouver des étapes existantes ; reprise Farm par indice, une ligne par occurrence. Entrée = clic gauche, Ctrl+Entrée = clic droit. Copier avant de masquer ; ne pas masquer si la copie échoue. Focus toujours dans le champ. Au repos : aucun minuteur. Son paquet n'embarque ni la grille, ni les panneaux.
-13. `settings.json` a deux auteurs. La clé `shortcuts` n'appartient qu'à Rust (`set_shortcut`, sous verrou) ; l'interface ne la réécrit jamais. Toute écriture conserve les clés inconnues.
+13. `settings.json` a deux auteurs. La clé `shortcuts` n'appartient qu'à Rust (`set_shortcut`, sous verrou) ; l'interface ne la réécrit jamais. Toute écriture conserve les clés inconnues, y compris dans `updates`, où l'interface ne remplace que `mode` (`manual` par défaut).
 14. Fermer la fenêtre principale quitte toute l'application (la palette masquée ne doit pas laisser un processus sans fenêtre). La palette est masquée, jamais détruite.
 
 ## Workflow Claude

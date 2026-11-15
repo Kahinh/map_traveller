@@ -34,6 +34,9 @@ Source : cahier des charges §6.3, §7, §8.
 - La palette relit `catalog.json` et `favorites.json` à chaque affichage, sans copie du catalogue.
 - `settings.json` : modèle pur dans `src/features/settings/settings.ts` (`parseSettings` tolérant, `mergeSettings` conserve les clés inconnues). La clé `shortcuts` est écrite uniquement par Rust (`shortcuts.rs`, verrou partagé avec `save_store`).
 
+- `settings.json` contient `alwaysOnTop`, `updates.mode` (`manual` par défaut) et `shortcuts` (Rust seul). Les réglages passent par `useSettings` (rien n'est écrit avant la fin du chargement ; écritures l'une après l'autre).
+- Le chemin du dossier de données ne s'écrit jamais dans l'interface : il vient de la commande `data_dir`, mise en cache par `src/lib/tauri/dataDir.ts`. `open_data_dir` l'ouvre, sans paramètre.
+
 ## Éditeur et images
 
 - Toute modification passe par `upsertDestination` / `removeDestination` (`src/features/catalog/editor.ts`), puis `saveCatalog`, puis l'état (`useCatalog`). Jamais l'inverse.

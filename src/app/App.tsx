@@ -16,18 +16,10 @@ import { CATEGORIES, type Category, type Destination } from '../features/catalog
 import { filterDestinations, type ViewFilter } from '../features/catalog/search';
 import { cardParts, partCommand, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
-import type { SettingsPatch } from '../features/settings/settings';
-import {
-  DEFAULT_SETTINGS,
-  loadFavorites,
-  loadSettings,
-  saveFavorites,
-  saveSettings,
-  type Settings,
-} from '../lib/tauri/storage';
-import { setAlwaysOnTop } from '../lib/tauri/window';
+import { loadFavorites, saveFavorites } from '../lib/tauri/storage';
 import { useCatalog } from './useCatalog';
 import { useCopyFeedback } from './useCopyFeedback';
+import { useSettings } from './useSettings';
 
 /** Un seul panneau ouvert à la fois. `key` remonte le formulaire à chaque ouverture. */
 type PanelState =
@@ -44,11 +36,13 @@ function blockContextMenu(e: MouseEvent) {
   if (!(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) e.preventDefault();
 }
 
-/** Vrai si la cible d'un évènement clavier est un champ de saisie. */
+/** Types d'`<input>` sans saisie de texte (Paramètres) : Échap doit y fermer le panneau. */
+const NON_TEXT_INPUTS = new Set(['checkbox', 'radio', 'button', 'submit', 'reset']);
+
+/** Vrai si la cible d'un évènement clavier est un champ de saisie de texte. */
 function isEditableTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
-  );
+  if (target instanceof HTMLInputElement) return !NON_TEXT_INPUTS.has(target.type);
+  return target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
 }
 
 const isCategory = (v: ViewFilter): v is Category => CATEGORIES.includes(v as Category);
@@ -62,7 +56,6 @@ function emptyMessage(view: ViewFilter, query: string): string {
 export function App() {
   const { load, destinations, save, remove } = useCatalog();
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [view, setView] = useState<ViewFilter>('all');
   const [query, setQuery] = useState('');
   const [panel, setPanel] = useState<PanelState>(null);
@@ -71,6 +64,7 @@ export function App() {
   /** Dernière position cliquée par parcours (session uniquement) ; -1 = début. */
   const [farmProgress, setFarmProgress] = useState<Record<string, number>>({});
   const { feedback, copy, notify } = useCopyFeedback();
+  const { settings, update: updateSettings } = useSettings((message) => notify(message, 'warning'));
   const searchRef = useRef<HTMLInputElement>(null);
   const favoritesRef = useRef(favorites);
   const editorSeq = useRef(0);
@@ -86,13 +80,10 @@ export function App() {
   const overlayOpen = editorOpen || settingsOpen;
 
   useEffect(() => {
-    void (async () => {
-      const [favs, sets] = await Promise.all([loadFavorites(), loadSettings()]);
+    void loadFavorites().then((favs) => {
       favoritesRef.current = favs;
       setFavorites(favs);
-      setSettings(sets);
-      void setAlwaysOnTop(sets.alwaysOnTop);
-    })();
+    });
   }, []);
 
   // Raccourcis : Échap (retour / effacer / quitter le mode gestion), Ctrl+F (recherche),
@@ -162,14 +153,6 @@ export function App() {
   const onEdit = useCallback((d: Destination) => openEditor(draftFromDestination(d)), [openEditor]);
 
   const onNew = () => openEditor(emptyDraft(isCategory(view) ? view : undefined));
-
-  /** Applique et enregistre aussitôt un réglage possédé par l'interface. */
-  const updateSettings = (patch: SettingsPatch) => {
-    const next = { ...settings, ...patch };
-    setSettings(next);
-    if (patch.alwaysOnTop !== undefined) void setAlwaysOnTop(next.alwaysOnTop);
-    void saveSettings(next);
-  };
 
   const onToggleAlwaysOnTop = () => updateSettings({ alwaysOnTop: !settings.alwaysOnTop });
 

@@ -151,6 +151,44 @@ pub fn data_dir(app: AppHandle) -> Result<String, String> {
     Ok(app_data_dir(&app)?.to_string_lossy().into_owned())
 }
 
+/// Ouvre l'Explorateur Windows sur le dossier de données (Paramètres › Données).
+///
+/// Aucun paramètre : le chemin est celui de `app_data_dir`, la fonction qui sert au stockage.
+/// L'interface ne peut donc pas faire ouvrir un autre emplacement. Exception étroite et assumée
+/// à la règle « pas d'exécution de programme » : programme fixe, argument calculé ici, aucune
+/// entrée de l'utilisateur.
+#[tauri::command]
+pub fn open_data_dir(app: AppHandle) -> Result<(), String> {
+    let dir = app_data_dir(&app)?;
+    open_in_explorer(&dir)
+}
+
+/// Lance `explorer.exe <dossier>`. Le chemin est un argument distinct (jamais concaténé dans
+/// une ligne de commande) : espaces et accents passent tels quels. `explorer.exe` renvoie
+/// souvent un code de sortie non nul même quand il réussit : on ne l'attend pas et on n'en
+/// lit pas le code ; seule une erreur de lancement est remontée.
+#[cfg(windows)]
+fn open_in_explorer(dir: &Path) -> Result<(), String> {
+    // Chemin complet de l'Explorateur : un `explorer.exe` posé à côté de l'application ne doit
+    // jamais être lancé à sa place (Windows cherche d'abord dans le dossier du programme).
+    let explorer = std::env::var_os("SystemRoot")
+        .map(|root| PathBuf::from(root).join("explorer.exe"))
+        .unwrap_or_else(|| PathBuf::from("explorer.exe"));
+    std::process::Command::new(explorer)
+        .arg(dir)
+        .spawn()
+        .map(|_child| ())
+        .map_err(|e| format!("Impossible d'ouvrir l'Explorateur Windows sur {} : {e}", dir.display()))
+}
+
+#[cfg(not(windows))]
+fn open_in_explorer(dir: &Path) -> Result<(), String> {
+    Err(format!(
+        "Ouverture du dossier disponible uniquement sous Windows. Dossier des données : {}",
+        dir.display()
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -223,5 +261,12 @@ mod tests {
         fs::write(&good, r#"{"a":1}"#).unwrap();
         assert_eq!(read_json_object(&good).get("a"), Some(&Value::from(1)));
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn open_in_explorer_is_refused_outside_windows() {
+        let err = open_in_explorer(Path::new("/tmp/map-traveller")).unwrap_err();
+        assert!(err.contains("uniquement sous Windows"));
     }
 }

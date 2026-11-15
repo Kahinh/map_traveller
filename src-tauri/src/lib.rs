@@ -1,7 +1,7 @@
 //! Map Traveller — point d'entrée Tauri.
 //!
 //! Le Rust gère uniquement : stockage local (JSON, images), fenêtres, raccourcis globaux et
-//! intégration Windows. Les règles de copie sont des fonctions pures côté TypeScript (`src/features/`).
+//! intégration Windows (dont l'ouverture du dossier de données dans l'Explorateur). Les règles de copie sont des fonctions pures côté TypeScript (`src/features/`).
 
 mod images;
 mod palette;
@@ -90,6 +90,7 @@ pub fn run() {
             storage::load_store,
             storage::save_store,
             storage::data_dir,
+            storage::open_data_dir,
             images::import_image,
             palette::hide_palette,
             shortcuts::get_shortcuts,

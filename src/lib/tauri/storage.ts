@@ -81,8 +81,9 @@ export async function loadSettings(): Promise<Settings> {
 }
 
 /**
- * Enregistre les réglages possédés par l'interface (`alwaysOnTop`). Le fichier est relu juste
- * avant : ses autres clés, dont `shortcuts` (écrit par Rust), sont réécrites telles quelles.
+ * Enregistre les réglages possédés par l'interface (`alwaysOnTop`, `updates.mode`). Le fichier
+ * est relu juste avant : ses autres clés, dont `shortcuts` (écrit par Rust) et les champs
+ * inconnus de `updates`, sont réécrites telles quelles (`mergeSettings`).
  * Dans l'application, Rust reprend de toute façon `shortcuts` du disque sous verrou
  * (`save_store`) : l'interface ne peut jamais remettre un raccourci périmé.
  */

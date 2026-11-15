@@ -31,7 +31,7 @@ Ne jamais écrire une couleur en dur dans un composant.
 ## Palette et Paramètres
 
 - Palette (`palette.html`, `src/styles/palette.css`, tokens seuls) : fenêtre fixe 560 × 380. Champ `role=combobox`, liste `role=listbox`, lignes de 40 px fixes (vignette `CardVisual`, titre + sous-titre, aperçu de ce qu'Entrée copie). Carte à deux étapes : emplacement de largeur fixe (« 2 étapes » au repos, cases 1 / 2 sur la ligne sélectionnée) : aucun saut de mise en page. Sélection souris sur `mousemove`.
-- Paramètres : engrenage dans `WindowHeader` (désactivé pendant l'édition), `SettingsPanel` avec un registre `SETTINGS_SECTIONS` et une rangée d'onglets ; un fichier par rubrique dans `src/components/settings/`. Ajouter une rubrique = une entrée du registre.
+- Paramètres : engrenage dans `WindowHeader` (désactivé pendant l'édition), `SettingsPanel` avec un registre `SETTINGS_SECTIONS` et une rangée d'onglets ; un fichier par rubrique dans `src/components/settings/`. Ajouter une rubrique = une entrée du registre. Rubriques dans l'ordre : Mises à jour, Données, Affichage, Raccourcis ; chacune reçoit `settings`, `onChange` et `updater`. Boutons radio dans `.settings__group` / `.settings__option` (explication en `.settings__option-hint`) ; valeurs sélectionnables en `.settings__value` (chemin en `.settings__path`, tronqué par le milieu, complet en infobulle). Pas de bouton « Enregistrer » : chaque réglage est écrit dès qu'il change.
 
 ## Disposition
 

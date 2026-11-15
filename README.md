@@ -97,6 +97,15 @@ Le formulaire :
 - **Parcours Farm** : le nom du parcours liste « parcours complet » puis chaque position. Le nom suivi d'une position reprend directement la suite : avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`. Si le parcours repasse par la même position, une ligne par passage est proposée.
 - **Limite** : la palette s'affiche devant le jeu en mode fenêtré ou sans bordure. En plein écran exclusif, Windows peut l'empêcher d'apparaître.
 
+### Paramètres
+
+L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enregistré dès qu'il change.
+
+- **Mises à jour** : la version installée et le mode, Manuel (par défaut : rien n'est contacté sans votre action) ou Automatique.
+- **Données** : l'emplacement réel de vos données, avec « Ouvrir le dossier » et « Copier le chemin ». Pour sauvegarder vos données, copiez ce dossier. Fermez l'application avant de modifier ces fichiers à la main.
+- **Affichage** : toujours au premier plan (même réglage que l'épingle).
+- **Raccourcis** : les deux raccourcis globaux.
+
 ### Raccourcis
 
 - `Ctrl+Alt+T` : afficher ou masquer la fenêtre (raccourci global).
@@ -139,6 +148,7 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `settings.json` | préférences (premier plan…) |
 | `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON) |
 
+- Windows contient aussi deux dossiers techniques nommés `app.maptraveller`, l'un dans `%APPDATA%` (position de la fenêtre), l'autre dans `%LOCALAPPDATA%` (cache de la vue web). Ils ne contiennent aucune donnée de l'utilisateur.
 - Au premier lancement, le catalogue d'exemple (`resources/catalog.seed.json`) est copié dans ce dossier.
 - Le catalogue est au **schéma 3**. Chaque destination peut porter `"twoStep": true` (PNJ et Donjons uniquement) et `"command2"` (commande de l'étape 2). Champs absents : `false` et `""`. `command2` est conservée même si `twoStep` vaut `false`. Un catalogue au schéma 2 est lu sans modification ; il est réécrit au schéma 3 à la prochaine sauvegarde.
 - Une version **0.1.x** refuse un `catalog.json` au schéma 3 (« version plus récente que l'application ») **sans le modifier**. Revenir à une version antérieure demande donc de restaurer une sauvegarde au schéma 2.
@@ -247,7 +257,7 @@ Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](http
 - [ ] Import / export ZIP complet, import JSON seul
 - [x] Palette de recherche globale (seconde fenêtre, reprise Farm par position, étapes 1 / 2)
 - [x] Raccourcis globaux configurables, panneau Paramètres
-- [ ] Rubriques Paramètres : mises à jour, dossier des données
+- [x] Rubriques Paramètres : mises à jour (version, mode), dossier des données, affichage
 - [ ] Validation sur Windows 11 propre, mise à l'échelle 100 % / 150 %, multi-écrans
 
 ## Licence et droits

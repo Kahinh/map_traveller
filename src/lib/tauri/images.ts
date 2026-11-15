@@ -7,6 +7,7 @@
  */
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
+import { getDataDir } from './dataDir';
 import { isTauri } from './env';
 
 /** Extensions proposées par le dialogue ; le format réel est contrôlé par Rust (`images.rs`). */
@@ -16,7 +17,7 @@ let dataDir: string | null = null;
 
 /** Mémorise le dossier de données. À attendre avant le premier rendu des cartes. */
 export async function initImages(): Promise<void> {
-  if (isTauri() && dataDir === null) dataDir = await invoke<string>('data_dir');
+  if (isTauri() && dataDir === null) dataDir = await getDataDir();
 }
 
 /** URL affichable pour une image relative, ou `null` (placeholder). */

@@ -1,6 +1,6 @@
 # CLAUDE.md — Map Traveller
 
-Application Windows flottante (Tauri 2 + Rust + React/TypeScript/Vite) qui copie dans le presse-papiers des commandes `/zaap` / `/travel` saisies par l'utilisateur. Locale, hors ligne, JSON uniquement.
+Application Windows flottante (Tauri 2 + Rust + React/TypeScript/Vite) qui copie dans le presse-papiers des commandes `/zaap` / `/travel` saisies par l'utilisateur. Locale, JSON uniquement ; aucun réseau hormis la recherche de mises à jour sur les Releases GitHub (manuelle par défaut).
 
 Spécification de référence : [docs/cahier-des-charges.md](docs/cahier-des-charges.md). En cas de doute, elle prime.
 
@@ -26,14 +26,16 @@ src/features/farm/       # PUR : parsing parcours + reprise par indice
 src/features/catalog/    # PUR : types, validation, recherche, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove)
 src/features/palette/    # PUR : lignes de palette (entries.ts), position tapée + lignes Farm (farmQuery.ts), sélection (navigation.ts)
 src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), capture d'un raccourci (accelerator.ts), path.ts
-src/features/updates/    # PUR : contrat du moteur de mise à jour (UpdateState, UpdaterBinding)
+src/features/updates/    # PUR : contrat (types.ts), machine à états, erreurs et décisions au lancement (updates.ts)
 src/palette/             # fenêtre palette (entrée palette.html) : Palette, PaletteRow — n'importe rien de la grille
 src/lib/tauri/           # pont système (clipboard, stockage, palette, raccourcis) avec fallback navigateur
 src/components/          # composants React (rendu + interactions uniquement) : Panel, FarmPanel, DestinationForm…
-src/app/                 # App, état global, useCatalog (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useCopyFeedback
+src/app/                 # App, état global, useCatalog (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useUpdater (moteur de mise à jour, monté dans App), useCopyFeedback
 src/styles/tokens.css    # tokens DA — seule source des couleurs
 src-tauri/src/           # Rust : stockage atomique (storage.rs), import d'images (images.rs), fenêtre palette (palette.rs), raccourcis globaux (shortcuts.rs), plugins
 resources/catalog.seed.json  # seed lecture seule, coordonnées FICTIVES
+scripts/make-latest-json.mjs       # index latest.json, contrôles avant et après publication
+src-tauri/tauri.release.conf.json  # surcharge des builds de tag (fichiers de mise à jour signés)
 tests/                   # Vitest
 ```
 
@@ -44,7 +46,7 @@ tests/                   # Vitest
 3. Farm : reprise par **indice d'étape** ; clic sur l'étape i copie les segments originaux après i ; dernière étape → rien + signal ; « Démarrer » → commande complète.
 4. Logique de découpe = fonctions pures testées. Aucun import Tauri/React dans `src/features/`.
 5. Données utilisateur dans `app_data_dir` ; le seed n'écrase jamais `catalog.json` ; écriture atomique + `.bak` ; chemins d'image relatifs. Schéma 3 : `twoStep` / `command2` ; un catalogue v2 est accepté avec les valeurs par défaut ; `command2` n'est jamais normalisée ni effacée.
-6. Jamais de collage/saisie dans le jeu, lecture mémoire, sniffing, réseau, télémétrie.
+6. Jamais de collage/saisie dans le jeu, lecture mémoire, sniffing, télémétrie. **Seul réseau autorisé** : la recherche (`latest.json`) et le téléchargement des mises à jour sur les Releases GitHub du dépôt, par le plugin updater ; en mode manuel (défaut), aucune requête sans clic de l'utilisateur. Aucun identifiant, aucune statistique.
 7. **Jamais de trajet réel inventé** : coordonnées fictives dans seed, tests et docs.
 8. Couleurs via `tokens.css` uniquement. Clics gauche/droit des cartes réservés à la copie / ouverture Farm.
 9. Permissions Tauri minimales. Seule exécution de programme autorisée : `open_data_dir` (`storage.rs`), qui lance l'Explorateur Windows (chemin complet sous `SystemRoot`) sur `app_data_dir()` : aucun paramètre, chemin passé comme argument distinct, sans attendre le processus, sous `cfg(windows)` uniquement. Pas de plugin opener ni shell.
@@ -52,6 +54,7 @@ tests/                   # Vitest
 11. Le raccourci clavier global ignore les champs de saisie et ne fait rien quand le formulaire est ouvert.
 12. Palette : aucune règle de copie réécrite (`cardParts` / `partCommand` / `parseFarmRoute` / `farmStartCommand` / `farmResumeCommand`). Les coordonnées tapées ne servent qu'à retrouver des étapes existantes ; reprise Farm par indice, une ligne par occurrence. Entrée = clic gauche, Ctrl+Entrée = clic droit. Copier avant de masquer ; ne pas masquer si la copie échoue. Focus toujours dans le champ. Au repos : aucun minuteur. Son paquet n'embarque ni la grille, ni les panneaux.
 13. `settings.json` a deux auteurs. La clé `shortcuts` n'appartient qu'à Rust (`set_shortcut`, sous verrou) ; l'interface ne la réécrit jamais. Toute écriture conserve les clés inconnues, y compris dans `updates`, où l'interface ne remplace que `mode` (`manual` par défaut).
+15. Mises à jour : la palette n'a aucune permission updater ni process ; l'installation n'est jamais lancée formulaire ouvert ; la clé privée de signature n'apparaît jamais dans le dépôt ni dans un journal ; ne jamais modifier `plugins.updater.pubkey` (les installations existantes ne font confiance qu'à elle) ; ne jamais activer `allowDowngrades`.
 14. Fermer la fenêtre principale quitte toute l'application (la palette masquée ne doit pas laisser un processus sans fenêtre). La palette est masquée, jamais détruite.
 
 ## Workflow Claude

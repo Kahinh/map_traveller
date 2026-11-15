@@ -2,6 +2,7 @@
 //!
 //! Le Rust gère uniquement : stockage local (JSON, images), fenêtres, raccourcis globaux et
 //! intégration Windows (dont l'ouverture du dossier de données dans l'Explorateur). Les règles de copie sont des fonctions pures côté TypeScript (`src/features/`).
+//! Les mises à jour se limitent ici à l'enregistrement des plugins `updater` et `process`.
 
 mod images;
 mod palette;
@@ -50,6 +51,10 @@ pub fn run() {
         )
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
+        // Mises à jour (issue n°5) : configuration dans `tauri.conf.json` (`plugins.updater`),
+        // toute la logique côté interface (`useUpdater`). Le plugin de processus sert à la relance.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 // Raccourcis configurables (`shortcuts.rs`) : l'action est retrouvée dans l'état géré.

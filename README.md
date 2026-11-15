@@ -2,7 +2,7 @@
 
 Petite application Windows **flottante et compacte**, à garder au-dessus du jeu (mode fenêtré ou sans bordure). Elle affiche une bibliothèque de cartes illustrées : un clic copie la commande `/travel` voulue dans le presse-papiers, il ne reste qu'à la **coller soi-même** dans le chat du jeu.
 
-> L'application ne colle jamais rien dans le jeu. Elle ne lit pas sa mémoire, n'intercepte pas le réseau et n'automatise aucune action de jeu. Elle fonctionne hors ligne, sans compte ni télémétrie.
+> L'application ne colle jamais rien dans le jeu. Elle ne lit pas sa mémoire, n'intercepte pas le réseau et n'automatise aucune action de jeu. Elle fonctionne hors ligne, sans compte ni télémétrie. Sa seule connexion possible est la recherche de mises à jour auprès de GitHub : par défaut (mode manuel), elle n'a lieu que lorsque vous cliquez sur « Rechercher des mises à jour ». Voir [Mises à jour](#mises-à-jour).
 
 Spécification complète : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
 
@@ -101,7 +101,7 @@ Le formulaire :
 
 L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enregistré dès qu'il change.
 
-- **Mises à jour** : la version installée et le mode, Manuel (par défaut : rien n'est contacté sans votre action) ou Automatique.
+- **Mises à jour** : la version installée, le mode, Manuel (par défaut : rien n'est contacté sans votre action) ou Automatique, et le bouton « Rechercher des mises à jour ». Détails dans [Mises à jour](#mises-à-jour).
 - **Données** : l'emplacement réel de vos données, avec « Ouvrir le dossier » et « Copier le chemin ». Pour sauvegarder vos données, copiez ce dossier. Fermez l'application avant de modifier ces fichiers à la main.
 - **Affichage** : toujours au premier plan (même réglage que l'épingle).
 - **Raccourcis** : les deux raccourcis globaux.
@@ -129,12 +129,32 @@ Node.js et Rust ne sont pas nécessaires. Si WebView2 est absent, l'installateur
 
 L'exécutable n'est pas signé : Windows SmartScreen peut afficher un avertissement (« Informations complémentaires » → « Exécuter quand même »).
 
-### Mettre à jour
+### Mises à jour
+
+> **Versions 0.4.0 et antérieures** : elles ne savent pas se mettre à jour seules. Installez une dernière fois la nouvelle version à la main (voir « Mise à jour manuelle » ci-dessous) ; les suivantes pourront se mettre à jour depuis l'application.
+
+Le mode se choisit dans **Paramètres → Mises à jour** :
+
+| Mode | Comportement |
+|---|---|
+| **Manuel** (par défaut) | Aucune connexion au lancement, aucune en arrière-plan : **rien ne part sans votre clic**. « Rechercher des mises à jour » indique si vous avez la dernière version ou propose la nouvelle avec « Installer et redémarrer » ; rien n'est téléchargé avant ce second clic. |
+| **Automatique** | Quelques secondes après chaque lancement, une vérification a lieu. Si une nouvelle version existe, elle est téléchargée (indication discrète en bas de la fenêtre), puis installée, et l'application redémarre. Si un formulaire de destination est ouvert, l'installation attend sa fermeture. Sans réseau, ou si GitHub ne répond pas, rien ne s'affiche et l'application reste utilisable ; le résultat reste consultable dans les Paramètres. |
+
+- **Ce qui est envoyé à GitHub** : une vérification est une simple requête HTTPS vers la page des Releases du dépôt (`latest.json`), suivie, s'il y a une nouvelle version et que vous l'installez, du téléchargement de l'installateur. GitHub voit votre adresse IP et le fichier demandé (l'index, puis l'installateur de la version annoncée), comme pour tout téléchargement, ainsi que l'en-tête technique standard du composant de mise à jour (son nom et sa version, pas ceux de l'application ni les vôtres). Aucun identifiant, aucune statistique, aucune donnée de votre catalogue n'est envoyé ; il n'y a pas de télémétrie.
+- **Sécurité** : chaque installateur publié est signé. L'application vérifie cette signature avant d'installer et refuse un fichier non signé ou modifié ; rien n'est alors installé.
+- **Installation** : l'installateur s'exécute en mode passif (une barre de progression, aucune question), puis relance l'application. Après le redémarrage, le message « Mise à jour X.Y.Z installée » s'affiche une fois.
+- **Données** : le catalogue, les favoris, les images et les réglages sont conservés ; ils sont dans `%APPDATA%\MapTraveller\`, que l'installateur ne touche pas.
+- Le système de mise à jour ne revient jamais à une version antérieure.
+- L'installateur n'étant pas signé par un certificat Windows, SmartScreen ou l'antivirus peuvent réagir à son lancement.
+
+#### Mise à jour manuelle
+
+Toujours possible, quel que soit le mode, et seule possible depuis la 0.4.0 ou une version antérieure :
 
 1. Télécharger le nouveau `.exe` depuis la dernière Release.
 2. Fermer Map Traveller, puis lancer l'installateur.
 
-L'installateur remplace l'ancienne version sur place, sans désinstallation préalable. Le catalogue, les favoris, les images et les réglages sont conservés : ils sont dans `%APPDATA%\MapTraveller\`, que l'installateur ne touche pas.
+L'installateur remplace l'ancienne version sur place, sans désinstallation préalable, et conserve vos données.
 
 ## Données utilisateur
 
@@ -145,7 +165,7 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `catalog.json` | vos destinations (éditable) |
 | `catalog.json.bak` | version précédente, restaurable |
 | `favorites.json` | identifiants des favoris |
-| `settings.json` | préférences (premier plan…) |
+| `settings.json` | préférences (premier plan, raccourcis, mode de mise à jour et date de la dernière vérification…) |
 | `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON) |
 
 - Windows contient aussi deux dossiers techniques nommés `app.maptraveller`, l'un dans `%APPDATA%` (position de la fenêtre), l'autre dans `%LOCALAPPDATA%` (cache de la vue web). Ils ne contiennent aucune donnée de l'utilisateur.
@@ -192,9 +212,10 @@ src/
   features/commands/   # PUR — clic gauche / clic droit, zones d'une carte (cardParts)
   features/farm/       # PUR — parsing du parcours, reprise par indice
   features/catalog/    # PUR — schéma, validation, recherche, tri, éditeur (editor.ts)
-  lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images
+  features/updates/    # PUR — machine à états des mises à jour, messages d'erreur, décisions au lancement
+  lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images, mises à jour (updater.ts)
   components/          # React : WindowHeader, CategoryTabs, CompactCard, Panel, FarmPanel, DestinationForm
-  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useCopyFeedback
+  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useCopyFeedback, useUpdater
   styles/              # tokens.css (DA) + app.css
 src-tauri/
   src/lib.rs           # plugins, raccourci global, instance unique
@@ -202,14 +223,16 @@ src-tauri/
   src/images.rs        # import d'images : taille, format réel, copie sous nom unique
   capabilities/        # permissions minimales
   tauri.conf.json
+  tauri.release.conf.json  # surcharge des builds de tag : fichiers de mise à jour signés
 resources/catalog.seed.json   # seed lecture seule (fictif)
+scripts/make-latest-json.mjs  # latest.json + contrôles avant et après publication
 tests/                        # Vitest
 .github/workflows/windows.yml # CI + installateur
 ```
 
 Principe : les règles de découpe des commandes sont des **fonctions pures**, sans dépendance à Tauri ni React. ESLint l'impose et Vitest les teste. Le Rust ne gère que les fichiers et l'intégration Windows.
 
-**Stack :** Tauri 2 · Rust stable · React 19 · TypeScript · Vite · Vitest. JSON local uniquement : pas de SQLite, de serveur ni de cloud.
+**Stack :** Tauri 2 · Rust stable · React 19 · TypeScript · Vite · Vitest. JSON local uniquement : pas de SQLite, de serveur ni de cloud. Seul accès réseau : la recherche et le téléchargement des mises à jour sur les Releases GitHub (plugins `updater` et `process` de Tauri).
 
 ### CI / publication
 
@@ -217,7 +240,7 @@ Principe : les règles de découpe des commandes sont des **fonctions pures**, s
 
 Le workflow tourne sur push et PR vers `main`, en manuel (`workflow_dispatch`) et sur tag `v*`.
 
-Un tag `vX.Y.Z` **publie en plus une Release GitHub** avec le `.exe` directement téléchargeable et des notes générées à partir des commits. Avant de construire, le workflow vérifie que le tag correspond à la version du code.
+Un tag `vX.Y.Z` **publie en plus une Release GitHub** avec le `.exe` directement téléchargeable, sa signature `.sig`, l'index `latest.json` des mises à jour et des notes générées à partir des commits. Avant de construire, le workflow vérifie que le tag correspond à la version du code ; après publication, il contrôle la Release (voir « Mises à jour automatiques »).
 
 Pour publier une version :
 
@@ -229,6 +252,49 @@ git push origin main v0.2.0      # la CI construit et publie la Release (~15–2
 ```
 
 `npm run version:set` sans argument affiche la version de chaque fichier.
+
+### Mises à jour automatiques (mainteneur)
+
+**Un tag atteint désormais les installations existantes** : toute Release publiée est proposée (mode manuel) ou installée sans question (mode automatique) chez les utilisateurs. Ne jamais taguer un commit dont le build `main` n'est pas vert.
+
+**Clé de signature.** Les mises à jour sont signées par une clé propre à l'application (signature minisign de Tauri, gratuite, distincte d'un certificat Windows).
+
+- La **clé publique** est dans `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). Elle n'est pas secrète.
+- La **clé privée** et son **mot de passe** sont uniquement dans les secrets GitHub Actions du dépôt (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) et dans une copie hors dépôt (gestionnaire de mots de passe du propriétaire). Ils ne sont jamais commités, jamais écrits dans un fichier du dépôt, jamais affichés dans un journal.
+- **Clé perdue** : plus aucune mise à jour ne peut être signée pour les installations existantes. Il faut générer une nouvelle paire (`npx tauri signer generate`), mettre la nouvelle clé publique dans `tauri.conf.json`, publier, et prévenir les utilisateurs qu'une réinstallation manuelle est nécessaire. Il n'existe pas de rattrapage automatique.
+- **Clé divulguée** : un tiers pourrait signer une fausse mise à jour, mais il lui faudrait aussi pouvoir publier dans les Releases du dépôt. Remplacer immédiatement la paire de clés (même procédure que la perte), remplacer les secrets, vérifier les accès au dépôt. Les installations existantes font confiance à l'ancienne clé publique jusqu'à leur réinstallation manuelle.
+- Les builds de `main`, des pull requests et `workflow_dispatch` ne reçoivent pas les secrets et ne signent rien. Seul un tag `vX.Y.Z` lance le build signé (`--config src-tauri/tauri.release.conf.json`).
+
+**Une Release contient trois fichiers** :
+
+| Fichier | Rôle |
+|---|---|
+| `MapTraveller_X.Y.Z_x64-setup.exe` | l'installateur |
+| `MapTraveller_X.Y.Z_x64-setup.exe.sig` | sa signature |
+| `latest.json` | l'index lu par l'application, généré par `scripts/make-latest-json.mjs` |
+
+L'application interroge `https://github.com/Kahinh/map_traveller/releases/latest/download/latest.json`, que GitHub redirige vers la dernière Release **stable** (ni brouillon, ni pré-version). `latest.json` pointe vers l'installateur de la Release du tag exact.
+
+**Contrôles.** Avant publication, `make-latest-json.mjs prepare` vérifie la signature avec la clé publique de `tauri.conf.json` (comme l'application), le nom et la version de l'installateur, puis écrit `latest.json`. Après publication, `make-latest-json.mjs verify` relit `latest.json` depuis la Release du tag et depuis l'adresse de l'application, contrôle version, adresse et signature, et télécharge l'installateur publié pour revérifier sa signature. Si ce contrôle échoue, le run est rouge alors que la Release est publique : corriger aussitôt (voir ci-dessous).
+
+**En cas d'échec.**
+
+- *Signature absente ou refusée au build* (étape « Build Tauri signé » ou « Préparer ») : rien n'est publié. Vérifier que les deux secrets existent et correspondent à la clé publique, puis publier le numéro suivant (ne jamais déplacer un tag).
+- *Contrôle après publication en échec* : supprimer `latest.json` de la Release fautive (l'application ne propose alors rien et n'affiche aucune erreur en mode automatique), ou repasser la Release en brouillon, puis publier le numéro suivant.
+- Solution de secours toujours valable pour les utilisateurs : réinstaller à la main depuis la page des Releases.
+- Si le dépôt redevient privé, les mises à jour cessent sans message en mode automatique.
+
+**Protocole de test en deux versions** (machine Windows réelle ; rien de ceci n'est testable dans le navigateur) :
+
+1. Publier une version **N** contenant le mécanisme ; l'installer à la main.
+2. Mode manuel : « Rechercher » → « dernière version ». Vérifier qu'aucune requête ne part au lancement (Moniteur de ressources, ou lancement hors ligne).
+3. Publier une version **N+1** (un simple correctif suffit).
+4. Depuis N, en mode manuel : N+1 est proposée, l'installation aboutit, l'application redémarre en N+1 avec « Mise à jour N+1 installée » ; catalogue, images, favoris et réglages intacts.
+5. Réinstaller N, passer en automatique, relancer : la mise à jour se fait seule. Recommencer avec un formulaire ouvert pendant le téléchargement : l'installation attend sa fermeture.
+6. Erreurs : réseau coupé au lancement (aucun message, application utilisable) ; réseau coupé pendant le téléchargement (l'ancienne version reste en place) ; « Rechercher » hors ligne (message clair).
+7. Noter le comportement de SmartScreen et de l'antivirus.
+
+Ne présenter la fonction comme fiable qu'après l'étape 5.
 
 ### Outillage Claude Code
 
@@ -258,6 +324,7 @@ Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](http
 - [x] Palette de recherche globale (seconde fenêtre, reprise Farm par position, étapes 1 / 2)
 - [x] Raccourcis globaux configurables, panneau Paramètres
 - [x] Rubriques Paramètres : mises à jour (version, mode), dossier des données, affichage
+- [ ] Mises à jour manuelles et automatiques depuis les Releases signées (livrées, à valider par le protocole en deux versions)
 - [ ] Validation sur Windows 11 propre, mise à l'échelle 100 % / 150 %, multi-écrans
 
 ## Licence et droits

@@ -16,10 +16,12 @@ import { CATEGORIES, type Category, type Destination } from '../features/catalog
 import { filterDestinations, type ViewFilter } from '../features/catalog/search';
 import { cardParts, partCommand, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
+import { describeUpdateState } from '../features/updates/types';
 import { loadFavorites, saveFavorites } from '../lib/tauri/storage';
 import { useCatalog } from './useCatalog';
 import { useCopyFeedback } from './useCopyFeedback';
 import { useSettings } from './useSettings';
+import { useUpdater } from './useUpdater';
 
 /** Un seul panneau ouvert à la fois. `key` remonte le formulaire à chaque ouverture. */
 type PanelState =
@@ -64,7 +66,7 @@ export function App() {
   /** Dernière position cliquée par parcours (session uniquement) ; -1 = début. */
   const [farmProgress, setFarmProgress] = useState<Record<string, number>>({});
   const { feedback, copy, notify } = useCopyFeedback();
-  const { settings, update: updateSettings } = useSettings((message) => notify(message, 'warning'));
+  const { settings, loaded: settingsLoaded, update: updateSettings } = useSettings((message) => notify(message, 'warning'));
   const searchRef = useRef<HTMLInputElement>(null);
   const favoritesRef = useRef(favorites);
   const editorSeq = useRef(0);
@@ -78,6 +80,21 @@ export function App() {
   const settingsOpen = panel?.type === 'settings';
   /** Panneau plein écran (formulaire, paramètres) : la grille et la barre d'outils sont inertes. */
   const overlayOpen = editorOpen || settingsOpen;
+
+  // Moteur de mise à jour au niveau de l'application : le mode automatique fonctionne panneau
+  // fermé ; l'installation (qui ferme l'application) attend la fermeture du formulaire.
+  const { binding: updater, state: updateState } = useUpdater({
+    settings,
+    settingsLoaded,
+    updateSettings,
+    installBlocked: editorOpen,
+    notify,
+  });
+  // Indicateur discret dans la bulle d'état pendant un téléchargement ou une installation, hors
+  // Paramètres (la rubrique affiche déjà l'état). Un message ponctuel (copie…) reste prioritaire.
+  const updateBusy =
+    updateState.status === 'downloading' || updateState.status === 'ready' || updateState.status === 'installing';
+  const updateIndicator = updateBusy && !settingsOpen ? describeUpdateState(updateState, null) : null;
 
   useEffect(() => {
     void loadFavorites().then((favs) => {
@@ -350,16 +367,23 @@ export function App() {
         <SettingsPanel
           section={panel.section}
           settings={settings}
+          updater={updater}
           onSectionChange={onSettingsSection}
           onChange={updateSettings}
           onClose={() => setPanel(null)}
         />
       )}
 
-      {feedback && (
+      {feedback ? (
         <div className={`status${feedback.kind === 'warning' ? ' is-warning' : ''}`} role="status">
           {feedback.text}
         </div>
+      ) : (
+        updateIndicator && (
+          <div className="status" role="status">
+            {updateIndicator}
+          </div>
+        )
       )}
     </div>
   );

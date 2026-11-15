@@ -81,7 +81,8 @@ export async function loadSettings(): Promise<Settings> {
 }
 
 /**
- * Enregistre les réglages possédés par l'interface (`alwaysOnTop`, `updates.mode`). Le fichier
+ * Enregistre les réglages possédés par l'interface (`alwaysOnTop`, `updates.mode` et les champs
+ * définis du moteur de mise à jour : `lastCheckedAt`, `lastSeenVersion`, `lastAutoInstallVersion`). Le fichier
  * est relu juste avant : ses autres clés, dont `shortcuts` (écrit par Rust) et les champs
  * inconnus de `updates`, sont réécrites telles quelles (`mergeSettings`).
  * Dans l'application, Rust reprend de toute façon `shortcuts` du disque sous verrou

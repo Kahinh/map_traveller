@@ -159,6 +159,64 @@ describe('réglages des mises à jour', () => {
   });
 });
 
+describe('réglages du moteur de mise à jour (lastCheckedAt, lastSeenVersion, lastAutoInstallVersion)', () => {
+  it('absents (ancien fichier) : non définis, sans erreur', () => {
+    const u = parseSettings({ updates: { mode: 'auto' } }).updates;
+    expect(u).toEqual({ mode: 'auto' });
+    expect('lastCheckedAt' in u).toBe(false);
+    expect('lastSeenVersion' in u).toBe(false);
+    expect(parseSettings({ alwaysOnTop: false }).updates).toEqual({ mode: 'manual' });
+  });
+
+  it('valeurs valides lues telles quelles', () => {
+    expect(
+      parseSettings({ updates: { mode: 'auto', lastCheckedAt: 1700000000000, lastSeenVersion: '9.0.0', lastAutoInstallVersion: '9.0.1' } })
+        .updates,
+    ).toEqual({ mode: 'auto', lastCheckedAt: 1700000000000, lastSeenVersion: '9.0.0', lastAutoInstallVersion: '9.0.1' });
+  });
+
+  it('valeurs invalides ignorées champ par champ, le mode reste lu', () => {
+    for (const lastCheckedAt of ['1700000000000', -1, 1.5, Number.NaN, null, {}, 2 ** 60]) {
+      expect(parseSettings({ updates: { mode: 'auto', lastCheckedAt } }).updates).toEqual({ mode: 'auto' });
+    }
+    for (const version of ['', 9, null, ['9.0.0'], 'a b', 'x'.repeat(65), '9.0.0\n']) {
+      expect(parseSettings({ updates: { lastSeenVersion: version, lastAutoInstallVersion: version } }).updates).toEqual({
+        mode: 'manual',
+      });
+    }
+  });
+
+  it('applySettingsPatch : change un champ sans toucher aux autres ; undefined ne remplace rien', () => {
+    const base: Settings = { ...DEFAULT_SETTINGS, updates: { mode: 'auto', lastSeenVersion: '9.0.0' } };
+    expect(applySettingsPatch(base, { updates: { lastCheckedAt: 5 } }).updates).toEqual({
+      mode: 'auto',
+      lastSeenVersion: '9.0.0',
+      lastCheckedAt: 5,
+    });
+    expect(applySettingsPatch(base, { updates: { lastSeenVersion: undefined, mode: undefined } }).updates).toEqual(base.updates);
+    expect(base.updates).toEqual({ mode: 'auto', lastSeenVersion: '9.0.0' });
+  });
+
+  it('mergeSettings : écrit les champs définis, conserve les inconnus et un champ connu non défini', () => {
+    const raw = { updates: { mode: 'manual', futur: 1, lastSeenVersion: '8.0.0', lastCheckedAt: 'illisible' } };
+    const settings: Settings = { ...DEFAULT_SETTINGS, updates: { mode: 'auto', lastCheckedAt: 7 } };
+    expect(mergeSettings(raw, settings).updates).toEqual({
+      mode: 'auto',
+      futur: 1,
+      lastSeenVersion: '8.0.0',
+      lastCheckedAt: 7,
+    });
+    expect(raw.updates.lastCheckedAt).toBe('illisible');
+  });
+
+  it('relecture : ce qui est écrit se relit à l’identique', () => {
+    const next = applySettingsPatch(DEFAULT_SETTINGS, {
+      updates: { lastCheckedAt: 1700000000000, lastSeenVersion: '9.0.0', lastAutoInstallVersion: '9.0.1' },
+    });
+    expect(parseSettings(mergeSettings({ updates: { futur: true } }, next)).updates).toEqual(next.updates);
+  });
+});
+
 describe('applySettingsPatch', () => {
   const base: Settings = {
     alwaysOnTop: true,

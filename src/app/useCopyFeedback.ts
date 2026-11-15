@@ -30,10 +30,11 @@ export function useCopyFeedback() {
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const flash = useCallback((next: CopyFeedback) => {
+  const flash = useCallback((next: CopyFeedback, durationMs?: number) => {
     window.clearTimeout(timer.current);
     setFeedback(next);
-    timer.current = window.setTimeout(() => setFeedback(null), next.kind === 'copied' ? COPIED_MS : WARNING_MS);
+    const ms = durationMs ?? (next.kind === 'copied' ? COPIED_MS : WARNING_MS);
+    timer.current = window.setTimeout(() => setFeedback(null), ms);
   }, []);
 
   /**
@@ -53,9 +54,13 @@ export function useCopyFeedback() {
     [flash],
   );
 
-  /** Message bref dans la bulle d'état, sans lien avec une carte (ex. « Destination enregistrée »). */
+  /**
+   * Message bref dans la bulle d'état, sans lien avec une carte (ex. « Destination enregistrée »).
+   * `durationMs` remplace la durée par défaut du type de message.
+   */
   const notify = useCallback(
-    (text: string, kind: FeedbackKind = 'copied') => flash({ key: NOTICE_KEY, kind, text }),
+    (text: string, kind: FeedbackKind = 'copied', durationMs?: number) =>
+      flash({ key: NOTICE_KEY, kind, text }, durationMs),
     [flash],
   );
 

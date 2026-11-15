@@ -15,10 +15,14 @@ const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
  *   écrite est toujours la plus récente.
  * - Avant la fin du chargement, `update` ne fait rien : écrire à ce moment remplacerait les
  *   réglages du fichier par les valeurs par défaut.
- * - `update` est stable.
+ * - `update` est stable. Il renvoie une promesse résolue une fois CE changement écrit (ou son
+ *   échec signalé) : elle ne rejette jamais. Le moteur de mise à jour l'attend avant de lancer
+ *   l'installateur, qui ferme l'application.
+ * - `loaded` passe à `true` une fois le fichier lu : avant, `settings` vaut les valeurs par défaut.
  */
 export function useSettings(onSaveError?: (message: string) => void) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [loaded, setLoaded] = useState(false);
   /** Derniers réglages connus ; `null` tant qu'ils ne sont pas chargés. */
   const settingsRef = useRef<Settings | null>(null);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
@@ -34,6 +38,7 @@ export function useSettings(onSaveError?: (message: string) => void) {
       if (!alive) return;
       settingsRef.current = loaded;
       setSettings(loaded);
+      setLoaded(true);
       void setAlwaysOnTop(loaded.alwaysOnTop);
     });
     return () => {
@@ -41,9 +46,9 @@ export function useSettings(onSaveError?: (message: string) => void) {
     };
   }, []);
 
-  const update = useCallback((patch: SettingsPatch) => {
+  const update = useCallback((patch: SettingsPatch): Promise<void> => {
     const current = settingsRef.current;
-    if (current === null) return;
+    if (current === null) return Promise.resolve();
     const next = applySettingsPatch(current, patch);
     settingsRef.current = next;
     setSettings(next);
@@ -51,7 +56,8 @@ export function useSettings(onSaveError?: (message: string) => void) {
     saveQueue.current = saveQueue.current
       .then(() => saveSettings(next))
       .catch((e: unknown) => onSaveErrorRef.current?.(`Réglages non enregistrés : ${errorText(e)}`));
+    return saveQueue.current;
   }, []);
 
-  return { settings, update };
+  return { settings, loaded, update };
 }

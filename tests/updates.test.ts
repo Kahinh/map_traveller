@@ -13,6 +13,7 @@ const STATES: UpdateState[] = [
   { status: 'up-to-date', checkedAt: 0 },
   { status: 'available', version: '9.0.0', notes: '' },
   { status: 'downloading', version: '9.0.0', received: 0, total: null },
+  { status: 'ready', version: '9.0.0' },
   { status: 'installing', version: '9.0.0' },
   { status: 'error', message: 'Hors ligne.', retryable: true },
 ];
@@ -60,6 +61,12 @@ describe('describeUpdateState', () => {
     expect(d(-5, 200)).toContain('0 %');
     expect(d(50, null)).not.toContain('%');
     expect(d(50, 0)).not.toContain('%');
+  });
+
+  it('prête : version citée, attente du formulaire expliquée', () => {
+    const text = describeUpdateState({ status: 'ready', version: '9.0.0' }, null);
+    expect(text).toContain('9.0.0');
+    expect(text).toContain('formulaire');
   });
 
   it('erreur : message du moteur tel quel', () => {

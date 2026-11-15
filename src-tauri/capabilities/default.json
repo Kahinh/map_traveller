@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions minimales de la fenêtre principale (CdC §10). Pas de shell, pas de http, pas de fs générique. La version affichée dans les Paramètres (getVersion) est couverte par core:default (core:app:allow-version). L'ouverture du dossier de données passe par la commande Rust open_data_dir, sans paramètre ni permission : aucun plugin opener.",
+  "description": "Permissions minimales de la fenêtre principale (CdC §10). Pas de shell, pas de http, pas de fs générique. La version affichée dans les Paramètres (getVersion) est couverte par core:default (core:app:allow-version). L'ouverture du dossier de données passe par la commande Rust open_data_dir, sans paramètre ni permission : aucun plugin opener. Mises à jour (issue n°5), fenêtre principale uniquement, jamais la palette : updater:allow-check = interroger l'index latest.json des Releases GitHub (seule adresse possible, fixée dans tauri.conf.json, plugins.updater.endpoints) ; updater:allow-download = télécharger l'installateur annoncé, dont le plugin vérifie la signature avant de le rendre ; updater:allow-install = lancer cet installateur vérifié (mode passif), une fois le formulaire fermé, ce qui ferme l'application ; process:allow-restart = relancer l'application après l'installation (seule permission du plugin de processus : pas de allow-exit). updater:allow-download-and-install n'est pas accordée : le téléchargement et l'installation sont séparés pour attendre la fermeture du formulaire entre les deux. La libération de la ressource Update (Update.close) est couverte par core:default (core:resources).",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -14,6 +14,10 @@
     "core:window:allow-set-always-on-top",
     "clipboard-manager:allow-write-text",
     "dialog:allow-open",
-    "dialog:allow-ask"
+    "dialog:allow-ask",
+    "updater:allow-check",
+    "updater:allow-download",
+    "updater:allow-install",
+    "process:allow-restart"
   ]
 }

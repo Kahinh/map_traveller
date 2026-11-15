@@ -10,9 +10,11 @@ Source : cahier des charges §11.
 ## Workflow `.github/workflows/windows.yml`
 
 - `windows-latest`, déclenché sur `push`/`pull_request` vers `main`, `workflow_dispatch` et tags `v*`.
-- Étapes : Node LTS + cache npm → Rust stable + cache cargo → `npm ci` → `npm run typecheck` → `npm run lint` → `npm test` → `npx tauri build --bundles nsis`.
+- Étapes communes : Node LTS + cache npm → Rust stable + cache cargo → `npm ci` → `npm run typecheck` → `npm run lint` → `npm test` → `cargo test`.
+- Push `main`, PR et `workflow_dispatch` : `npx tauri build --bundles nsis`, **non signé, sans aucun secret**.
+- Tag `v*` : `npx tauri build --bundles nsis --config src-tauri/tauri.release.conf.json`, avec `TAURI_SIGNING_PRIVATE_KEY` et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` dans l'environnement de **cette étape seulement** ; puis `node scripts/make-latest-json.mjs prepare --tag vX.Y.Z` (vérifie la signature avec la clé publique, écrit `release/`).
 - Artefact : `src-tauri/target/release/bundle/nsis/*.exe` (ex. `MapTraveller_1.0.0_x64-setup.exe`).
-- Sur tag `v*` : vérification tag = version (`scripts/version.mjs --check`), puis **Release GitHub publiée** (non brouillon, `make_latest`) avec le `.exe` et des notes générées.
+- Sur tag `v*` : vérification tag = version (`scripts/version.mjs --check`), puis **Release GitHub publiée** (non brouillon, `make_latest`) avec **trois fichiers** : `MapTraveller_X.Y.Z_x64-setup.exe`, sa signature `.exe.sig` et `latest.json` ; puis `node scripts/make-latest-json.mjs verify --tag vX.Y.Z`, qui relit l'index publié et retélécharge l'installateur.
 
 ## Versionnement
 
@@ -35,7 +37,14 @@ Cas particuliers :
 
 ## Mises à jour
 
-Manuelles : l'utilisateur télécharge le nouvel installateur depuis la dernière Release ; NSIS met à jour sur place, les données `%APPDATA%\MapTraveller` sont conservées. Dépôt public : un auto-updater Tauri (plugin updater + `latest.json` signé dans la Release) est possible plus tard ; ne jamais embarquer de jeton dans l'app.
+Plugin updater de Tauri, index `https://github.com/Kahinh/map_traveller/releases/latest/download/latest.json`, installation NSIS passive. Mode manuel par défaut, automatique au choix (Paramètres → Mises à jour). Les données `%APPDATA%\MapTraveller` sont conservées.
+
+- **Un tag atteint directement les installations existantes** : proposé en mode manuel, installé sans question en mode automatique. Ne jamais taguer un commit dont le build `main` n'est pas vert.
+- Clé publique dans `tauri.conf.json` (`plugins.updater.pubkey`) : ne jamais la modifier. Clé privée et mot de passe : uniquement dans les secrets GitHub, et une copie hors dépôt chez le propriétaire. Clé perdue = plus aucune mise à jour possible pour les installations existantes.
+- Échec de l'étape « Préparer » (signature absente, mot de passe faux, clé qui ne correspond pas) : rien n'est publié. Faire corriger les secrets par le propriétaire, puis publier le numéro suivant.
+- Échec de l'étape « Contrôler » alors que la Release est publique : supprimer `latest.json` de cette Release (l'application ne voit alors rien), puis publier le numéro suivant.
+- Les versions 0.4.0 et antérieures n'ont pas le mécanisme : elles demandent une dernière installation manuelle.
+- Ne jamais embarquer de jeton dans l'application.
 
 ## Diagnostic d'un échec
 
@@ -43,4 +52,4 @@ Manuelles : l'utilisateur télécharge le nouvel installateur depuis la dernièr
 
 ## Interdits
 
-Pas de signature factice, pas de contournement SmartScreen, pas de secret en clair dans le workflow.
+Pas de signature factice, pas de contournement SmartScreen, pas de secret en clair dans le workflow. Ne jamais afficher l'environnement d'une étape qui reçoit les secrets. Ne jamais activer `allowDowngrades`. Ne jamais déplacer un tag publié.

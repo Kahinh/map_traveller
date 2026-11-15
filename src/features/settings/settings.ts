@@ -5,6 +5,8 @@
  *   jamais d'erreur. L'ancien format `{ "alwaysOnTop": … }` reste valide.
  * - Écriture : les clés inconnues du fichier sont CONSERVÉES (une autre version a pu les écrire),
  *   y compris à l'intérieur de l'objet `updates`.
+ * - `updates.lastCheckedAt`, `updates.lastSeenVersion` et `updates.lastAutoInstallVersion` sont
+ *   écrits par le moteur de mise à jour (`useUpdater`) ; absents ou invalides → non définis.
  * - `shortcuts` appartient à Rust (`set_shortcut`) : l'interface le lit mais ne l'écrit jamais ;
  *   `mergeSettings` le reprend tel quel du fichier, et Rust le protège de son côté (`save_store`).
  */
@@ -17,6 +19,12 @@ export const UPDATE_MODES: readonly UpdateMode[] = ['manual', 'auto'];
 
 export interface UpdateSettings {
   mode: UpdateMode;
+  /** Date (ms depuis 1970) de la dernière recherche aboutie ; absente si jamais. */
+  lastCheckedAt?: number;
+  /** Dernière version de l'application lancée : sert à annoncer une mise à jour une seule fois. */
+  lastSeenVersion?: string;
+  /** Dernière version dont l'installation AUTOMATIQUE a été lancée (garde-fou anti-boucle). */
+  lastAutoInstallVersion?: string;
 }
 
 export interface Settings {
@@ -47,6 +55,39 @@ export function isUpdateMode(v: unknown): v is UpdateMode {
   return UPDATE_MODES.includes(v as UpdateMode);
 }
 
+/** Horodatage plausible : entier positif ou nul ; sinon `undefined`. */
+function readTimestamp(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : undefined;
+}
+
+/** Numéro de version plausible (`0.5.0`, `1.2.3-beta.1`) ; sinon `undefined`. */
+const VERSION_PATTERN = /^[0-9A-Za-z.+-]{1,64}$/;
+function readVersion(v: unknown): string | undefined {
+  return typeof v === 'string' && VERSION_PATTERN.test(v) ? v : undefined;
+}
+
+/** Champs de `updates` lus d'un objet quelconque : seuls les champs valides sont présents. */
+function parseUpdateSettings(updates: Record<string, unknown>): UpdateSettings {
+  const result: UpdateSettings = { mode: isUpdateMode(updates.mode) ? updates.mode : DEFAULT_SETTINGS.updates.mode };
+  const lastCheckedAt = readTimestamp(updates.lastCheckedAt);
+  const lastSeenVersion = readVersion(updates.lastSeenVersion);
+  const lastAutoInstallVersion = readVersion(updates.lastAutoInstallVersion);
+  if (lastCheckedAt !== undefined) result.lastCheckedAt = lastCheckedAt;
+  if (lastSeenVersion !== undefined) result.lastSeenVersion = lastSeenVersion;
+  if (lastAutoInstallVersion !== undefined) result.lastAutoInstallVersion = lastAutoInstallVersion;
+  return result;
+}
+
+/** Champs de `updates` définis (valeur autre que `undefined`), dans un nouvel objet. */
+function definedUpdateFields(updates: Partial<UpdateSettings>): Partial<UpdateSettings> {
+  const result: Partial<UpdateSettings> = {};
+  if (updates.mode !== undefined) result.mode = updates.mode;
+  if (updates.lastCheckedAt !== undefined) result.lastCheckedAt = updates.lastCheckedAt;
+  if (updates.lastSeenVersion !== undefined) result.lastSeenVersion = updates.lastSeenVersion;
+  if (updates.lastAutoInstallVersion !== undefined) result.lastAutoInstallVersion = updates.lastAutoInstallVersion;
+  return result;
+}
+
 /** Réglages lus d'un contenu JSON quelconque. Ne lève jamais. */
 export function parseSettings(input: unknown): Settings {
   const data = isRecord(input) ? input : {};
@@ -62,7 +103,7 @@ export function parseSettings(input: unknown): Settings {
   return {
     // Comportement historique : seul `false` désactive le premier plan.
     alwaysOnTop: data.alwaysOnTop !== false,
-    updates: { mode: isUpdateMode(updates.mode) ? updates.mode : DEFAULT_SETTINGS.updates.mode },
+    updates: parseUpdateSettings(updates),
     shortcuts: { toggleMain, palette },
   };
 }
@@ -75,14 +116,15 @@ export function applySettingsPatch(settings: Settings, patch: SettingsPatch): Se
   return {
     ...settings,
     alwaysOnTop: patch.alwaysOnTop ?? settings.alwaysOnTop,
-    updates: { ...settings.updates, mode: patch.updates?.mode ?? settings.updates.mode },
+    updates: { ...settings.updates, ...definedUpdateFields(patch.updates ?? {}) },
   };
 }
 
 /**
  * Objet à écrire : le contenu actuel du fichier (`raw`, toutes clés conservées, `shortcuts`
- * compris) avec les seules clés que l'interface possède remplacées. Dans `updates`, seul
- * `mode` est remplacé : les autres champs (écrits par une version plus récente) sont conservés.
+ * compris) avec les seules clés que l'interface possède remplacées. Dans `updates`, seuls
+ * `mode` et les champs DÉFINIS du moteur de mise à jour sont remplacés : les autres champs
+ * (écrits par une version plus récente) sont conservés, de même qu'un champ connu non défini.
  */
 export function mergeSettings(raw: unknown, settings: Settings): Record<string, unknown> {
   const base = isRecord(raw) ? raw : {};
@@ -90,6 +132,6 @@ export function mergeSettings(raw: unknown, settings: Settings): Record<string, 
   return {
     ...base,
     alwaysOnTop: settings.alwaysOnTop,
-    updates: { ...updates, mode: settings.updates.mode },
+    updates: { ...updates, ...definedUpdateFields(settings.updates), mode: settings.updates.mode },
   };
 }

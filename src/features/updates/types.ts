@@ -1,18 +1,23 @@
 /**
- * Interface entre la rubrique « Mises à jour » des Paramètres et le futur moteur de mise à jour
- * (issue n°5). PUR : aucun moteur ici, aucune requête, seulement le contrat et sa lecture.
+ * Interface entre la rubrique « Mises à jour » des Paramètres et le moteur de mise à jour
+ * (hook `useUpdater`, issue n°5). PUR : aucune requête, seulement le contrat et sa lecture.
+ * Les transitions d'état sont dans `updates.ts`.
  *
- * Le moteur (hook `useUpdater`, issue n°5) fournira un `UpdaterBinding` disponible ; tant qu'il
- * n'existe pas, la rubrique reçoit `UPDATER_NOT_AVAILABLE` et désactive son bouton.
+ * Le moteur fournit un `UpdaterBinding` disponible dans l'application installée ; ailleurs
+ * (navigateur, `npm run dev`), la rubrique reçoit un binding indisponible et désactive son bouton.
  */
 
-/** État du moteur, repris du plan de l'issue n°5. */
+/**
+ * État du moteur, repris du plan de l'issue n°5. `ready` : la mise à jour est téléchargée et sa
+ * signature vérifiée, l'installation attend la fermeture du formulaire de destination.
+ */
 export type UpdateState =
   | { status: 'idle' }
   | { status: 'checking' }
   | { status: 'up-to-date'; checkedAt: number }
   | { status: 'available'; version: string; notes: string }
   | { status: 'downloading'; version: string; received: number; total: number | null }
+  | { status: 'ready'; version: string }
   | { status: 'installing'; version: string }
   | { status: 'error'; message: string; retryable: boolean };
 
@@ -64,6 +69,8 @@ export function describeUpdateState(state: UpdateState, currentVersion: string |
         ? `Téléchargement de la version ${state.version}…`
         : `Téléchargement de la version ${state.version}… ${percent} %`;
     }
+    case 'ready':
+      return `Version ${state.version} téléchargée : installation dès la fermeture du formulaire.`;
     case 'installing':
       return `Installation de la version ${state.version} : l'application va redémarrer.`;
     case 'error':

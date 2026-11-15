@@ -80,9 +80,28 @@ Le formulaire :
 
 **Images** (application installée uniquement) : le bouton « Choisir… » ouvre le dialogue Windows (PNG, JPEG, WebP, 10 Mo maximum). Le fichier est **copié** dans `images/` sous un nom interne ; l'original peut ensuite être déplacé ou supprimé. Le format réel du fichier est contrôlé : un fichier refusé ne remplace pas l'image existante. « Retirer » enlève l'image de la carte sans supprimer de fichier. Dans `npm run dev` (navigateur), l'import d'images est désactivé.
 
+### Palette de recherche
+
+`Ctrl+Alt+Espace`, depuis n'importe quelle fenêtre, ouvre une petite palette au centre de l'écran principal. On tape, on valide, la commande est dans le presse-papiers et la palette se referme. Rien n'est collé ni tapé dans le jeu.
+
+| Touche | Effet |
+|---|---|
+| `↑` / `↓` | changer de ligne |
+| `Entrée` ou clic | copier, comme un **clic gauche** (sans le `/zaap` initial) |
+| `Ctrl+Entrée` ou clic droit | copier la commande **complète** |
+| `←` / `→` | sur une carte à deux étapes, choisir l'étape 1 ou 2 |
+| `Échap` | fermer sans copier |
+
+- **Recherche** : par nom, alias, tag, zone ou catégorie (« donjon … », « farm … »), sans accents ni majuscules. Le meilleur résultat est présélectionné ; sans texte, les favoris viennent en premier.
+- **Carte à deux étapes** : une seule ligne, avec les cases **1** et **2** sur la ligne sélectionnée.
+- **Parcours Farm** : le nom du parcours liste « parcours complet » puis chaque position. Le nom suivi d'une position reprend directement la suite : avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`. Si le parcours repasse par la même position, une ligne par passage est proposée.
+- **Limite** : la palette s'affiche devant le jeu en mode fenêtré ou sans bordure. En plein écran exclusif, Windows peut l'empêcher d'apparaître.
+
 ### Raccourcis
 
 - `Ctrl+Alt+T` : afficher ou masquer la fenêtre (raccourci global).
+- `Ctrl+Alt+Espace` : ouvrir ou fermer la palette de recherche (raccourci global).
+- Les deux raccourcis globaux se règlent dans **Paramètres** (engrenage de la barre de titre) → Raccourcis : cliquer sur le champ, puis appuyer sur la combinaison voulue (Ctrl ou Alt, plus une lettre, un chiffre, F1 à F12 ou Espace). Si un raccourci est déjà pris par une autre application, l'ancien est conservé et un message l'indique.
 - Épingle : activer ou désactiver « toujours au premier plan ». Le réglage est mémorisé.
 - Taper directement du texte lance la recherche ; `Ctrl+F` y place le curseur.
 - `Échap` : fermer le parcours Farm ouvert, sinon effacer la recherche, sinon quitter le mode gestion.
@@ -226,7 +245,9 @@ Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](http
 - [x] Import d'images (dialogue Windows, contrôle du format, copie dans `images/`)
 - [ ] Vignettes réduites à l'import (images lourdes) et nettoyage explicite des images orphelines
 - [ ] Import / export ZIP complet, import JSON seul
-- [ ] Raccourci global configurable, paramètres
+- [x] Palette de recherche globale (seconde fenêtre, reprise Farm par position, étapes 1 / 2)
+- [x] Raccourcis globaux configurables, panneau Paramètres
+- [ ] Rubriques Paramètres : mises à jour, dossier des données
 - [ ] Validation sur Windows 11 propre, mise à l'échelle 100 % / 150 %, multi-écrans
 
 ## Licence et droits

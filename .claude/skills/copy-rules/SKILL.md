@@ -24,6 +24,10 @@ Source de vérité : cahier des charges §4 et §5 (`docs/cahier-des-charges.md`
    - coordonnées répétées : seul l'indice compte.
 6. Multi-ligne : les retours à la ligne sont conservés tels quels ; ajouter un test pour tout nouveau cas inhabituel.
 
+## Palette
+
+`src/features/palette/` : `cardEntry` = un choix par zone de `cardParts` (primary = `partCommand(part, 'left')`, secondary = `partCommand(part, 'right')`). Lignes Farm : `farm-start` = `farmStartCommand`, `farm-step` i = `farmResumeCommand(route, i)` (dernière étape → `null`). `parsePaletteQuery` ne lit qu'une position en fin de requête (`1-1` = `1,1`, `1 -1` = négatif) ; aucune commande n'est construite à partir de ces nombres.
+
 ## Procédure
 
 1. Écrire/adapter d'abord le test dans `tests/` (Vitest), à partir des exemples **fictifs** du cahier des charges.

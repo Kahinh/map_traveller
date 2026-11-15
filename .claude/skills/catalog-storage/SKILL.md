@@ -28,6 +28,12 @@ Source : cahier des charges §6.3, §7, §8.
 - Aucune URL distante, aucun chemin absolu dans le JSON.
 - Seed : coordonnées **fictives** uniquement.
 
+## Recherche et réglages
+
+- Recherche : `rankDestinations` classe par préfixe du nom (0) > début de mot (1) > contenu du nom (2) > alias / tags / zone / catégorie (3), puis favori, puis `compareDestinations`. Un mot désigne une catégorie s'il est le **début** d'un mot-clé de `CATEGORY_KEYWORDS`, sur 2 lettres au moins (`matchesCategory`) : jamais par simple inclusion.
+- La palette relit `catalog.json` et `favorites.json` à chaque affichage, sans copie du catalogue.
+- `settings.json` : modèle pur dans `src/features/settings/settings.ts` (`parseSettings` tolérant, `mergeSettings` conserve les clés inconnues). La clé `shortcuts` est écrite uniquement par Rust (`shortcuts.rs`, verrou partagé avec `save_store`).
+
 ## Éditeur et images
 
 - Toute modification passe par `upsertDestination` / `removeDestination` (`src/features/catalog/editor.ts`), puis `saveCatalog`, puis l'état (`useCatalog`). Jamais l'inverse.

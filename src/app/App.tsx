@@ -4,6 +4,7 @@ import { CompactCard } from '../components/CompactCard';
 import { DestinationForm } from '../components/DestinationForm';
 import { FarmPanel } from '../components/FarmPanel';
 import { PencilIcon, PlusIcon } from '../components/icons';
+import { DEFAULT_SETTINGS_SECTION, SettingsPanel, type SettingsSectionId } from '../components/SettingsPanel';
 import { WindowHeader } from '../components/WindowHeader';
 import {
   draftFromDestination,
@@ -15,6 +16,7 @@ import { CATEGORIES, type Category, type Destination } from '../features/catalog
 import { filterDestinations, type ViewFilter } from '../features/catalog/search';
 import { cardParts, partCommand, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
+import type { SettingsPatch } from '../features/settings/settings';
 import {
   DEFAULT_SETTINGS,
   loadFavorites,
@@ -28,7 +30,11 @@ import { useCatalog } from './useCatalog';
 import { useCopyFeedback } from './useCopyFeedback';
 
 /** Un seul panneau ouvert à la fois. `key` remonte le formulaire à chaque ouverture. */
-type PanelState = null | { type: 'farm'; id: string } | { type: 'editor'; draft: DestinationDraft; key: number };
+type PanelState =
+  | null
+  | { type: 'farm'; id: string }
+  | { type: 'editor'; draft: DestinationDraft; key: number }
+  | { type: 'settings'; section: SettingsSectionId };
 
 const NOTHING_TO_COPY = 'Aucune commande à copier.';
 const FARM_KEY = 'farm:';
@@ -70,9 +76,14 @@ export function App() {
   const editorSeq = useRef(0);
   /** Destination à faire défiler jusqu'à l'écran dès qu'elle est rendue (après enregistrement). */
   const revealRef = useRef<string | null>(null);
+  /** Dernière rubrique des paramètres consultée (session uniquement). */
+  const settingsSectionRef = useRef<SettingsSectionId>(DEFAULT_SETTINGS_SECTION);
 
   const ready = load.status === 'ready';
   const editorOpen = panel?.type === 'editor';
+  const settingsOpen = panel?.type === 'settings';
+  /** Panneau plein écran (formulaire, paramètres) : la grille et la barre d'outils sont inertes. */
+  const overlayOpen = editorOpen || settingsOpen;
 
   useEffect(() => {
     void (async () => {
@@ -86,6 +97,8 @@ export function App() {
 
   // Raccourcis : Échap (retour / effacer / quitter le mode gestion), Ctrl+F (recherche),
   // frappe directe → recherche. Le formulaire gère son propre clavier : rien ici quand il est ouvert.
+  // Paramètres : Échap ferme le panneau ; pendant la capture d'un raccourci, le champ arrête la
+  // propagation de toutes les touches, donc Échap n'annule que la capture.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (editorOpen) return;
@@ -101,8 +114,13 @@ export function App() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         setPanel(null);
-        search?.focus();
-        search?.select();
+        const focusSearch = () => {
+          search?.focus();
+          search?.select();
+        };
+        // Sous les paramètres, la recherche est inerte : focus une fois le panneau retiré.
+        if (settingsOpen) setTimeout(focusSearch, 0);
+        else focusSearch();
         return;
       }
       const printable = e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey;
@@ -110,7 +128,7 @@ export function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [panel, editorOpen, query]);
+  }, [panel, editorOpen, settingsOpen, query]);
 
   const openEditor = useCallback((draft: DestinationDraft) => {
     editorSeq.current += 1;
@@ -145,11 +163,27 @@ export function App() {
 
   const onNew = () => openEditor(emptyDraft(isCategory(view) ? view : undefined));
 
-  const onToggleAlwaysOnTop = () => {
-    const next = { ...settings, alwaysOnTop: !settings.alwaysOnTop };
+  /** Applique et enregistre aussitôt un réglage possédé par l'interface. */
+  const updateSettings = (patch: SettingsPatch) => {
+    const next = { ...settings, ...patch };
     setSettings(next);
-    void setAlwaysOnTop(next.alwaysOnTop);
+    if (patch.alwaysOnTop !== undefined) void setAlwaysOnTop(next.alwaysOnTop);
     void saveSettings(next);
+  };
+
+  const onToggleAlwaysOnTop = () => updateSettings({ alwaysOnTop: !settings.alwaysOnTop });
+
+  // Pendant l'édition, le bouton est désactivé : la saisie en cours n'est jamais perdue.
+  const onToggleSettings = () =>
+    setPanel((p) => {
+      if (p?.type === 'editor') return p;
+      if (p?.type === 'settings') return null;
+      return { type: 'settings', section: settingsSectionRef.current };
+    });
+
+  const onSettingsSection = (section: SettingsSectionId) => {
+    settingsSectionRef.current = section;
+    setPanel({ type: 'settings', section });
   };
 
   // L'état n'est mis à jour qu'après l'écriture sur disque (`useCatalog`) ; une erreur remonte au formulaire.
@@ -215,10 +249,16 @@ export function App() {
 
   return (
     <div className="app" onContextMenu={blockContextMenu}>
-      <WindowHeader alwaysOnTop={settings.alwaysOnTop} onToggleAlwaysOnTop={onToggleAlwaysOnTop} />
+      <WindowHeader
+        alwaysOnTop={settings.alwaysOnTop}
+        onToggleAlwaysOnTop={onToggleAlwaysOnTop}
+        settingsOpen={settingsOpen}
+        settingsDisabled={editorOpen}
+        onToggleSettings={onToggleSettings}
+      />
 
-      {/* Sous le formulaire, rien ne doit recevoir le focus clavier ni les clics. */}
-      <div className="toolbar" inert={editorOpen}>
+      {/* Sous le formulaire ou les paramètres, rien ne doit recevoir le focus clavier ni les clics. */}
+      <div className="toolbar" inert={overlayOpen}>
         <input
           ref={searchRef}
           className="search"
@@ -257,7 +297,7 @@ export function App() {
         </div>
       </div>
 
-      <main className={`grid-scroll${manageMode ? ' is-managing' : ''}`} inert={editorOpen}>
+      <main className={`grid-scroll${manageMode ? ' is-managing' : ''}`} inert={overlayOpen}>
         {load.status === 'loading' && <p className="empty">Chargement…</p>}
         {load.status === 'error' && (
           <p className="empty">
@@ -319,6 +359,16 @@ export function App() {
           onSave={onSaveDraft}
           onDelete={onDeleteDestination}
           onDuplicate={onDuplicate}
+          onClose={() => setPanel(null)}
+        />
+      )}
+
+      {panel?.type === 'settings' && (
+        <SettingsPanel
+          section={panel.section}
+          settings={settings}
+          onSectionChange={onSettingsSection}
+          onChange={updateSettings}
           onClose={() => setPanel(null)}
         />
       )}

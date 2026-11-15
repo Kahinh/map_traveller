@@ -6,6 +6,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import seed from '../../../resources/catalog.seed.json';
 import { validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
+import { mergeSettings, parseSettings, type Settings } from '../../features/settings/settings';
 import { isTauri } from './env';
 
 export type StoreName = 'catalog' | 'favorites' | 'settings';
@@ -72,18 +73,20 @@ export function saveFavorites(ids: ReadonlySet<string>): Promise<void> {
   return writeJson('favorites', { ids: [...ids].sort() });
 }
 
-export interface Settings {
-  alwaysOnTop: boolean;
-}
+export { DEFAULT_SETTINGS, type Settings } from '../../features/settings/settings';
 
-export const DEFAULT_SETTINGS: Settings = { alwaysOnTop: true };
-
+/** Réglages ; un fichier absent ou illisible donne les valeurs par défaut. */
 export async function loadSettings(): Promise<Settings> {
-  const data = await readJson('settings').catch(() => undefined);
-  if (!isRecord(data)) return { ...DEFAULT_SETTINGS };
-  return { ...DEFAULT_SETTINGS, alwaysOnTop: data.alwaysOnTop !== false };
+  return parseSettings(await readJson('settings').catch(() => undefined));
 }
 
-export function saveSettings(settings: Settings): Promise<void> {
-  return writeJson('settings', settings);
+/**
+ * Enregistre les réglages possédés par l'interface (`alwaysOnTop`). Le fichier est relu juste
+ * avant : ses autres clés, dont `shortcuts` (écrit par Rust), sont réécrites telles quelles.
+ * Dans l'application, Rust reprend de toute façon `shortcuts` du disque sous verrou
+ * (`save_store`) : l'interface ne peut jamais remettre un raccourci périmé.
+ */
+export async function saveSettings(settings: Settings): Promise<void> {
+  const raw = await readJson('settings').catch(() => undefined);
+  await writeJson('settings', mergeSettings(raw, settings));
 }

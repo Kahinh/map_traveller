@@ -24,6 +24,24 @@
         "alwaysOnTop": true,
         "shadow": true,
         "center": true
+      },
+      {
+        "label": "palette",
+        "create": false,
+        "url": "palette.html",
+        "title": "Map Traveller · Palette",
+        "width": 560,
+        "height": 380,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": true,
+        "visible": false,
+        "transparent": false,
+        "backgroundColor": "#252739"
       }
     ],
     "security": {

@@ -28,6 +28,11 @@ Ne jamais écrire une couleur en dur dans un composant.
 - Panneaux : composant `Panel` (`.panel`, `.panel__header`, `.panel__title`), un seul ouvert à la fois (`PanelState`). Formulaire : `.form__body` défilant, `.form__actions` fixées en bas, catégorie en `.segmented`, boutons `.btn` / `.btn--primary` / `.btn--danger` / `.btn--danger-ghost`. Confirmations (abandon, suppression) dans la barre d'actions, jamais de dialogue natif.
 - Pendant le formulaire, la grille et la barre d'outils sont `inert`.
 
+## Palette et Paramètres
+
+- Palette (`palette.html`, `src/styles/palette.css`, tokens seuls) : fenêtre fixe 560 × 380. Champ `role=combobox`, liste `role=listbox`, lignes de 40 px fixes (vignette `CardVisual`, titre + sous-titre, aperçu de ce qu'Entrée copie). Carte à deux étapes : emplacement de largeur fixe (« 2 étapes » au repos, cases 1 / 2 sur la ligne sélectionnée) : aucun saut de mise en page. Sélection souris sur `mousemove`.
+- Paramètres : engrenage dans `WindowHeader` (désactivé pendant l'édition), `SettingsPanel` avec un registre `SETTINGS_SECTIONS` et une rangée d'onglets ; un fichier par rubrique dans `src/components/settings/`. Ajouter une rubrique = une entrée du registre.
+
 ## Disposition
 
 Barre de titre custom (drag region) : icône, « Map Traveller », épingle, paramètres, réduire, fermer → recherche compacte → onglets Tout / PNJ / Donjons / Lieux-dits / Farm / Favoris + bouton `+` → grille `auto-fill` à défilement vertical.

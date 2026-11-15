@@ -1144,6 +1144,58 @@ textarea:focus-visible {
   user-select: text;
 }
 
+
+/* ---------- Panneau Paramètres ----------
+   Onglets de rubriques (même style que les catégories), contenu défilant (`.form__body`). */
+.settings__tabs {
+  flex: none;
+  padding: 0 8px 6px;
+}
+
+.settings__body {
+  padding-top: 2px;
+}
+
+.settings__notice {
+  color: var(--mt-warning);
+}
+
+.settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Champ de capture d'un raccourci : un bouton (pas un champ de texte), pour que Échap
+   ferme le panneau hors capture. */
+.shortcut-field {
+  width: 100%;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: var(--mt-radius-sm);
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-bg-raised);
+  color: var(--mt-text);
+  text-align: left;
+  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.shortcut-field:hover:not(:disabled) {
+  border-color: var(--mt-text-muted);
+}
+
+.shortcut-field.is-capturing {
+  border-color: var(--mt-accent);
+  color: var(--mt-accent);
+  font-family: inherit;
+}
+
+.shortcut-field:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

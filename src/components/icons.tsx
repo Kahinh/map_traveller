@@ -34,6 +34,15 @@ export const PinIcon = ({ filled }: { filled: boolean }) => (
   </Icon>
 );
 
+/** Roue dentée du bouton « Paramètres » : anneau, moyeu et huit dents. */
+export const GearIcon = () => (
+  <Icon>
+    <circle cx="8" cy="8" r="3.6" />
+    <circle cx="8" cy="8" r="1.4" />
+    <path d="M8 1.8v2.6M8 11.6v2.6M1.8 8h2.6M11.6 8h2.6M3.6 3.6l1.85 1.85M10.55 10.55l1.85 1.85M3.6 12.4l1.85-1.85M10.55 5.45l1.85-1.85" />
+  </Icon>
+);
+
 export const MinimizeIcon = () => (
   <Icon>
     <path d="M3.5 8h9" />

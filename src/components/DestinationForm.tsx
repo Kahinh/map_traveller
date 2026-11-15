@@ -14,6 +14,7 @@ import { canImportImages, pickAndImportImage } from '../lib/tauri/images';
 import { CardName } from './CompactCard';
 import { CardVisual } from './Thumb';
 import { Panel } from './Panel';
+import { SplitCardArt } from './SplitCardArt';
 
 interface Props {
   /** Brouillon d'ouverture : sert aussi de référence pour détecter les modifications. */
@@ -308,13 +309,10 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
                 aria-hidden
                 title={draft.image ?? undefined}
               >
-                <CardVisual key={draft.image ?? ''} name={draft.name} image={draft.image} />
-                {twoStep && (
-                  <>
-                    <span className="card__divider" />
-                    <span className="card__step card__step--1">1</span>
-                    <span className="card__step card__step--2">2</span>
-                  </>
+                {twoStep ? (
+                  <SplitCardArt key={draft.image ?? ''} name={draft.name} image={draft.image} />
+                ) : (
+                  <CardVisual key={draft.image ?? ''} name={draft.name} image={draft.image} />
                 )}
                 {draft.category === 'farm' && <span className="card__badge">Farm</span>}
                 <CardName name={draft.name.trim() || 'Sans nom'} />

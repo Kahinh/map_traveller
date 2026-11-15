@@ -3,6 +3,7 @@ import type { FeedbackKind } from '../app/useCopyFeedback';
 import type { Destination } from '../features/catalog/schema';
 import { isTwoStep, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { CheckIcon, PencilIcon, StarIcon } from './icons';
+import { SplitCardArt } from './SplitCardArt';
 import { CardVisual } from './Thumb';
 
 interface Props {
@@ -40,9 +41,10 @@ export function CardName({ name }: { name: string }) {
  * l'étoile est un bouton frère, pas imbriqué. Mémoïsée : seules les cartes dont les props
  * changent sont re-rendues (retour de copie, favori).
  *
- * Carte à deux étapes : une seule image, deux boutons superposés découpés en triangles par
- * `clip-path` (diagonale bas-gauche → haut-droite). Chaque zone applique les règles de copie
- * à sa propre commande.
+ * Carte à deux étapes : deux triangles séparés par un interstice transparent (diagonale
+ * bas-gauche → haut-droite). Une seule image, dans le calque `SplitCardArt` découpé une fois ;
+ * deux boutons superposés découpés chacun selon son triangle par `clip-path`. Chaque zone
+ * applique les règles de copie à sa propre commande ; l'interstice n'est pas cliquable.
  */
 export const CompactCard = memo(function CompactCard({
   destination: d,
@@ -92,7 +94,7 @@ export const CompactCard = memo(function CompactCard({
     const part = feedback ? feedbackPart : null;
     return (
       <div className={`card card--split${feedback && part ? ` is-${feedback} is-part-${part}` : ''}`} data-id={d.id}>
-        <CardVisual name={d.name} image={d.image} />
+        <SplitCardArt name={d.name} image={d.image} />
         {([1, 2] as const).map((p) => (
           <button
             key={p}
@@ -104,13 +106,6 @@ export const CompactCard = memo(function CompactCard({
             onContextMenu={contextMenu(p)}
           />
         ))}
-        <span className="card__divider" aria-hidden />
-        <span className="card__step card__step--1" aria-hidden>
-          1
-        </span>
-        <span className="card__step card__step--2" aria-hidden>
-          2
-        </span>
         <CardName name={d.name} />
         {feedback === 'copied' && part && (
           <span className={`card__check card__check--${part}`} aria-hidden>

@@ -5,8 +5,10 @@
  * `partCommand`, les parcours Farm par `parseFarmRoute`, `farmStartCommand` et
  * `farmResumeCommand` (via `farmQuery.ts`). Les commandes sont du texte brut, jamais modifié.
  */
+import { EMPTY_DICTIONARY, type AliasDictionary } from '../aliases/aliases';
 import type { Destination } from '../catalog/schema';
-import { queryWords, rankDestinations } from '../catalog/search';
+import { queryWords } from '../catalog/search';
+import { buildSearchIndex, searchIndexRank } from '../catalog/searchIndex';
 import { cardParts, partCommand, type PartIndex } from '../commands/cardParts';
 import { parseFarmRoute, type FarmRoute } from '../farm/farmRoute';
 import {
@@ -30,16 +32,22 @@ export const STEP_HINTS: Record<PartIndex, string> = {
 };
 
 /**
- * Index d'une ouverture de la palette : destinations actives seulement, et chaque parcours
- * Farm analysé une seule fois ici (jamais pendant la frappe).
+ * Index de la palette : destinations actives seulement, index de recherche construit avec le
+ * dictionnaire d'alias, et chaque parcours Farm analysé une seule fois ici (jamais pendant la
+ * frappe).
  */
-export function buildPaletteIndex(destinations: readonly Destination[], favorites: ReadonlySet<string>): PaletteIndex {
-  const active = destinations.filter((d) => d.enabled);
+export function buildPaletteIndex(
+  destinations: readonly Destination[],
+  favorites: ReadonlySet<string>,
+  dictionary: AliasDictionary = EMPTY_DICTIONARY,
+): PaletteIndex {
+  const search = buildSearchIndex(destinations, dictionary);
+  const active = search.docs;
   const routes = new Map<string, FarmRoute>();
   for (const d of active) {
     if (d.category === 'farm') routes.set(d.id, parseFarmRoute(d.command));
   }
-  return { destinations: active, favorites, routes };
+  return { destinations: active, favorites, search, routes };
 }
 
 /**
@@ -84,21 +92,27 @@ function uniqueByKey(entries: readonly PaletteEntry[]): PaletteEntry[] {
 
 /**
  * Recherche classée. Deux interprétations sont lancées puis fusionnées :
- * (b) la requête entière comme texte (recherche normale, classée par `rankDestinations`) ;
+ * (b) la requête entière comme texte (recherche normale, classée par `searchIndexRank`) ;
  * (a) si la requête finit par une position (« farm tremble 2 2 ») et qu'un texte la précède,
  *     les étapes des parcours Farm correspondant au texte qui sont à cette position.
  * Si (a) trouve au moins une étape, ses lignes passent en tête.
  *
  * Parcours Farm en (b) : requête vide ou plusieurs parcours trouvés → une ligne « parcours
  * complet » par parcours ; un seul parcours trouvé → « parcours complet » puis chaque position.
- * Le plafond `limit` s'applique en dernier.
+ * Le plafond `limit` s'applique en dernier. `favorites` remplace ceux de l'index : la palette
+ * peut ainsi garder son index quand seuls les favoris changent.
  */
-export function searchPalette(index: PaletteIndex, query: string, limit: number): PaletteSearchResult {
-  const { favorites, routes } = index;
+export function searchPalette(
+  index: PaletteIndex,
+  query: string,
+  limit: number,
+  favorites: ReadonlySet<string> = index.favorites,
+): PaletteSearchResult {
+  const { routes } = index;
   const isFav = (d: Destination) => favorites.has(d.id);
 
   // (b) Requête entière prise comme texte.
-  const textMatches = rankDestinations(index.destinations, query, favorites);
+  const textMatches = searchIndexRank(index.search, query, favorites);
   const hasWords = queryWords(query).length > 0;
   const expand = hasWords && textMatches.filter((d) => d.category === 'farm').length === 1;
   const textEntries: PaletteEntry[] = [];
@@ -117,11 +131,9 @@ export function searchPalette(index: PaletteIndex, query: string, limit: number)
   const restartEntries: PaletteEntry[] = [];
   let notice: string | null = null;
   if (position && queryWords(text).length > 0) {
-    const farms = rankDestinations(
-      index.destinations.filter((d) => d.category === 'farm'),
-      text,
-      favorites,
-    );
+    // Restreint aux parcours AVANT la seconde passe : une destination d'une autre catégorie qui
+    // correspond exactement ne doit pas empêcher de retrouver un parcours à une faute près.
+    const farms = searchIndexRank(index.search, text, favorites, (d) => d.category === 'farm');
     for (const d of farms) {
       const route = routes.get(d.id);
       if (!route) continue;

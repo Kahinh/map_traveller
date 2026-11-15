@@ -33,17 +33,19 @@ npm run tauri build    # installateur NSIS (normalement fait par la CI)
 ```
 src/features/commands/   # PUR : clic gauche / clic droit, zones d'une carte (cardParts)
 src/features/farm/       # PUR : parsing parcours + reprise par indice
-src/features/catalog/    # PUR : types, validation, recherche, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove)
+src/features/catalog/    # PUR : types, validation, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove), recherche (searchText.ts : normalisation, mots ; searchIndex.ts : index, coûts, classement ; search.ts : façade)
+src/features/aliases/    # PUR : dictionnaire GLOBAL d'alias de recherche (alias livrés + aliases.json), lecture tolérante, édition sans mutation
 src/features/palette/    # PUR : lignes de palette (entries.ts), position tapée + lignes Farm (farmQuery.ts), sélection (navigation.ts)
 src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), capture d'un raccourci (accelerator.ts), path.ts
 src/features/updates/    # PUR : contrat (types.ts), machine à états, erreurs et décisions au lancement (updates.ts)
 src/palette/             # fenêtre palette (entrée palette.html) : Palette, PaletteRow — n'importe rien de la grille
 src/lib/tauri/           # pont système (clipboard, stockage, palette, raccourcis) avec fallback navigateur
 src/components/          # composants React (rendu + interactions uniquement) : Panel, FarmPanel, DestinationForm…
-src/app/                 # App, état global, useCatalog (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useUpdater (moteur de mise à jour, monté dans App), useCopyFeedback
+src/app/                 # App, état global, useCatalog et useAliases (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useUpdater (moteur de mise à jour, monté dans App), useCopyFeedback
 src/styles/tokens.css    # tokens DA — seule source des couleurs
 src-tauri/src/           # Rust : stockage atomique (storage.rs), import d'images (images.rs), fenêtre palette (palette.rs), raccourcis globaux (shortcuts.rs), plugins
 resources/catalog.seed.json  # seed lecture seule, coordonnées FICTIVES
+resources/aliases.default.json  # alias de recherche livrés, lecture seule, embarqués dans le paquet (jamais copiés chez l'utilisateur)
 scripts/make-latest-json.mjs       # index latest.json, contrôles avant et après publication
 src-tauri/tauri.release.conf.json  # surcharge des builds de tag (fichiers de mise à jour signés)
 tests/                   # Vitest
@@ -54,6 +56,7 @@ tests/                   # Vitest
 | Tâche | Lire en premier | Skill |
 |---|---|---|
 | Ce qui est copié par un clic ou une touche | `src/features/commands/`, `src/features/farm/`, leurs tests | `copy-rules` |
+| Recherche (grille et palette), alias | `src/features/catalog/searchIndex.ts`, `searchText.ts`, `src/features/aliases/`, `tests/searchIndex.test.ts` | `catalog-storage` |
 | Format du catalogue, réglages, fichiers | `src/features/catalog/schema.ts`, `src/features/settings/`, `src-tauri/src/storage.rs` | `catalog-storage` |
 | Cartes, panneaux, formulaire, palette (visuel) | `src/styles/tokens.css`, `src/styles/app.css`, `src/components/` | `ui-da-pnj` |
 | Palette de recherche | `src/features/palette/`, `src/palette/`, `src-tauri/src/palette.rs` | `copy-rules`, `ui-da-pnj` |
@@ -65,7 +68,8 @@ tests/                   # Vitest
 - `plugins.updater.pubkey` et `identifier` dans `tauri.conf.json` : les installations existantes en dépendent.
 - Les secrets GitHub et tout ce qui touche à la signature.
 - Un tag déjà publié, une Release publiée.
-- Le format de `catalog.json` sans monter `schemaVersion` : les données des utilisateurs en dépendent.
+- Le format de `catalog.json` sans monter `schemaVersion` : les données des utilisateurs en dépendent. Même règle pour `aliases.json`.
+- Le dictionnaire d'alias livré (`resources/aliases.default.json`) : ne rien y ajouter sans demande, ne rien inventer.
 - L'historique Git (réécriture, force-push).
 - Dans le doute sur la portée d'un changement : s'arrêter et demander.
 

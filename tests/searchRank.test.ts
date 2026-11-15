@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Destination } from '../src/features/catalog/schema';
-import { filterDestinations, matchRank, queryWords, rankDestinations } from '../src/features/catalog/search';
+import { filterDestinations, rankDestinations } from '../src/features/catalog/search';
+import { buildSearchIndex, COST, searchIndexRank } from '../src/features/catalog/searchIndex';
 
 // Coordonnées fictives uniquement.
 function dest(partial: Partial<Destination> & { id: string; name: string }): Destination {
@@ -32,18 +33,26 @@ describe('classement de la recherche (palette §5.2)', () => {
     expect(ids(rankDestinations(list, 'arbre', new Set()))).toEqual(['prefixe', 'mot', 'contenu', 'tag']);
   });
 
-  it('matchRank : rangs explicites, null si un mot manque', () => {
-    const d = dest({ id: 'x', name: 'Grand arbre', zone: 'Plaine fictive' });
-    expect(matchRank(d, queryWords('grand'))).toBe(0);
-    expect(matchRank(d, queryWords('arb'))).toBe(1);
-    expect(matchRank(d, queryWords('rbr'))).toBe(2);
-    expect(matchRank(d, queryWords('plaine'))).toBe(3);
-    expect(matchRank(d, queryWords('grand absent'))).toBeNull();
-    expect(matchRank(d, [])).toBe(0);
+  it('coûts explicites par champ ; un mot manquant écarte la destination', () => {
+    // Une destination témoin par coût : l'ordre du classement révèle le coût de chaque mot.
+    const list = [
+      dest({ id: 'zone', name: 'Autre', zone: 'Plaine fictive' }),
+      dest({ id: 'dedans', name: 'Esplanade' }),
+      dest({ id: 'mot', name: 'Grande plaine' }),
+      dest({ id: 'debut', name: 'Plaine haute' }),
+    ];
+    expect(ids(rankDestinations(list, 'plaine', new Set()))).toEqual(['debut', 'mot', 'zone']);
+    expect(ids(rankDestinations(list, 'plan', new Set()))).toEqual(['dedans']);
+    expect(rankDestinations(list, 'plaine absent', new Set())).toEqual([]);
+    expect(COST.nameStart).toBeLessThan(COST.nameWord);
+    expect(COST.nameWord).toBeLessThan(COST.nameInside);
+    expect(COST.nameInside).toBeLessThan(COST.other);
+    expect(COST.other).toBeLessThan(COST.typo);
   });
 
   it('un mot après un tiret compte comme début de mot', () => {
-    expect(matchRank(dest({ id: 'x', name: 'Lieu-dit Haut' }), ['dit'])).toBe(1);
+    const list = [dest({ id: 'dedans', name: 'Inédite' }), dest({ id: 'tiret', name: 'Lieu-dit Haut' })];
+    expect(ids(searchIndexRank(buildSearchIndex(list), 'dit', new Set()))).toEqual(['tiret', 'dedans']);
   });
 
   it('favori en tête à rang égal, puis sortOrder et nom', () => {
@@ -58,11 +67,10 @@ describe('classement de la recherche (palette §5.2)', () => {
     expect(ids(rankDestinations(mixed, 'pont', new Set(['fav'])))).toEqual(['top', 'fav']);
   });
 
-  it('sans accents ni casse, plusieurs mots en ET, rang du premier mot', () => {
+  it('sans accents ni casse, plusieurs mots en ET', () => {
     const list = [dest({ id: 'm', name: 'Mériana', zone: 'Île fictive' }), dest({ id: 'v', name: 'Vortex' })];
     expect(ids(rankDestinations(list, 'MERIANA', new Set()))).toEqual(['m']);
     expect(ids(rankDestinations(list, 'ile mer', new Set()))).toEqual(['m']);
-    expect(matchRank(list[0]!, queryWords('ile mer'))).toBe(3);
     expect(rankDestinations(list, 'ile vortex', new Set())).toEqual([]);
   });
 

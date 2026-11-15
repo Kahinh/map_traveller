@@ -18,6 +18,7 @@ import { cardParts, partCommand, type ClickButton, type PartIndex } from '../fea
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
 import { describeUpdateState } from '../features/updates/types';
 import { loadFavorites, saveFavorites } from '../lib/tauri/storage';
+import { useAliases } from './useAliases';
 import { useCatalog } from './useCatalog';
 import { useCopyFeedback } from './useCopyFeedback';
 import { useSettings } from './useSettings';
@@ -57,6 +58,8 @@ function emptyMessage(view: ViewFilter, query: string): string {
 
 export function App() {
   const { load, destinations, save, remove } = useCatalog();
+  // Dictionnaire global d'alias de recherche : même moteur pour la grille et la palette.
+  const { dictionary, binding: aliases } = useAliases();
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
   const [view, setView] = useState<ViewFilter>('all');
   const [query, setQuery] = useState('');
@@ -191,7 +194,7 @@ export function App() {
     const saved = await save(draft);
     setPanel(null);
     // Si la vue courante masque la destination, basculer sur sa catégorie et vider la recherche.
-    if (saved.enabled && filterDestinations([saved], view, query, favorites).length === 0) {
+    if (saved.enabled && filterDestinations([saved], view, query, favorites, dictionary).length === 0) {
       setView(saved.category);
       setQuery('');
     }
@@ -226,8 +229,8 @@ export function App() {
   // La saisie reste fluide sur un gros catalogue : le filtrage suit avec une priorité basse.
   const deferredQuery = useDeferredValue(query);
   const visible = useMemo(
-    () => filterDestinations(destinations, view, deferredQuery, favorites),
-    [destinations, view, deferredQuery, favorites],
+    () => filterDestinations(destinations, view, deferredQuery, favorites, dictionary),
+    [destinations, view, deferredQuery, favorites, dictionary],
   );
 
   // Après un enregistrement : amener la carte à l'écran dès qu'elle fait partie de la grille.
@@ -368,6 +371,8 @@ export function App() {
           section={panel.section}
           settings={settings}
           updater={updater}
+          aliases={aliases}
+          destinations={destinations}
           onSectionChange={onSettingsSection}
           onChange={updateSettings}
           onClose={() => setPanel(null)}

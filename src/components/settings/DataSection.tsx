@@ -113,6 +113,9 @@ export function DataSection() {
             <code>settings.json</code> : vos réglages
           </li>
           <li>
+            <code>aliases.json</code> : vos alias de recherche (créé à la première personnalisation)
+          </li>
+          <li>
             <code>images</code> : les images importées
           </li>
           <li>

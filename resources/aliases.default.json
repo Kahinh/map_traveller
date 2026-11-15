@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "aliases": [
+    { "term": "hdv", "expansions": ["hôtel des ventes"] },
+    { "term": "rdv", "expansions": ["reine des voleurs"] }
+  ]
+}

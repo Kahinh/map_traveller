@@ -3,6 +3,7 @@
  * React ni Tauri.
  */
 import { CATEGORY_LABELS, type Destination } from '../catalog/schema';
+import type { SearchIndex } from '../catalog/searchIndex';
 import type { FarmRoute } from '../farm/farmRoute';
 
 /** Ce qu'une case (ou la ligne entière) copie. */
@@ -36,12 +37,15 @@ export interface PaletteEntry {
 }
 
 /**
- * Index construit une fois par ouverture de la palette : destinations actives et parcours
- * Farm déjà analysés (aucune analyse pendant la frappe).
+ * Index de la palette, construit une fois par catalogue chargé : destinations actives, index de
+ * recherche (vocabulaire, dictionnaire d'alias) et parcours Farm déjà analysés. Rien n'est
+ * analysé pendant la frappe.
  */
 export interface PaletteIndex {
   destinations: readonly Destination[];
   favorites: ReadonlySet<string>;
+  /** Index de recherche des destinations actives, alias compris. */
+  search: SearchIndex;
   /** Parcours analysé par identifiant de destination Farm. */
   routes: ReadonlyMap<string, FarmRoute>;
 }

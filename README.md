@@ -92,7 +92,9 @@ Le formulaire :
 | `←` / `→` | sur une carte à deux étapes, choisir l'étape 1 ou 2 |
 | `Échap` | fermer sans copier |
 
-- **Recherche** : par nom, alias, tag, zone ou catégorie (« donjon … », « farm … »), sans accents ni majuscules. Le meilleur résultat est présélectionné ; sans texte, les favoris viennent en premier.
+- **Recherche** : par nom, alias, tag, zone ou catégorie (« donjon … », « farm … »). Elle ignore les accents, les majuscules, la ponctuation, les tirets, les mots de liaison (« de », « des », « du », « l' »… sauf s'ils sont seuls dans la recherche) et l'ordre des mots : `bijoutier bonta` et `bonta bijoutier` donnent le même résultat. Le meilleur résultat est présélectionné ; sans texte, les favoris viennent en premier.
+- **Alias** : un acronyme du dictionnaire (`hdv` pour « hôtel des ventes ») trouve toutes les destinations concernées ; un mot de plus affine (`hdv bonta`). Voir [Paramètres](#paramètres).
+- **Fautes de frappe** : si rien ne correspond exactement, la recherche tolère une faute (deux à partir de 8 lettres) sur les mots de 4 lettres et plus. Un résultat approximatif n'apparaît jamais quand un résultat exact existe.
 - **Carte à deux étapes** : une seule ligne, avec les cases **1** et **2** sur la ligne sélectionnée.
 - **Parcours Farm** : le nom du parcours liste « parcours complet » puis chaque position. Le nom suivi d'une position reprend directement la suite : avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`. Si le parcours repasse par la même position, une ligne par passage est proposée.
 - **Limite** : la palette s'affiche devant le jeu en mode fenêtré ou sans bordure. En plein écran exclusif, Windows peut l'empêcher d'apparaître.
@@ -104,6 +106,7 @@ L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enre
 - **Mises à jour** : la version installée, le mode, Manuel (par défaut : rien n'est contacté sans votre action) ou Automatique, et le bouton « Rechercher des mises à jour ». Détails dans [Mises à jour](#mises-à-jour).
 - **Données** : l'emplacement réel de vos données, avec « Ouvrir le dossier » et « Copier le chemin ». Pour sauvegarder vos données, copiez ce dossier. Fermez l'application avant de modifier ces fichiers à la main.
 - **Affichage** : toujours au premier plan (même réglage que l'épingle).
+- **Alias** : le dictionnaire de la recherche, commun à la fenêtre et à la palette. Un alias remplace un mot de la recherche par sa signification, pour toutes les destinations : il se saisit **une seule fois** ici, pas carte par carte. Les alias fournis avec l'application (`hdv`, `rdv`) peuvent être désactivés ou remplacés ; les vôtres s'ajoutent, se modifient et se suppriment. Chaque ligne indique combien de destinations l'alias trouve.
 - **Raccourcis** : les deux raccourcis globaux.
 
 ### Raccourcis
@@ -166,13 +169,14 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `catalog.json.bak` | version précédente, restaurable |
 | `favorites.json` | identifiants des favoris |
 | `settings.json` | préférences (premier plan, raccourcis, mode de mise à jour et date de la dernière vérification…) |
+| `aliases.json` | vos alias de recherche et les alias fournis que vous avez désactivés (créé à la première personnalisation). Ce que l'application ne comprend pas dans ce fichier est conservé tel quel ; un fichier illisible ou d'une version plus récente n'est jamais réécrit |
 | `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON) |
 
 - Windows contient aussi deux dossiers techniques nommés `app.maptraveller`, l'un dans `%APPDATA%` (position de la fenêtre), l'autre dans `%LOCALAPPDATA%` (cache de la vue web). Ils ne contiennent aucune donnée de l'utilisateur.
 - Au premier lancement, le catalogue d'exemple (`resources/catalog.seed.json`) est copié dans ce dossier.
 - Le catalogue est au **schéma 3**. Chaque destination peut porter `"twoStep": true` (PNJ et Donjons uniquement) et `"command2"` (commande de l'étape 2). Champs absents : `false` et `""`. `command2` est conservée même si `twoStep` vaut `false`. Un catalogue au schéma 2 est lu sans modification ; il est réécrit au schéma 3 à la prochaine sauvegarde.
 - Une version **0.1.x** refuse un `catalog.json` au schéma 3 (« version plus récente que l'application ») **sans le modifier**. Revenir à une version antérieure demande donc de restaurer une sauvegarde au schéma 2.
-- Les mises à jour **n'écrasent jamais** vos données.
+- Les mises à jour **n'écrasent jamais** vos données. Les alias fournis avec l'application sont embarqués dans celle-ci et peuvent évoluer d'une version à l'autre ; vos alias personnalisés et vos désactivations, rangés dans `aliases.json`, ne sont jamais touchés.
 - Une image retirée d'une carte, ou importée dans un formulaire annulé, reste dans `images/` : aucun fichier n'est supprimé automatiquement.
 - Chaque écriture est atomique (fichier temporaire puis remplacement). La version précédente est gardée en `.bak`.
 - **Sauvegarde manuelle :** copier tout le dossier `%APPDATA%\MapTraveller\`.
@@ -213,11 +217,12 @@ npm run tauri build  # installateur NSIS local
 src/
   features/commands/   # PUR — clic gauche / clic droit, zones d'une carte (cardParts)
   features/farm/       # PUR — parsing du parcours, reprise par indice
-  features/catalog/    # PUR — schéma, validation, recherche, tri, éditeur (editor.ts)
+  features/catalog/    # PUR — schéma, validation, éditeur (editor.ts), recherche : texte (searchText.ts), index et classement (searchIndex.ts)
+  features/aliases/    # PUR — dictionnaire global d'alias de recherche (livrés + personnalisés)
   features/updates/    # PUR — machine à états des mises à jour, messages d'erreur, décisions au lancement
   lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images, mises à jour (updater.ts)
   components/          # React : WindowHeader, CategoryTabs, CompactCard, Panel, FarmPanel, DestinationForm
-  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useCopyFeedback, useUpdater
+  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useAliases, useCopyFeedback, useUpdater
   styles/              # tokens.css (DA) + app.css
 src-tauri/
   src/lib.rs           # plugins, raccourci global, instance unique
@@ -227,6 +232,7 @@ src-tauri/
   tauri.conf.json
   tauri.release.conf.json  # surcharge des builds de tag : fichiers de mise à jour signés
 resources/catalog.seed.json   # seed lecture seule (fictif)
+resources/aliases.default.json # alias de recherche livrés (lecture seule, embarqués dans l'interface)
 scripts/make-latest-json.mjs  # latest.json + contrôles avant et après publication
 tests/                        # Vitest
 .github/workflows/windows.yml # CI + installateur
@@ -326,6 +332,7 @@ Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](http
 - [x] Palette de recherche globale (seconde fenêtre, reprise Farm par position, étapes 1 / 2)
 - [x] Raccourcis globaux configurables, panneau Paramètres
 - [x] Rubriques Paramètres : mises à jour (version, mode), dossier des données, affichage
+- [x] Recherche tolérante (ordre des mots, mots de liaison, fautes de frappe) et dictionnaire global d'alias
 - [ ] Mises à jour manuelles et automatiques depuis les Releases signées (livrées, à valider par le protocole en deux versions)
 - [ ] Validation sur Windows 11 propre, mise à l'échelle 100 % / 150 %, multi-écrans
 

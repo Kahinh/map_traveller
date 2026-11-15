@@ -1225,6 +1225,86 @@ textarea:focus-visible {
   user-select: text;
 }
 
+/* ---------- Rubrique « Alias » : saisie sur une ligne, puis un alias par bloc ---------- */
+.aliases__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.aliases__term {
+  flex: 0 0 84px;
+  width: auto;
+}
+
+.aliases__meaning {
+  flex: 1 1 150px;
+  width: auto;
+  min-width: 0;
+}
+
+.aliases__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aliases__list:empty {
+  display: none;
+}
+
+.aliases__row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 8px;
+  border-radius: var(--mt-radius-sm);
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-bg-raised);
+}
+
+.aliases__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.aliases__row.is-off .aliases__head {
+  opacity: 0.5;
+}
+
+.aliases__name {
+  flex: none;
+  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-weight: 700;
+  color: var(--mt-text);
+  user-select: text;
+}
+
+.aliases__meanings {
+  min-width: 0;
+  color: var(--mt-text);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.aliases__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.aliases__info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Champ de capture d'un raccourci : un bouton (pas un champ de texte), pour que Échap
    ferme le panneau hors capture. */
 .shortcut-field {

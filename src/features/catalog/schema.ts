@@ -21,15 +21,26 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 
 /**
  * Mots-clés cherchables par catégorie (« farm tremble », « donjon … ») : un mot de la requête
- * qui commence l'un d'eux désigne la catégorie (`matchesCategory`). Ils ne comptent qu'au rang
- * le plus faible du classement.
- * Déjà en minuscules et sans accents (comparés au texte normalisé).
+ * qui COMMENCE l'un d'eux, sur deux lettres au moins, désigne la catégorie (`categoriesForWord`).
+ * Ils ne comptent qu'au rang le plus faible du classement.
+ * Déjà en minuscules, sans accents ni tiret (la requête est découpée sur les tirets).
  */
 export const CATEGORY_KEYWORDS: Record<Category, string> = {
   npc: 'pnj',
   dungeon: 'donjon donjons',
-  place: 'lieu lieu-dit lieux-dits',
+  place: 'lieu lieux',
   farm: 'farm',
+};
+
+/**
+ * Mots-clés secondaires, reconnus en correspondance EXACTE seulement : « lieu-dit » est découpé
+ * en « lieu » et « dit », mais « di » ne doit pas ramener tous les lieux-dits.
+ */
+export const CATEGORY_EXACT_KEYWORDS: Record<Category, string> = {
+  npc: '',
+  dungeon: '',
+  place: 'dit dits',
+  farm: '',
 };
 
 /** Catégories qui peuvent porter un trajet en deux étapes. */

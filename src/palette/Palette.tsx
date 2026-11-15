@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { SearchIcon } from '../components/icons';
+import { buildDictionary, EMPTY_DICTIONARY, type AliasDictionary } from '../features/aliases/aliases';
 import type { Destination } from '../features/catalog/schema';
 import type { ClickButton } from '../features/commands/cardParts';
 import { buildPaletteIndex, PALETTE_LIMIT, searchPalette, type PaletteEntry } from '../features/palette/entries';
@@ -7,7 +8,13 @@ import { navReducer, type NavAction, type NavState } from '../features/palette/n
 import { copyText } from '../lib/tauri/clipboard';
 import { initImages } from '../lib/tauri/images';
 import { hidePalette, onPaletteShown } from '../lib/tauri/palette';
-import { loadCatalog, loadFavorites } from '../lib/tauri/storage';
+import {
+  DEFAULT_ALIASES,
+  loadFavorites,
+  parseAliasesText,
+  parseCatalogText,
+  readStoreText,
+} from '../lib/tauri/storage';
 import { PaletteRow } from './PaletteRow';
 
 const LIST_ID = 'palette-list';
@@ -26,6 +33,14 @@ interface NavSlot {
 }
 
 const EMPTY_NAV: NavState = { index: -1, choice: 0 };
+const NO_FAVORITES: ReadonlySet<string> = new Set();
+
+/** Vrai si les deux ensembles ont les mêmes éléments. */
+function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
+  return true;
+}
 
 /**
  * Palette de recherche globale. Le focus reste toujours dans le champ ; Entrée / clic gauche
@@ -36,8 +51,12 @@ const EMPTY_NAV: NavState = { index: -1, choice: 0 };
 export function Palette() {
   const [destinations, setDestinations] = useState<readonly Destination[]>([]);
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
+  const [dictionary, setDictionary] = useState<AliasDictionary>(EMPTY_DICTIONARY);
   const [loaded, setLoaded] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  /** Catalogue invalide : conservée tant que le texte du fichier ne change pas. */
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  /** Échec du dernier chargement : effacée dès qu'un chargement réussit. */
+  const [readError, setReadError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<Status>(null);
   const [slot, setSlot] = useState<NavSlot>({ entries: null, nav: EMPTY_NAV });
@@ -45,12 +64,19 @@ export function Palette() {
   const listRef = useRef<HTMLUListElement>(null);
   const loadSeq = useRef(0);
   const copying = useRef(false);
+  /** Textes des fichiers au dernier chargement : inchangés, rien n'est revalidé ni réindexé. */
+  const lastCatalogText = useRef<string | null | undefined>(undefined);
+  const lastAliasesText = useRef<string | null | undefined>(undefined);
   /** Dernière position écran du pointeur vue sur la liste. */
   const lastPointer = useRef<{ x: number; y: number } | null>(null);
 
-  // Index construit une fois par chargement ; recherche à chaque frappe sur le texte en cache.
-  const index = useMemo(() => buildPaletteIndex(destinations, favorites), [destinations, favorites]);
-  const { entries, notice } = useMemo(() => searchPalette(index, query, PALETTE_LIMIT), [index, query]);
+  // Index construit une fois par catalogue ou dictionnaire chargé (ni à chaque affichage, ni
+  // quand seuls les favoris changent) ; à chaque frappe, seul le dernier mot tapé est recherché.
+  const index = useMemo(() => buildPaletteIndex(destinations, NO_FAVORITES, dictionary), [destinations, dictionary]);
+  const { entries, notice } = useMemo(
+    () => searchPalette(index, query, PALETTE_LIMIT, favorites),
+    [index, query, favorites],
+  );
   const choiceCounts = useMemo(() => entries.map((e) => e.choices.length), [entries]);
 
   const nav = slot.entries === entries ? slot.nav : navReducer(slot.nav, { type: 'results' }, choiceCounts);
@@ -67,21 +93,40 @@ export function Palette() {
     [entries, choiceCounts],
   );
 
-  /** Recharge catalogue et favoris (à chaque affichage) ; seul le dernier chargement compte. */
+  /**
+   * Relit catalogue, alias et favoris à chaque affichage ; seul le dernier chargement compte.
+   * Un fichier dont le texte n'a pas changé n'est ni revalidé ni réindexé : l'état, donc l'index
+   * de recherche et les parcours analysés, est réutilisé tel quel.
+   */
   const reload = useCallback(async () => {
     const seq = ++loadSeq.current;
     try {
-      const [catalog, favs] = await Promise.all([loadCatalog(), loadFavorites(), initImages()]);
+      const [catalogText, aliasesText, favs] = await Promise.all([
+        readStoreText('catalog'),
+        readStoreText('aliases'),
+        loadFavorites(),
+        initImages(),
+      ]);
       if (seq !== loadSeq.current) return;
-      if (catalog.ok) {
-        setDestinations(catalog.catalog.destinations);
-        setLoadError(null);
-      } else {
-        setLoadError(`Catalogue invalide : ${catalog.errors[0]?.message ?? 'erreur inconnue'}`);
+      if (catalogText !== lastCatalogText.current) {
+        lastCatalogText.current = catalogText;
+        const catalog = parseCatalogText(catalogText);
+        if (catalog.ok) {
+          setDestinations(catalog.catalog.destinations);
+          setCatalogError(null);
+        } else {
+          setCatalogError(`Catalogue invalide : ${catalog.errors[0]?.message ?? 'erreur inconnue'}`);
+        }
       }
-      setFavorites(favs);
+      if (aliasesText !== lastAliasesText.current) {
+        lastAliasesText.current = aliasesText;
+        // Fichier illisible : les alias fournis restent utilisés (la rubrique Alias signale l'erreur).
+        setDictionary(buildDictionary(DEFAULT_ALIASES, parseAliasesText(aliasesText).user));
+      }
+      setFavorites((prev) => (sameSet(prev, favs) ? prev : favs));
+      setReadError(null);
     } catch (e) {
-      if (seq === loadSeq.current) setLoadError(`Chargement impossible : ${String(e)}`);
+      if (seq === loadSeq.current) setReadError(`Chargement impossible : ${String(e)}`);
     } finally {
       if (seq === loadSeq.current) setLoaded(true);
     }
@@ -218,6 +263,7 @@ export function Palette() {
 
   const showSteps = selected !== undefined && selected.choices.length > 1;
   const showZaapHint = selected?.choices.some((c) => c.primary !== c.secondary) ?? false;
+  const loadError = readError ?? catalogError;
   const trimmed = query.trim();
 
   let message: string | null = null;

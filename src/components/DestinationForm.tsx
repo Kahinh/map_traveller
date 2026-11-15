@@ -11,7 +11,8 @@ import {
 } from '../features/catalog/editor';
 import { CATEGORIES, TWO_STEP_CATEGORIES, type Category } from '../features/catalog/schema';
 import { canImportImages, pickAndImportImage } from '../lib/tauri/images';
-import { CardName, CardVisual } from './CompactCard';
+import { CardName } from './CompactCard';
+import { CardVisual } from './Thumb';
 import { Panel } from './Panel';
 
 interface Props {

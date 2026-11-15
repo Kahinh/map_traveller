@@ -1,10 +1,9 @@
-import { memo, useState, type CSSProperties, type MouseEvent } from 'react';
+import { memo, type MouseEvent } from 'react';
 import type { FeedbackKind } from '../app/useCopyFeedback';
-import { cardHue } from '../features/catalog/cardHue';
 import type { Destination } from '../features/catalog/schema';
 import { isTwoStep, type ClickButton, type PartIndex } from '../features/commands/cardParts';
-import { imageSrc } from '../lib/tauri/images';
 import { CheckIcon, PencilIcon, StarIcon } from './icons';
+import { CardVisual } from './Thumb';
 
 interface Props {
   destination: Destination;
@@ -27,49 +26,11 @@ const STEP_LABELS: Record<PartIndex, string> = {
 
 const COPY_HINT = 'clic gauche : sans Zaap · clic droit : complet';
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
 /** Nom en surimpression : le conteneur porte le dégradé, le texte est coupé à deux lignes. */
 export function CardName({ name }: { name: string }) {
   return (
     <span className="card__name">
       <span className="card__label">{name}</span>
-    </span>
-  );
-}
-
-/**
- * Illustration de la carte : image importée, ou initiales sur un dégradé teinté si absente ou
- * illisible. Seule la teinte numérique `--card-hue` est posée ici ; les couleurs sont dans
- * `tokens.css`.
- */
-export function CardVisual({ name, image }: { name: string; image: string | null }) {
-  const src = imageSrc(image);
-  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
-  return src && src !== brokenSrc ? (
-    <img
-      className="card__img"
-      src={src}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      draggable={false}
-      onError={() => setBrokenSrc(src)}
-    />
-  ) : (
-    <span
-      className="card__placeholder"
-      style={{ '--card-hue': String(cardHue(name)) } as CSSProperties}
-      aria-hidden
-    >
-      {initials(name)}
     </span>
   );
 }

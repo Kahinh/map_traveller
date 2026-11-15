@@ -65,6 +65,14 @@ export const PencilIcon = () => (
   </Icon>
 );
 
+/** Loupe du champ de recherche de la palette. */
+export const SearchIcon = () => (
+  <Icon>
+    <circle cx="7" cy="7" r="4.25" />
+    <path d="M10.2 10.2L13.5 13.5" />
+  </Icon>
+);
+
 /** Coche du retour de copie. */
 export const CheckIcon = () => (
   <Icon strokeWidth={2.2}>

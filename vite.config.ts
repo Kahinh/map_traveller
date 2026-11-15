@@ -15,6 +15,14 @@ export default defineConfig({
   build: {
     target: 'chrome105',
     sourcemap: false,
+    // Deux pages : la fenêtre principale et la palette (paquet séparé, sans la grille).
+    // Chemins relatifs à la racine du projet, d'où sont lancés npm et Tauri.
+    rolldownOptions: {
+      input: {
+        main: 'index.html',
+        palette: 'palette.html',
+      },
+    },
   },
   test: {
     include: ['tests/**/*.test.ts'],

@@ -1,0 +1,349 @@
+/* Palette de recherche (fenêtre 560 × 380, fixe). Couleurs : tokens.css uniquement.
+   Même direction artistique que la fenêtre principale, sans charger ses styles. */
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--mt-bg);
+  color: var(--mt-text);
+  font-family: var(--mt-font);
+  font-size: var(--mt-font-size);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.palette {
+  /* Dimensions propres à la palette (pas de couleur ici). */
+  --pal-row-h: 40px;
+  --pal-thumb: 28px;
+  --pal-steps-w: 50px;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-bg);
+  overflow: hidden;
+}
+
+/* ---------- Champ de recherche ---------- */
+.palette__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 12px;
+  color: var(--mt-text-muted);
+  background: linear-gradient(180deg, var(--mt-titlebar-from), var(--mt-titlebar-to));
+}
+
+.palette__bar svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.palette__search {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--mt-radius-sm);
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-bg-raised);
+  color: var(--mt-text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  user-select: text;
+  transition: border-color var(--mt-transition);
+}
+
+.palette__search:focus,
+.palette__search:focus-visible {
+  border-color: var(--mt-accent);
+  outline: none;
+}
+
+.palette__search::placeholder {
+  color: var(--mt-text-muted);
+}
+
+/* ---------- Messages ---------- */
+.palette__notice {
+  flex: none;
+  margin: 0;
+  padding: 5px 12px;
+  font-size: var(--mt-font-size-sm);
+  color: var(--mt-warning);
+  border-bottom: 1px solid var(--mt-card-border);
+}
+
+.palette__notice.is-error {
+  color: var(--mt-danger);
+}
+
+.palette__empty {
+  margin: 0;
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--mt-text-muted);
+}
+
+/* Lecteurs d'écran uniquement. */
+.palette__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Liste ---------- */
+.palette__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mt-card-border) transparent;
+}
+
+.palette__list:empty {
+  display: none;
+}
+
+/* Hauteur fixe : l'apparition des cases 1 / 2 ne déplace rien. */
+.palette__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--pal-row-h);
+  padding: 0 8px;
+  border-radius: var(--mt-radius-sm);
+  cursor: pointer;
+}
+
+.palette__row.is-selected {
+  background: var(--mt-card-bg);
+  box-shadow: inset 2px 0 0 var(--mt-accent);
+}
+
+.palette__row.is-empty {
+  cursor: default;
+}
+
+.palette__row.is-empty > :not(.palette__steps) {
+  opacity: 0.5;
+}
+
+/* Vignette : réutilise `CardVisual` (image ou monogramme teinté) à petite taille. */
+.palette__thumb {
+  position: relative;
+  flex: none;
+  width: var(--pal-thumb);
+  height: var(--pal-thumb);
+  border-radius: var(--mt-radius-sm);
+  overflow: hidden;
+  background: var(--mt-card-bg);
+}
+
+.palette__thumb .card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.palette__thumb .card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 26% 16%, var(--mt-ph-glow), transparent 62%),
+    linear-gradient(155deg, var(--mt-ph-top), var(--mt-ph-bottom));
+  color: var(--mt-text);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.palette__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.palette__title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.palette__title-text,
+.palette__subtitle,
+.palette__preview {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.palette__fav {
+  flex: none;
+  display: inline-flex;
+  color: var(--mt-accent);
+}
+
+.palette__fav svg {
+  width: 11px;
+  height: 11px;
+}
+
+.palette__fav .icon-halo {
+  display: none;
+}
+
+.palette__subtitle {
+  font-size: var(--mt-font-size-sm);
+  color: var(--mt-text-muted);
+}
+
+/* Aperçu de ce qu'Entrée copiera (texte brut, tronqué à l'affichage seulement). */
+.palette__preview {
+  flex: 0 1 38%;
+  min-width: 0;
+  text-align: right;
+  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-size: var(--mt-font-size-sm);
+  color: var(--mt-text-muted);
+}
+
+.palette__row.is-selected .palette__preview {
+  color: var(--mt-text);
+}
+
+/* ---------- Cases 1 / 2 (carte à deux étapes) ---------- */
+.palette__steps {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  width: var(--pal-steps-w);
+}
+
+.palette__steps-hint {
+  font-size: 10px;
+  color: var(--mt-text-muted);
+  white-space: nowrap;
+}
+
+.palette__step {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--mt-radius-sm);
+  border: 1px solid var(--mt-card-border);
+  background: var(--mt-bg-raised);
+  color: var(--mt-text-muted);
+  font-size: var(--mt-font-size-sm);
+  font-weight: 700;
+  transition:
+    background-color var(--mt-transition),
+    color var(--mt-transition);
+}
+
+.palette__step.is-active {
+  border-color: var(--mt-accent);
+  background: var(--mt-accent);
+  color: var(--mt-accent-ink);
+}
+
+.palette__step.is-empty {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---------- Pied : aide ou état de la copie ---------- */
+.palette__hints {
+  flex: none;
+  margin-top: auto; /* reste en bas, même sans liste */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 28px;
+  padding: 0 12px;
+  border-top: 1px solid var(--mt-card-border);
+  background: var(--mt-bg-raised);
+  color: var(--mt-text-muted);
+  font-size: var(--mt-font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.palette__hints kbd {
+  display: inline-block;
+  min-width: 16px;
+  margin-right: 2px;
+  padding: 0 4px;
+  border: 1px solid var(--mt-card-border);
+  border-radius: 4px;
+  background: var(--mt-card-bg);
+  color: var(--mt-text);
+  font: inherit;
+  font-size: 10px;
+  line-height: 15px;
+  text-align: center;
+}
+
+.palette__status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette__status.is-copied {
+  color: var(--mt-accent);
+}
+
+.palette__status.is-warning {
+  color: var(--mt-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

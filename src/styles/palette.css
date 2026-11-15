@@ -1,4 +1,5 @@
-/* Palette de recherche (fenêtre 560 × 380, fixe). Couleurs : tokens.css uniquement.
+/* Palette de recherche (fenêtre de 560 de large ; sa HAUTEUR suit le contenu, issue n°19 :
+   barre seule, puis lignes et pied quand il y a des résultats). Couleurs : tokens.css uniquement.
    Même direction artistique que la fenêtre principale, sans charger ses styles. */
 @import './tokens.css';
 
@@ -38,9 +39,12 @@ button {
   --pal-thumb: 28px;
   --pal-steps-w: 50px;
 
+  /* Lignes visibles avant défilement. */
+  --pal-max-rows: 8;
+
+  /* Hauteur automatique : `Palette.tsx` la mesure et la donne à la fenêtre. */
   display: flex;
   flex-direction: column;
-  height: 100%;
   border: 1px solid var(--mt-card-border);
   background: var(--mt-bg);
   overflow: hidden;
@@ -55,7 +59,27 @@ button {
   height: 46px;
   padding: 0 12px;
   color: var(--mt-text);
-  background: linear-gradient(180deg, var(--mt-titlebar-from), var(--mt-titlebar-to));
+  background: var(--mt-palette-bar);
+}
+
+/* Information courte dans la barre (aucun résultat, chargement, échec d'une copie) : elle ne
+   change jamais la hauteur de la fenêtre. */
+.palette__bar-info {
+  flex: 0 1 auto;
+  max-width: 45%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--mt-font-size-sm);
+  color: var(--mt-text-muted);
+}
+
+.palette__bar-info.is-copied {
+  color: var(--mt-accent);
+}
+
+.palette__bar-info.is-warning {
+  color: var(--mt-warning);
 }
 
 .palette__bar svg {
@@ -103,13 +127,6 @@ button {
   color: var(--mt-danger-text);
 }
 
-.palette__empty {
-  margin: 0;
-  padding: 24px 12px;
-  text-align: center;
-  color: var(--mt-text-muted);
-}
-
 /* Lecteurs d'écran uniquement. */
 .palette__sr {
   position: absolute;
@@ -122,8 +139,9 @@ button {
 
 /* ---------- Liste ---------- */
 .palette__list {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: none;
+  /* Huit lignes au plus, puis défilement ; les marges haute et basse comprises. */
+  max-height: calc(var(--pal-max-rows) * var(--pal-row-h) + 8px);
   margin: 0;
   padding: 4px;
   list-style: none;
@@ -296,7 +314,6 @@ button {
 /* ---------- Pied : aide ou état de la copie ---------- */
 .palette__hints {
   flex: none;
-  margin-top: auto; /* reste en bas, même sans liste */
   display: flex;
   align-items: center;
   gap: 12px;

@@ -1,13 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from 'react';
 import { SearchIcon } from '../components/icons';
 import { buildDictionary, EMPTY_DICTIONARY, type AliasDictionary } from '../features/aliases/aliases';
 import type { Destination } from '../features/catalog/schema';
 import type { ClickButton } from '../features/commands/cardParts';
-import { buildPaletteIndex, PALETTE_LIMIT, searchPalette, type PaletteEntry } from '../features/palette/entries';
+import {
+  buildPaletteIndex,
+  PALETTE_LIMIT,
+  searchPalette,
+  type PaletteEntry,
+  type PaletteSearchResult,
+} from '../features/palette/entries';
 import { navReducer, type NavAction, type NavState } from '../features/palette/navigation';
 import { copyText } from '../lib/tauri/clipboard';
 import { initImages } from '../lib/tauri/images';
-import { hidePalette, onPaletteShown } from '../lib/tauri/palette';
+import { hidePalette, onPaletteShown, setPaletteHeight } from '../lib/tauri/palette';
 import {
   DEFAULT_ALIASES,
   loadFavorites,
@@ -34,6 +49,8 @@ interface NavSlot {
 
 const EMPTY_NAV: NavState = { index: -1, choice: 0 };
 const NO_FAVORITES: ReadonlySet<string> = new Set();
+/** Champ vide : la barre seule, aucune ligne (objet stable : la navigation n'est pas recalculée). */
+const NO_RESULT: PaletteSearchResult = { entries: [], notice: null };
 
 /** Vrai si les deux ensembles ont les mêmes éléments. */
 function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
@@ -47,6 +64,10 @@ function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
  * copie sans le `/zaap` initial, Ctrl+Entrée / clic droit copie la commande complète. Copie
  * d'abord, masque ensuite, et seulement si la copie a réussi. Aucun minuteur : au repos, rien
  * ne tourne.
+ *
+ * Compacte (issue n°19) : champ vide ou aucun résultat, seule la barre est rendue ; sinon les
+ * lignes et le pied d'aide s'ajoutent dessous. La FENÊTRE prend la hauteur de ce contenu
+ * (`setPaletteHeight`) : mesurée une fois par rendu, envoyée seulement quand elle change.
  */
 export function Palette() {
   const [destinations, setDestinations] = useState<readonly Destination[]>([]);
@@ -64,6 +85,9 @@ export function Palette() {
   const listRef = useRef<HTMLUListElement>(null);
   const loadSeq = useRef(0);
   const copying = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  /** Dernière hauteur envoyée à la fenêtre ; `null` : à renvoyer. */
+  const lastHeight = useRef<number | null>(null);
   /** Textes des fichiers au dernier chargement : inchangés, rien n'est revalidé ni réindexé. */
   const lastCatalogText = useRef<string | null | undefined>(undefined);
   const lastAliasesText = useRef<string | null | undefined>(undefined);
@@ -73,9 +97,10 @@ export function Palette() {
   // Index construit une fois par catalogue ou dictionnaire chargé (ni à chaque affichage, ni
   // quand seuls les favoris changent) ; à chaque frappe, seul le dernier mot tapé est recherché.
   const index = useMemo(() => buildPaletteIndex(destinations, NO_FAVORITES, dictionary), [destinations, dictionary]);
+  const hasQuery = query.trim() !== '';
   const { entries, notice } = useMemo(
-    () => searchPalette(index, query, PALETTE_LIMIT, favorites),
-    [index, query, favorites],
+    () => (hasQuery ? searchPalette(index, query, PALETTE_LIMIT, favorites) : NO_RESULT),
+    [index, query, favorites, hasQuery],
   );
   const choiceCounts = useMemo(() => entries.map((e) => e.choices.length), [entries]);
 
@@ -132,8 +157,26 @@ export function Palette() {
     }
   }, []);
 
+  /**
+   * Donne à la fenêtre la hauteur réelle du contenu. La feuille de style reste la seule source
+   * des dimensions : rien n'est recalculé ici. Un seul appel à Rust par CHANGEMENT de hauteur.
+   */
+  const syncHeight = useCallback(() => {
+    const height = rootRef.current?.offsetHeight;
+    if (height === undefined || height === lastHeight.current) return;
+    lastHeight.current = height;
+    setPaletteHeight(height);
+  }, []);
+
+  // Après chaque rendu, avant l'affichage : la fenêtre suit le contenu sans image intermédiaire.
+  useLayoutEffect(syncHeight);
+
   /** À chaque affichage : champ vidé, sélection remise au premier résultat, données rechargées. */
   const onShown = useCallback(() => {
+    // Rust vient de rouvrir la fenêtre réduite à la barre : la hauteur est à renvoyer, même si
+    // le contenu n'a pas changé depuis le dernier affichage (message de chargement, par exemple).
+    lastHeight.current = null;
+    syncHeight();
     copying.current = false;
     setQuery('');
     setStatus(null);
@@ -141,7 +184,7 @@ export function Palette() {
     inputRef.current?.focus();
     if (listRef.current) listRef.current.scrollTop = 0;
     void reload();
-  }, [reload]);
+  }, [reload, syncHeight]);
 
   useEffect(() => onPaletteShown(onShown), [onShown]);
 
@@ -266,15 +309,19 @@ export function Palette() {
   const loadError = readError ?? catalogError;
   const trimmed = query.trim();
 
-  let message: string | null = null;
-  if (!loaded) message = 'Chargement…';
-  else if (entries.length === 0) {
-    if (trimmed) message = `Aucun résultat pour « ${trimmed} ».`;
-    else if (!loadError) message = 'Aucune destination dans le catalogue.';
+  const hasResults = entries.length > 0;
+
+  // Information courte affichée DANS la barre, à droite : elle n'agrandit jamais la fenêtre.
+  // Sans résultat, il n'y a pas de pied : l'état d'une copie (échec) s'affiche donc ici.
+  let barInfo: Status = null;
+  if (!hasResults) {
+    if (status) barInfo = status;
+    else if (!loaded) barInfo = { kind: 'warning', text: 'Chargement…' };
+    else if (trimmed && !loadError) barInfo = { kind: 'warning', text: 'Aucun résultat' };
   }
 
   return (
-    <div className="palette">
+    <div ref={rootRef} className="palette">
       <div className="palette__bar">
         <SearchIcon />
         <input
@@ -295,6 +342,11 @@ export function Palette() {
           spellCheck={false}
           autoComplete="off"
         />
+        {barInfo && (
+          <span className={`palette__bar-info${status ? ` is-${barInfo.kind}` : ''}`} title={barInfo.text}>
+            {barInfo.text}
+          </span>
+        )}
       </div>
 
       {(loadError || notice) && (
@@ -315,41 +367,42 @@ export function Palette() {
           />
         ))}
       </ul>
-      {message && <p className="palette__empty">{message}</p>}
 
       {/* Région annoncée par les lecteurs d'écran : toujours présente, contenu seul variable. */}
       <span className="palette__sr" role="status" aria-live="polite">
-        {status?.text ?? ''}
+        {status?.text ?? barInfo?.text ?? ''}
       </span>
-      <footer className="palette__hints">
-        {status ? (
-          <span className={`palette__status is-${status.kind}`}>{status.text}</span>
-        ) : (
-          <>
-            <span>
-              <kbd>↑</kbd>
-              <kbd>↓</kbd> naviguer
-            </span>
-            {showSteps && (
+      {hasResults && (
+        <footer className="palette__hints">
+          {status ? (
+            <span className={`palette__status is-${status.kind}`}>{status.text}</span>
+          ) : (
+            <>
               <span>
-                <kbd>←</kbd>
-                <kbd>→</kbd> étape
+                <kbd>↑</kbd>
+                <kbd>↓</kbd> naviguer
               </span>
-            )}
-            <span>
-              <kbd>Entrée</kbd> copier
-            </span>
-            {showZaapHint && (
+              {showSteps && (
+                <span>
+                  <kbd>←</kbd>
+                  <kbd>→</kbd> étape
+                </span>
+              )}
               <span>
-                <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> avec Zaap
+                <kbd>Entrée</kbd> copier
               </span>
-            )}
-            <span>
-              <kbd>Échap</kbd> fermer
-            </span>
-          </>
-        )}
-      </footer>
+              {showZaapHint && (
+                <span>
+                  <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> avec Zaap
+                </span>
+              )}
+              <span>
+                <kbd>Échap</kbd> fermer
+              </span>
+            </>
+          )}
+        </footer>
+      )}
     </div>
   );
 }

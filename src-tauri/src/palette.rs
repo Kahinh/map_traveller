@@ -6,14 +6,22 @@
 //!   appelée dans `setup`, issue n°14) pour que la première ouverture soit aussi rapide que les
 //!   suivantes, puis seulement masquée et réaffichée. Si ce préchargement échoue, elle est créée
 //!   à la première utilisation, comme avant.
-//! - Affichage : centrée sur l'écran principal, puis focus, puis événement `palette:shown`.
+//! - Hauteur dynamique (issue n°19) : la fenêtre s'ouvre réduite à la barre de recherche
+//!   (`BAR_HEIGHT`) ; l'interface demande ensuite la hauteur de son contenu par la commande
+//!   `set_palette_height`. C'est la fenêtre elle-même qui change de taille : aucune zone vide
+//!   ni transparente sous la barre.
+//! - Affichage : placée sur l'écran principal (haut de fenêtre fixe, voir `center_on_primary`),
+//!   puis focus, puis événement `palette:shown`.
 //! - Perte de focus → masquée, sauf dans les `FOCUS_GRACE` qui suivent un affichage.
 //! - Le retour du focus à la fenêtre précédente est laissé au comportement natif de Windows.
 
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
-use tauri::{App, AppHandle, Emitter, Manager, PhysicalPosition, WebviewWindow, WebviewWindowBuilder, Window, Wry};
+use tauri::{
+    App, AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, WebviewWindow,
+    WebviewWindowBuilder, Window, Wry,
+};
 
 /// Libellé de la fenêtre : cible des capabilities (`capabilities/palette.json`) et exclue
 /// du plugin qui mémorise la position des fenêtres.
@@ -22,9 +30,14 @@ pub const PALETTE_LABEL: &str = "palette";
 /// Événement émis vers la palette après chaque affichage (écouté par `src/lib/tauri/palette.ts`).
 const SHOWN_EVENT: &str = "palette:shown";
 
-/// Taille logique de la palette ; doit rester égale à `width` / `height` de `tauri.conf.json`.
+/// Largeur logique de la palette ; doit rester égale à `width` de `tauri.conf.json`.
 const WIDTH: f64 = 560.0;
-const HEIGHT: f64 = 380.0;
+/// Hauteur de la barre de recherche seule (46 px + bordures) : hauteur de la fenêtre à
+/// l'ouverture et sans résultat. Doit rester égale à `height` de `tauri.conf.json`.
+const BAR_HEIGHT: f64 = 48.0;
+/// Hauteur maximale : barre, une ligne de message, huit lignes de résultats, pied d'aide.
+/// La mise en page (`src/styles/palette.css`) ne demande jamais plus.
+const MAX_HEIGHT: f64 = 430.0;
 
 /// Une perte de focus reçue juste après l'affichage est ignorée (sinon la palette se
 /// refermerait en s'ouvrant).
@@ -88,6 +101,10 @@ pub fn show_palette(app: &AppHandle) -> Result<(), String> {
         Some(window) => window,
         None => create_palette(app)?,
     };
+    // Toujours rouverte réduite à la barre : jamais la taille de l'affichage précédent.
+    if let Err(e) = window.set_size(LogicalSize::new(WIDTH, BAR_HEIGHT)) {
+        eprintln!("Taille de la palette non réinitialisée : {e}");
+    }
     center_on_primary(&window);
     mark_shown();
     window
@@ -117,9 +134,11 @@ fn create_palette<M: Manager<Wry>>(app: &M) -> Result<WebviewWindow, String> {
         .map_err(|e| format!("Création de la fenêtre palette impossible : {e}"))
 }
 
-/// Place la fenêtre au centre de l'écran principal, en pixels physiques, d'après le facteur
-/// d'échelle de CET écran (la fenêtre y prendra cette échelle). Sans écran principal connu :
-/// centrage par défaut de Tauri.
+/// Place la fenêtre sur l'écran principal, en pixels physiques, d'après le facteur d'échelle de
+/// CET écran (la fenêtre y prendra cette échelle) : centrée en largeur, et en hauteur comme si
+/// elle avait sa taille maximale. Le haut de la fenêtre, donc la barre de recherche, reste ainsi
+/// au même endroit quelle que soit la hauteur ; les résultats se développent vers le bas.
+/// Sans écran principal connu : centrage par défaut de Tauri.
 fn center_on_primary(window: &WebviewWindow) {
     let monitor = match window.primary_monitor() {
         Ok(Some(monitor)) => monitor,
@@ -132,7 +151,7 @@ fn center_on_primary(window: &WebviewWindow) {
     let screen = monitor.size();
     let origin = monitor.position();
     let width = (WIDTH * scale).round() as i32;
-    let height = (HEIGHT * scale).round() as i32;
+    let height = (MAX_HEIGHT * scale).round() as i32;
     let x = origin.x + (screen.width as i32 - width) / 2;
     let y = origin.y + (screen.height as i32 - height) / 2;
     if let Err(e) = window.set_position(PhysicalPosition::new(x, y)) {
@@ -172,5 +191,50 @@ pub fn hide_palette(app: AppHandle) -> Result<(), String> {
             .hide()
             .map_err(|e| format!("Masquage de la palette impossible : {e}")),
         None => Ok(()),
+    }
+}
+
+/// Hauteur à appliquer pour une hauteur demandée par l'interface : bornée entre la barre seule
+/// et le maximum. `None` si la valeur n'est pas un nombre fini (rien n'est alors changé).
+pub fn clamp_height(requested: f64) -> Option<f64> {
+    if requested.is_finite() {
+        Some(requested.clamp(BAR_HEIGHT, MAX_HEIGHT))
+    } else {
+        None
+    }
+}
+
+/// Ajuste la hauteur de la fenêtre palette à son contenu (issue n°19) : la fenêtre elle-même
+/// change de taille, il n'y a donc jamais de zone vide sous la barre ni de surface qui capte
+/// les clics. Largeur et coin haut gauche inchangés. Sans effet si la palette n'existe pas.
+#[tauri::command]
+pub fn set_palette_height(app: AppHandle, height: f64) -> Result<(), String> {
+    let height = clamp_height(height).ok_or_else(|| "Hauteur de palette invalide.".to_string())?;
+    match app.get_webview_window(PALETTE_LABEL) {
+        Some(window) => window
+            .set_size(LogicalSize::new(WIDTH, height))
+            .map_err(|e| format!("Redimensionnement de la palette impossible : {e}")),
+        None => Ok(()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn height_is_clamped_between_bar_and_maximum() {
+        assert_eq!(clamp_height(10.0), Some(BAR_HEIGHT));
+        assert_eq!(clamp_height(BAR_HEIGHT), Some(BAR_HEIGHT));
+        assert_eq!(clamp_height(200.0), Some(200.0));
+        assert_eq!(clamp_height(5000.0), Some(MAX_HEIGHT));
+        assert_eq!(clamp_height(-1.0), Some(BAR_HEIGHT));
+    }
+
+    #[test]
+    fn non_finite_height_is_refused() {
+        assert_eq!(clamp_height(f64::NAN), None);
+        assert_eq!(clamp_height(f64::INFINITY), None);
+        assert_eq!(clamp_height(f64::NEG_INFINITY), None);
     }
 }

@@ -92,7 +92,8 @@ Le formulaire :
 | `←` / `→` | sur une carte à deux étapes, choisir l'étape 1 ou 2 |
 | `Échap` | fermer sans copier |
 
-- **Recherche** : par nom, alias, tag, zone ou catégorie (« donjon … », « farm … »). Elle ignore les accents, les majuscules, la ponctuation, les tirets, les mots de liaison (« de », « des », « du », « l' »… sauf s'ils sont seuls dans la recherche) et l'ordre des mots : `bijoutier bonta` et `bonta bijoutier` donnent le même résultat. Le meilleur résultat est présélectionné ; sans texte, les favoris viennent en premier.
+- **Compacte** : à l'ouverture, seule la barre de recherche est affichée. Les résultats apparaissent dessous dès la première lettre, et la fenêtre prend exactement leur hauteur (8 lignes visibles au plus, puis défilement). Sans résultat, elle se réduit à la barre, qui ne change jamais de place.
+- **Recherche** : par nom, alias, tag, zone ou catégorie (« donjon … », « farm … »). Elle ignore les accents, les majuscules, la ponctuation, les tirets, les mots de liaison (« de », « des », « du », « l' »… sauf s'ils sont seuls dans la recherche) et l'ordre des mots : `bijoutier bonta` et `bonta bijoutier` donnent le même résultat. Le meilleur résultat est présélectionné.
 - **Alias** : un acronyme du dictionnaire (`hdv` pour « hôtel des ventes ») trouve toutes les destinations concernées ; un mot de plus affine (`hdv bonta`). Voir [Paramètres](#paramètres).
 - **Fautes de frappe** : si rien ne correspond exactement, la recherche tolère une faute (deux à partir de 8 lettres) sur les mots de 4 lettres et plus. Un résultat approximatif n'apparaît jamais quand un résultat exact existe.
 - **Carte à deux étapes** : une seule ligne, avec les cases **1** et **2** sur la ligne sélectionnée.

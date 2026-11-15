@@ -9,12 +9,26 @@ import { isTauri } from './env';
 
 /** Commande Rust qui masque (sans la détruire) la fenêtre palette. */
 export const HIDE_PALETTE_COMMAND = 'hide_palette';
+/** Commande Rust qui ajuste la hauteur de la fenêtre palette à son contenu. */
+export const SET_PALETTE_HEIGHT_COMMAND = 'set_palette_height';
 /** Événement émis par Rust vers la fenêtre palette juste après son affichage. */
 export const PALETTE_SHOWN_EVENT = 'palette:shown';
 
 /** Masque la palette. Sans effet dans le navigateur. Lève si la commande Rust échoue. */
 export async function hidePalette(): Promise<void> {
   if (isTauri()) await invoke(HIDE_PALETTE_COMMAND);
+}
+
+/**
+ * Demande à Rust de donner à la FENÊTRE la hauteur de son contenu (pixels logiques). Rust borne
+ * la valeur. Sans effet dans le navigateur. Ne lève jamais : un échec laisse la fenêtre à sa
+ * taille précédente et est seulement journalisé.
+ */
+export function setPaletteHeight(height: number): void {
+  if (!isTauri()) return;
+  invoke(SET_PALETTE_HEIGHT_COMMAND, { height }).catch((e: unknown) =>
+    console.error('Redimensionnement de la palette impossible', e),
+  );
 }
 
 /**

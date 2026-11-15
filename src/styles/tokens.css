@@ -12,7 +12,10 @@
   --mt-accent: #e5f052;
   --mt-accent-ink: #252739;
   --mt-warning: #f0a052;
-  --mt-danger: #c9485b;
+  --mt-danger: #c9485b; /* fonds seulement (bouton de suppression, fermeture) */
+  --mt-danger-text: #ee7385; /* tout texte rouge : 5,2 sur le fond, 4,6 sur les champs */
+  /* Contour des champs de saisie (pas des cartes ni des boutons) : 3,2 sur les champs. */
+  --mt-field-border: #7a7ca6;
   --mt-shadow: rgba(0, 0, 0, 0.35);
   --mt-hover: rgba(241, 241, 255, 0.08);
   /* Fond de focus clavier des zones d'une carte à deux étapes. */
@@ -32,9 +35,6 @@
   --mt-scrim-soft: rgba(14, 15, 26, 0.3);
   --mt-scrim-clear: rgba(14, 15, 26, 0);
   --mt-text-shadow: rgba(8, 8, 16, 0.85);
-  /* Finitions : reflet haut et liseré intérieur, posés par-dessus l'image. */
-  --mt-card-sheen: rgba(255, 255, 255, 0.12);
-  --mt-card-inner: rgba(255, 255, 255, 0.05);
   /* Petites pastilles sur image (Farm, repères d'étape, crayon) et étoile. */
   --mt-chip-bg: rgba(14, 15, 26, 0.72);
   --mt-chip-ring: rgba(241, 241, 255, 0.28);
@@ -49,9 +49,18 @@
   --mt-radius-sm: 6px;
   --mt-titlebar-h: 30px;
 
-  --mt-font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --mt-font-size: 12px;
-  --mt-font-size-sm: 11px;
+  /* Typographie (issue n°13) : aucune taille ni pile de police écrite ailleurs, rien sous 10 px. */
+  --mt-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mt-font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+  --mt-font-size-xs: 10px; /* pastilles, repères, numéros d'étape, touches */
+  --mt-font-size-sm: 11px; /* noms de carte, onglets, boutons, libellés */
+  --mt-font-size: 12px; /* corps */
+  --mt-font-size-md: 13px; /* titre d'une ligne de palette */
+  --mt-font-size-lg: 14px; /* champ de recherche de la palette */
+  --mt-font-size-monogram: 26px; /* initiales d'une carte sans image */
+  --mt-font-weight-regular: 400;
+  --mt-font-weight-semibold: 600;
+  --mt-font-weight-bold: 700;
 }
 
 /* Carte sans image : la teinte `--card-hue` (0–359) est posée en `style` par le composant,

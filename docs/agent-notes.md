@@ -77,3 +77,10 @@ En ne revalidant plus le catalogue quand son texte n'a pas changé, la palette n
 Le Rust (`store_file("aliases")`) n'a pas été compilé en local (bibliothèques système absentes) : validé par la CI. Non exécutés : écriture réelle de `aliases.json` et de son `.bak`, survie des alias à une mise à jour installée, palette devant le jeu avec un alias, rubrique « Alias » sous WebView2 et à 150 %.
 **Garde-fou :** liste de tests manuels dans la description de la PR.
 
+### 2026-11-15 — `outil-trompeur` — Chrome sans affichage se déclare `hover: none`
+Toutes les règles `@media (hover: hover)` étaient ignorées : l'étoile apparaissait « toujours visible » alors que le CSS était correct. `Emulation.setEmulatedMedia` ne sait pas émuler `hover`. Pire, `page.setViewport` de puppeteer réinitialise le type de survol en cours de script.
+**Garde-fou :** lancer Chrome avec `--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4`, vérifier `matchMedia('(hover: hover)')` avant chaque mesure, et changer d'échelle par `Emulation.setDeviceMetricsOverride` plutôt que `setViewport`. Survol d'un élément : `CSS.forcePseudoState`.
+
+### 2026-11-15 — `violation-principe` — Captures AVANT écrasées
+Le script de captures relancé avec l'étiquette `avant` après les modifications a remplacé l'état de référence. Rattrapé en remisant (`git stash`) le travail le temps de refaire les captures.
+**Garde-fou :** aucun, à surveiller ; faire les captures AVANT dans un dossier à part et ne plus y écrire ensuite.

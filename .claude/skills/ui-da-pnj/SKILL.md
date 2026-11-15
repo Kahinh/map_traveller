@@ -16,10 +16,20 @@ Source : cahier des charges §3, §5.1, §6, §9.
 | `--mt-card-bg` / `--mt-card-border` | `#393B58` / `#505273` |
 | `--mt-text` / `--mt-text-muted` | `#F1F1FF` / `#B8B9D0` |
 | `--mt-accent` | `#E5F052` |
+| `--mt-danger` / `--mt-danger-text` | `#C9485B` (fonds) / `#EE7385` (tout texte rouge) |
+| `--mt-field-border` | `#7A7CA6` : contour des champs de saisie seulement (pas des cartes ni des boutons) |
 | `--mt-card-size` | `90px` |
 | `--mt-radius` | `10px` |
+| `--mt-font` / `--mt-font-mono` | `'Segoe UI Variable Text', 'Segoe UI', …` / `'Cascadia Mono', Consolas, …` |
+| `--mt-font-size-xs` / `-sm` / (base) / `-md` / `-lg` | `10` / `11` / `12` / `13` / `14px` |
+| `--mt-font-size-monogram` | `26px` (initiales d'une carte sans image) |
+| `--mt-font-weight-regular` / `-semibold` / `-bold` | `400` / `600` / `700` |
 
-Ne jamais écrire une couleur en dur dans un composant.
+Ne jamais écrire une couleur en dur dans un composant. Aucune taille, graisse ni pile de police en dur dans `app.css` ni `palette.css` : tokens seulement, et rien sous 10 px (vérifier que le texte tient dans sa pastille, élargir la boîte s'il le faut).
+
+## Accent
+
+Le jaune-vert est réservé à trois usages : **sélection ou état actif** (onglet, segment, épingle, étoile favorite, étape courante), **action principale** (`.btn--primary`, « Début » du Farm), **focus**. Tout le reste est en `--mt-text` ou `--mt-text-muted` : pastille « FARM », lien « Plus d'options » (texte clair + chevron, souligné au survol), champ de la palette (il a toujours le focus : pas de cadre d'accent). Icônes de la barre de titre en `--mt-text` (contraste sur le dégradé).
 
 ## Éditeur
 
@@ -39,12 +49,13 @@ Barre de titre custom (drag region) : icône, « Map Traveller », épingle, par
 
 ## Carte
 
-- Image pleine carte (`object-fit: cover`). Nom **en surimpression** : `.card__name` (dégradé `--mt-scrim-*` partant du transparent, au moins 50 % de la hauteur) contient `.card__label` (11 px en 600, `line-clamp: 2`, ombre `--mt-text-shadow`). Composant `CardName`. Jamais de bandeau opaque.
+- Image pleine carte (`object-fit: cover`). Nom **en surimpression** : `.card__name` (au moins 50 % de la hauteur) contient `.card__label` (`--mt-font-size-sm` en 600, `line-clamp: 2`, ombre `--mt-text-shadow`). Composant `CardName`. Le dégradé `--mt-scrim-*` n'est posé que sur une image (`.card__img ~ .card__name`) ; sur le monogramme teinté, le texte et son ombre suffisent. Jamais de bandeau opaque.
+- **Un seul contour** par carte : la bordure `--mt-card-border` (éclaircie au survol). Pas de reflet ni de liseré intérieur décoratif.
 - Sans image : `.card__placeholder`, dégradé teinté. Le composant pose seulement `--card-hue` (0–359, `cardHue(name)` dans `src/features/catalog/cardHue.ts`, pure et testée) ; les tons `--mt-ph-*` sont déclarés dans `tokens.css`.
-- Étoile : SVG `StarIcon` détourée (`--mt-icon-halo`), bouton distinct. Opacité 0.45 au repos, 0.9 au survol de la carte, accent si favorite.
+- Étoile : SVG `StarIcon` détourée (`--mt-icon-halo`), bouton distinct. Visible en permanence **seulement si favorite** (accent). Sinon opacité 0 au repos, 0.9 au survol de la carte ou quand la carte a le focus clavier, 1 quand l'étoile a le focus ; sous `@media (hover: none)`, 0.75 en permanence. Masquée par l'opacité seule : elle reste dans l'ordre de tabulation.
 - Pastilles (Farm, repères 1 / 2, crayon) : rondes, `--mt-chip-bg` + anneau `--mt-chip-ring`. Le repère « 1 » est à 29 % / 29 %, hors du crayon du mode gestion.
 - Surbrillance au survol : voile `::after` porté par le bouton cliquable (`.card__main`, `.card__zone`), **opacité seule**, aucun JavaScript. `--mt-highlight` pour la carte, `--mt-highlight-zone` (plus marqué) pour un triangle, `--mt-press` à l'appui. Carte classique : liseré `.card__main::before` (`--mt-highlight-edge`, accent 2 px au focus). Règles `:hover` toujours sous `@media (hover: hover)`. Le survol de l'étoile ou du crayon ne surligne pas la carte.
-- Empilement : image (carte à deux étapes : calque découpé `.card__art` avec image, reflet et dégradé du nom) < contour du triangle et voile < pastilles et nom (1) < liseré et reflet (2) < copie (3) < étoile et crayon (4). Tout calque décoratif est en `pointer-events: none`.
+- Empilement : image (carte à deux étapes : calque découpé `.card__art` avec image et dégradé du nom) < contour du triangle et voile < pastilles et nom (1) < liseré (2) < copie (3) < étoile et crayon (4). Tout calque décoratif est en `pointer-events: none`.
 - Interdits : ombre ou contour externes (`content-visibility` les rogne), `filter`, `backdrop-filter`, `will-change` permanent, `transform` au survol sur une zone ou sur la carte.
 - Clic gauche / droit = copie (ou ouverture Farm) ; `contextmenu` toujours `preventDefault`.
 - Crayon visible uniquement en mode gestion.
@@ -52,8 +63,8 @@ Barre de titre custom (drag region) : icône, « Map Traveller », épingle, par
 - Structure : `.card` (div) contient `.card__main` (bouton de copie) et `.card__star` (bouton frère) — jamais de bouton imbriqué.
 - Cartes mémoïsées (`memo`) : garder des gestionnaires stables (`useCallback`) dans `App`.
 - Étapes Farm : classe `.step` ; `is-current` = dernière position cliquée, `is-done` = positions dépassées.
-- Icônes : SVG de `src/components/icons.tsx` (pas d'emoji).
-- Carte à deux étapes : deux triangles séparés par un interstice transparent (`--mt-split-gap`, 4 px, mesuré perpendiculairement à la diagonale). `.card--split` n'a ni fond ni bordure ; il contient `SplitCardArt` (calque `.card__art` : fond, image **unique** et non recadrée, reflet `::before`, dégradé du nom `::after`, découpé une seule fois par `--mt-zone-both` ; repères `.card__step`), deux boutons `.card__zone--1` / `--2` découpés par `clip-path`, puis le nom (texte seul, entier), la coche, l'étoile et le crayon. `SplitCardArt` sert aussi à l'aperçu du formulaire. La géométrie n'est définie **que** par `--mt-zone-cut`, `--mt-zone-1`, `--mt-zone-2` et `--mt-zone-both` (carte carrée) : tout calque lié à une zone (coche, contour, surbrillance) réutilise ces variables. Contour de chaque triangle sur ses trois côtés : `.card__zone::before` (ombre interne + bande sur la diagonale) ; survol, focus et copie ne changent que `--zone-edge` / `--zone-edge-w` (`--mt-card-border` au repos, `--mt-highlight-edge` au survol, accent 2 px au focus). Focus clavier : voile `--mt-focus`, contour accent et repère en accent. L'interstice n'est pas cliquable. Le dégradé du nom est déclaré une fois (`--mt-name-scrim` sur `.card`).
+- Icônes : SVG de `src/components/icons.tsx` (grille 16 px, trait 1,5, `currentColor`) ; pas d'emoji ni de caractère « ★ » (l'onglet Favoris utilise `StarIcon`).
+- Carte à deux étapes : deux triangles séparés par un interstice transparent (`--mt-split-gap`, 4 px, mesuré perpendiculairement à la diagonale). `.card--split` n'a ni fond ni bordure ; il contient `SplitCardArt` (calque `.card__art` : fond, image **unique** et non recadrée, dégradé du nom `::after` s'il y a une image, découpé une seule fois par `--mt-zone-both` ; repères `.card__step`), deux boutons `.card__zone--1` / `--2` découpés par `clip-path`, puis le nom (texte seul, entier), la coche, l'étoile et le crayon. `SplitCardArt` sert aussi à l'aperçu du formulaire. La géométrie n'est définie **que** par `--mt-zone-cut`, `--mt-zone-1`, `--mt-zone-2` et `--mt-zone-both` (carte carrée) : tout calque lié à une zone (coche, contour, surbrillance) réutilise ces variables. Contour de chaque triangle sur ses trois côtés : `.card__zone::before` (ombre interne + bande sur la diagonale) ; survol, focus et copie ne changent que `--zone-edge` / `--zone-edge-w` (`--mt-card-border` au repos, `--mt-highlight-edge` au survol, accent 2 px au focus). Focus clavier : voile `--mt-focus`, contour accent et repère en accent. L'interstice n'est pas cliquable. Le dégradé du nom est déclaré une fois (`--mt-name-scrim` sur `.card`).
 - États : image absente (initiales), catalogue vide, recherche sans résultat, chargement.
 
 ## Vérification

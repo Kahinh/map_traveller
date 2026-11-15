@@ -40,6 +40,14 @@ S'inspirer **étroitement de la composition et de l'ergonomie de la capture four
 
 La grille doit rester **dense**, sans grandes illustrations ni grandes marges. Images centrées et recadrées sans déformation, nom tronqué avec infobulle, survol discret, retour de copie par coche ou contour bref. Prévoir des états de chargement, d'image absente et de catalogue vide. La capture est une référence de DA, pas une extraction prouvée des styles internes de PNJ.
 
+**Addendum (issue n°13, premier lot).** La palette violette, l'accent jaune-vert et le dégradé de la barre de titre sont conservés. Changements :
+
+- Contraste : icônes de la barre de titre (et loupe de la palette) en texte principal ; `--mt-danger-text` (`#EE7385`) pour tout texte rouge, `--mt-danger` restant pour les fonds ; `--mt-field-border` (`#7A7CA6`) pour le contour des champs de saisie.
+- Typographie en tokens : 10 / 11 / 12 / 13 / 14 px (`--mt-font-size-xs` à `-lg`), 26 px pour les initiales d'une carte sans image, graisses 400 / 600 / 700. Aucune taille écrite en dur, rien sous 10 px. Police `Segoe UI Variable Text`, repli `Segoe UI` ; commandes en `--mt-font-mono` (`Cascadia Mono`, `Consolas`).
+- L'accent est réservé à la sélection ou l'état actif, à l'action principale et au focus (pastille « FARM » et lien « Plus d'options » en texte clair).
+- Carte : un seul contour ; dégradé sous le nom seulement sur une image ; étoile visible en permanence seulement si la destination est favorite, sinon au survol de la carte ou au focus clavier (toujours visible sans survol, sur écran tactile).
+- Onglet Favoris avec l'icône SVG de l'étoile ; engrenage redessiné ; champ de la palette sans cadre d'accent permanent.
+
 ### 3.2 Disposition
 
 Barre de titre personnalisée : icône, nom « Map Traveller », épingle toujours devant, paramètres, réduire/fermer. Sous la barre : recherche compacte, onglets Tout / PNJ / Donjons / Lieux-dits / Farm / Favoris, bouton `+` pour ajouter une destination, puis grille à défilement vertical. La largeur de la grille s'adapte à la fenêtre. L'édition doit être accessible sans détourner les clics gauche et droit réservés à la copie : bouton `+`, mode gestion, icône crayon uniquement en mode édition.

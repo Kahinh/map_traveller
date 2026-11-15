@@ -84,3 +84,7 @@ Toutes les règles `@media (hover: hover)` étaient ignorées : l'étoile appara
 ### 2026-11-15 — `violation-principe` — Captures AVANT écrasées
 Le script de captures relancé avec l'étiquette `avant` après les modifications a remplacé l'état de référence. Rattrapé en remisant (`git stash`) le travail le temps de refaire les captures.
 **Garde-fou :** aucun, à surveiller ; faire les captures AVANT dans un dossier à part et ne plus y écrire ensuite.
+
+### 2026-11-15 — `violation-principe` — « Amener la carte à l'écran » ne fonctionnait pas
+Après un enregistrement, la grille était déjà rendue avec la nouvelle destination quand `revealRef` était posé : l'effet qui fait défiler ne se relançait plus, la carte créée restait hors de l'écran (constaté sur `main` à 6 500 destinations, issue n°14). Aucun test ne le voyait.
+**Garde-fou :** compteur `revealTick` qui relance l'effet ; le défilement est calculé (`scrollTopToReveal`, `tests/gridWindow.test.ts`) car la carte n'est plus forcément dans le DOM. Contrôle navigateur : `/home/claude/scratch/t14/create.mjs` (hors dépôt), à refaire dans tout changement de la grille.

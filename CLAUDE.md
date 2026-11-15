@@ -33,7 +33,7 @@ npm run tauri build    # installateur NSIS (normalement fait par la CI)
 ```
 src/features/commands/   # PUR : clic gauche / clic droit, zones d'une carte (cardParts)
 src/features/farm/       # PUR : parsing parcours + reprise par indice
-src/features/catalog/    # PUR : types, validation, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove), recherche (searchText.ts : normalisation, mots ; searchIndex.ts : index, coûts, classement ; search.ts : façade)
+src/features/catalog/    # PUR : types, validation, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove), recherche (searchText.ts : normalisation, mots ; searchIndex.ts : index, coûts, classement ; search.ts : façade), grille fenêtrée (gridWindow.ts)
 src/features/aliases/    # PUR : dictionnaire GLOBAL d'alias de recherche (alias livrés + aliases.json), lecture tolérante, édition sans mutation
 src/features/palette/    # PUR : lignes de palette (entries.ts), position tapée + lignes Farm (farmQuery.ts), sélection (navigation.ts)
 src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), capture d'un raccourci (accelerator.ts), path.ts
@@ -41,7 +41,7 @@ src/features/updates/    # PUR : contrat (types.ts), machine à états, erreurs 
 src/palette/             # fenêtre palette (entrée palette.html) : Palette, PaletteRow — n'importe rien de la grille
 src/lib/tauri/           # pont système (clipboard, stockage, palette, raccourcis) avec fallback navigateur
 src/components/          # composants React (rendu + interactions uniquement) : Panel, FarmPanel, DestinationForm…
-src/app/                 # App, état global, useCatalog et useAliases (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useUpdater (moteur de mise à jour, monté dans App), useCopyFeedback
+src/app/                 # App, état global, useCatalog et useAliases (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useUpdater (moteur de mise à jour, monté dans App), useCopyFeedback, useGridWindow (seules les rangées visibles + 2 sont rendues)
 src/styles/tokens.css    # tokens DA — seule source des couleurs
 src-tauri/src/           # Rust : stockage atomique (storage.rs), import d'images (images.rs), fenêtre palette (palette.rs), raccourcis globaux (shortcuts.rs), plugins
 resources/catalog.seed.json  # seed lecture seule, coordonnées FICTIVES

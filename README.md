@@ -217,12 +217,12 @@ npm run tauri build  # installateur NSIS local
 src/
   features/commands/   # PUR — clic gauche / clic droit, zones d'une carte (cardParts)
   features/farm/       # PUR — parsing du parcours, reprise par indice
-  features/catalog/    # PUR — schéma, validation, éditeur (editor.ts), recherche : texte (searchText.ts), index et classement (searchIndex.ts)
+  features/catalog/    # PUR — schéma, validation, éditeur (editor.ts), recherche : texte (searchText.ts), index et classement (searchIndex.ts), grille fenêtrée (gridWindow.ts)
   features/aliases/    # PUR — dictionnaire global d'alias de recherche (livrés + personnalisés)
   features/updates/    # PUR — machine à états des mises à jour, messages d'erreur, décisions au lancement
   lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images, mises à jour (updater.ts)
   components/          # React : WindowHeader, CategoryTabs, CompactCard, Panel, FarmPanel, DestinationForm
-  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useAliases, useCopyFeedback, useUpdater
+  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useAliases, useCopyFeedback, useUpdater, useGridWindow (rangées visibles seulement)
   styles/              # tokens.css (DA) + app.css
 src-tauri/
   src/lib.rs           # plugins, raccourci global, instance unique
@@ -237,6 +237,8 @@ scripts/make-latest-json.mjs  # latest.json + contrôles avant et après publica
 tests/                        # Vitest
 .github/workflows/windows.yml # CI + installateur
 ```
+
+La grille ne crée que les rangées de cartes visibles, plus deux au-dessus et au-dessous : le nombre d'éléments dans la page ne dépend pas de la taille du catalogue. La touche Tab ne parcourt donc que les cartes présentes à l'écran.
 
 Principe : les règles de découpe des commandes sont des **fonctions pures**, sans dépendance à Tauri ni React. ESLint l'impose et Vitest les teste. Le Rust ne gère que les fichiers et l'intégration Windows.
 

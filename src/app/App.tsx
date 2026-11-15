@@ -21,6 +21,7 @@ import { loadFavorites, saveFavorites } from '../lib/tauri/storage';
 import { useAliases } from './useAliases';
 import { useCatalog } from './useCatalog';
 import { useCopyFeedback } from './useCopyFeedback';
+import { useGridWindow } from './useGridWindow';
 import { useSettings } from './useSettings';
 import { useUpdater } from './useUpdater';
 
@@ -75,6 +76,9 @@ export function App() {
   const editorSeq = useRef(0);
   /** Destination à faire défiler jusqu'à l'écran dès qu'elle est rendue (après enregistrement). */
   const revealRef = useRef<string | null>(null);
+  /** Incrémenté après un enregistrement : relance l'effet qui amène la carte à l'écran (la grille
+   *  a pu être rendue avec la nouvelle destination avant que `revealRef` soit posé). */
+  const [revealTick, setRevealTick] = useState(0);
   /** Dernière rubrique des paramètres consultée (session uniquement). */
   const settingsSectionRef = useRef<SettingsSectionId>(DEFAULT_SETTINGS_SECTION);
 
@@ -199,6 +203,7 @@ export function App() {
       setQuery('');
     }
     revealRef.current = saved.enabled ? saved.id : null;
+    setRevealTick((t) => t + 1);
     notify('Destination enregistrée.');
   };
 
@@ -233,13 +238,26 @@ export function App() {
     [destinations, view, deferredQuery, favorites, dictionary],
   );
 
-  // Après un enregistrement : amener la carte à l'écran dès qu'elle fait partie de la grille.
+  // Grille fenêtrée : seules les rangées visibles (plus une marge) sont dans le DOM.
+  const {
+    scrollRef: gridScrollRef,
+    gridRef,
+    start: gridStart,
+    end: gridEnd,
+    style: gridStyle,
+    reveal,
+  } = useGridWindow(visible.length);
+
+  // Après un enregistrement : amener la carte à l'écran dès qu'elle fait partie de la grille,
+  // par calcul de sa rangée (elle n'est pas forcément rendue).
   useEffect(() => {
     const id = revealRef.current;
-    if (id === null || !visible.some((d) => d.id === id)) return;
+    if (id === null) return;
+    const index = visible.findIndex((d) => d.id === id);
+    if (index < 0) return;
     revealRef.current = null;
-    document.querySelector(`[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [visible]);
+    reveal(index);
+  }, [visible, reveal, revealTick]);
 
   const farmId = panel?.type === 'farm' ? panel.id : null;
   const farm = useMemo(() => destinations.find((d) => d.id === farmId) ?? null, [destinations, farmId]);
@@ -300,7 +318,7 @@ export function App() {
         </div>
       </div>
 
-      <main className={`grid-scroll${manageMode ? ' is-managing' : ''}`} inert={overlayOpen}>
+      <main ref={gridScrollRef} className={`grid-scroll${manageMode ? ' is-managing' : ''}`} inert={overlayOpen}>
         {load.status === 'loading' && <p className="empty">Chargement…</p>}
         {load.status === 'error' && (
           <p className="empty">
@@ -320,8 +338,8 @@ export function App() {
         {ready && destinations.length > 0 && visible.length === 0 && (
           <p className="empty">{emptyMessage(view, deferredQuery)}</p>
         )}
-        <div className="grid">
-          {visible.map((d) => (
+        <div ref={gridRef} className="grid" style={gridStyle}>
+          {visible.slice(gridStart, gridEnd).map((d) => (
             <CompactCard
               key={d.id}
               destination={d}

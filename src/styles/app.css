@@ -57,7 +57,7 @@ textarea:focus-visible {
 
 .titlebar__title {
   flex: 1;
-  font-weight: 600;
+  font-weight: var(--mt-font-weight-semibold);
   letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
@@ -65,13 +65,14 @@ textarea:focus-visible {
 }
 
 .titlebar__logo {
-  width: 16px;
+  /* 20 px de large : « MT » en 10 px gras occupe 16 px, il lui faut une marge. */
+  width: 20px;
   height: 16px;
   border-radius: 4px;
   background: var(--mt-accent);
   color: var(--mt-accent-ink);
-  font-size: 9px;
-  font-weight: 700;
+  font-size: var(--mt-font-size-xs);
+  font-weight: var(--mt-font-weight-bold);
   display: grid;
   place-items: center;
   margin-right: 6px;
@@ -88,6 +89,10 @@ textarea:focus-visible {
   color: var(--mt-text-muted);
   flex: none;
   transition: background-color 120ms ease, color 120ms ease;
+}
+
+.titlebar .icon-btn {
+  color: var(--mt-text);
 }
 
 .icon-btn:hover {
@@ -138,7 +143,7 @@ textarea:focus-visible {
   background: var(--mt-accent);
   border-color: var(--mt-accent);
   color: var(--mt-accent-ink);
-  font-weight: 600;
+  font-weight: var(--mt-font-weight-semibold);
 }
 
 .btn--primary:hover:not(:disabled) {
@@ -152,7 +157,7 @@ textarea:focus-visible {
 }
 
 .btn--danger-ghost {
-  color: var(--mt-danger);
+  color: var(--mt-danger-text);
 }
 
 .btn--danger-ghost:hover:not(:disabled) {
@@ -173,7 +178,7 @@ textarea:focus-visible {
   height: 24px;
   padding: 0 8px;
   border-radius: var(--mt-radius-sm);
-  border: 1px solid var(--mt-card-border);
+  border: 1px solid var(--mt-field-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text);
   font: inherit;
@@ -228,6 +233,18 @@ textarea:focus-visible {
   color: var(--mt-accent);
 }
 
+/* Icône SVG d'un onglet (Favoris) : alignée sur le texte ; le détourage n'a pas lieu d'être. */
+.tab svg {
+  width: 11px;
+  height: 11px;
+  margin-right: 3px;
+  vertical-align: -1px;
+}
+
+.tab .icon-halo {
+  display: none;
+}
+
 /* ---------- Grille ---------- */
 .grid-scroll {
   flex: 1;
@@ -253,11 +270,11 @@ textarea:focus-visible {
    aucun effet ne sort du cadre (ni ombre ni contour externes). Empilement, du fond vers le
    dessus :
      image ou dégradé teinté (auto ; carte à deux étapes : dans le calque découpé `.card__art`,
-       avec son reflet et le dégradé du nom)
+       avec le dégradé du nom)
      → contour d'un triangle `::before`, voile de survol / appui `::after` du bouton ou de la
        zone (auto, après l'image)
      → pastille Farm, repères 1 / 2, nom sur son dégradé (z 1)
-     → liseré de survol / focus de la carte classique, reflet `.card::before` (z 2)
+     → liseré de survol / focus de la carte classique (z 2)
      → contour et coche de copie (z 3)
      → étoile, crayon (z 4).
    Seuls le bouton de copie (ou les deux zones), l'étoile et le crayon reçoivent les clics ;
@@ -273,19 +290,6 @@ textarea:focus-visible {
   /* Les cartes hors écran ne sont ni mises en page ni peintes : gros catalogues fluides. */
   content-visibility: auto;
   contain-intrinsic-size: var(--mt-card-size);
-}
-
-/* Finition : reflet sur l'arête haute et liseré intérieur, posés sur l'image. */
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  border-radius: calc(var(--mt-radius) - 1px);
-  box-shadow:
-    inset 0 1px 0 var(--mt-card-sheen),
-    inset 0 0 0 1px var(--mt-card-inner);
-  pointer-events: none;
 }
 
 /* Bordure éclaircie seulement au survol d'une zone de copie (pas de l'étoile ni du crayon). */
@@ -391,8 +395,8 @@ textarea:focus-visible {
     radial-gradient(circle at 26% 16%, var(--mt-ph-glow), transparent 62%),
     linear-gradient(155deg, var(--mt-ph-top), var(--mt-ph-bottom));
   color: var(--mt-ph-ink);
-  font-size: 26px;
-  font-weight: 700;
+  font-size: var(--mt-font-size-monogram);
+  font-weight: var(--mt-font-weight-bold);
   line-height: 1;
   letter-spacing: 0.04em;
 }
@@ -409,8 +413,9 @@ textarea:focus-visible {
   );
 }
 
-/* Nom en surimpression : dégradé qui part du transparent, hauteur minimale fixe quel que
-   soit le nombre de lignes, texte en bas sur deux lignes au plus. */
+/* Nom en surimpression, texte en bas sur deux lignes au plus, hauteur minimale fixe quel que
+   soit le nombre de lignes. Le dégradé sombre n'est posé que sur une image (voir plus bas) :
+   le monogramme teinté est assez sombre en bas pour porter le texte et son ombre. */
 .card__name {
   position: absolute;
   left: 0;
@@ -422,6 +427,11 @@ textarea:focus-visible {
   align-items: flex-end;
   justify-content: center;
   padding: 0 5px 4px;
+}
+
+/* Le dégradé n'est posé que sur une image. `.card__img` précède toujours `.card__name` (même
+   parent) : sélecteur de frère, sans `:has`. */
+.card__img ~ .card__name {
   background: var(--mt-name-scrim);
 }
 
@@ -435,7 +445,7 @@ textarea:focus-visible {
   overflow: hidden;
   overflow-wrap: break-word;
   font-size: var(--mt-font-size-sm);
-  font-weight: 600;
+  font-weight: var(--mt-font-weight-semibold);
   line-height: 1.2;
   text-align: center;
   color: var(--mt-text);
@@ -455,16 +465,18 @@ textarea:focus-visible {
   border-radius: 7px;
   background: var(--mt-chip-bg);
   box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
-  color: var(--mt-accent);
-  font-size: 9px;
-  font-weight: 700;
+  color: var(--mt-text);
+  font-size: var(--mt-font-size-xs);
+  font-weight: var(--mt-font-weight-bold);
   line-height: 1;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-/* Étoile : discrète au repos, nette au survol, accent quand active. Le tracé `.icon-halo`
-   la détoure en sombre pour rester lisible sur une image claire. */
+/* Étoile : visible en permanence seulement si la destination est favorite (accent) ;
+   sinon masquée, révélée au survol de la carte ou au focus clavier (de l'étoile ou de la
+   carte). Masquée par l'opacité seule : elle reste dans l'ordre de tabulation. Le tracé
+   `.icon-halo` la détoure en sombre pour rester lisible sur une image claire. */
 .card__star {
   position: absolute;
   top: 2px;
@@ -476,7 +488,7 @@ textarea:focus-visible {
   place-items: center;
   border-radius: 50%;
   color: var(--mt-text);
-  opacity: 0.45;
+  opacity: 0;
   transition: opacity var(--mt-transition), transform var(--mt-transition);
 }
 
@@ -492,6 +504,10 @@ textarea:focus-visible {
 .card__star:focus-visible,
 .card__star.is-on {
   opacity: 1;
+}
+
+.card:has(:focus-visible) .card__star:not(.is-on, :focus-visible) {
+  opacity: 0.9;
 }
 
 .card__star.is-on {
@@ -585,7 +601,7 @@ textarea:focus-visible {
 /* ---------- Carte à deux étapes ----------
    Deux triangles séparés par un interstice transparent de `--mt-split-gap` (diagonale
    bas-gauche → haut-droite). La carte elle-même n'a ni fond ni bordure : tout ce qui est
-   peint (fond, image unique, reflet, dégradé du nom) est dans `.card__art`, découpé une seule
+   peint (fond, image unique, dégradé du nom) est dans `.card__art`, découpé une seule
    fois par `--mt-zone-both` ; l'interstice laisse voir ce qu'il y a réellement derrière.
    Les deux boutons couvrent toute la carte et sont découpés chacun par son triangle
    (`--mt-zone-1` / `--mt-zone-2`) : la découpe vaut pour la zone qui reçoit les clics, son
@@ -608,11 +624,6 @@ textarea:focus-visible {
   background: none;
 }
 
-/* Le reflet de la carte passe sur le calque découpé (sinon il peindrait l'interstice). */
-.card--split::before {
-  content: none;
-}
-
 .card__art {
   position: absolute;
   inset: 0;
@@ -622,20 +633,9 @@ textarea:focus-visible {
   clip-path: var(--mt-zone-both);
 }
 
-/* Reflet : mêmes ombres internes que `.card::before`, au-dessus de l'image et du dégradé. */
-.card__art::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: var(--mt-radius);
-  box-shadow:
-    inset 0 1px 0 var(--mt-card-sheen),
-    inset 0 0 0 1px var(--mt-card-inner);
-}
-
-/* Dégradé du nom, découpé avec l'image ; le texte, lui, reste entier au-dessus. */
-.card__art::after {
+/* Dégradé du nom, découpé avec l'image ; le texte, lui, reste entier au-dessus. Comme sur une
+   carte classique, il n'est posé que s'il y a une image. */
+.card__art:has(.card__img)::after {
   content: '';
   position: absolute;
   left: 0;
@@ -736,8 +736,8 @@ textarea:focus-visible {
   background: var(--mt-chip-bg);
   box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
   color: var(--mt-text);
-  font-size: 9px;
-  font-weight: 700;
+  font-size: var(--mt-font-size-xs);
+  font-weight: var(--mt-font-weight-bold);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -894,7 +894,7 @@ textarea:focus-visible {
 
 .panel__title {
   flex: 1;
-  font-weight: 600;
+  font-weight: var(--mt-font-weight-semibold);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -930,7 +930,7 @@ textarea:focus-visible {
   border-radius: var(--mt-radius);
   border: 1px solid var(--mt-card-border);
   background: var(--mt-card-bg);
-  font-weight: 600;
+  font-weight: var(--mt-font-weight-semibold);
   font-variant-numeric: tabular-nums;
   transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, opacity 120ms ease,
     transform 120ms ease;
@@ -949,8 +949,8 @@ textarea:focus-visible {
   position: absolute;
   top: 2px;
   left: 5px;
-  font-size: 9px;
-  font-weight: 400;
+  font-size: var(--mt-font-size-xs);
+  font-weight: var(--mt-font-weight-regular);
   color: var(--mt-text-muted);
 }
 
@@ -1014,13 +1014,13 @@ textarea:focus-visible {
 .form__label {
   font-size: var(--mt-font-size-sm);
   color: var(--mt-text-muted);
-  font-weight: 600;
+  font-weight: var(--mt-font-weight-semibold);
 }
 
 .form__hint {
   margin: 0;
   font-size: var(--mt-font-size-sm);
-  font-weight: 400;
+  font-weight: var(--mt-font-weight-regular);
   color: var(--mt-text-muted);
 }
 
@@ -1029,7 +1029,7 @@ textarea:focus-visible {
   min-height: 24px;
   padding: 3px 8px;
   border-radius: var(--mt-radius-sm);
-  border: 1px solid var(--mt-card-border);
+  border: 1px solid var(--mt-field-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text);
   font: inherit;
@@ -1053,7 +1053,7 @@ textarea:focus-visible {
 
 /* Champs de commande : chasse fixe, retours à la ligne visibles, hauteur réglable. */
 .form__input--mono {
-  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-family: var(--mt-font-mono);
   resize: vertical;
   min-height: 48px;
   white-space: pre-wrap;
@@ -1172,7 +1172,7 @@ textarea:focus-visible {
 
 .form__preview-value,
 .form__preview-steps {
-  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-family: var(--mt-font-mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   max-height: 4.5em;
@@ -1190,8 +1190,32 @@ textarea:focus-visible {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  color: var(--mt-accent);
+  color: var(--mt-text);
   font-size: var(--mt-font-size-sm);
+}
+
+/* Chevron : signale le dépliage sans l'accent (réservé à la sélection, l'action principale
+   et le focus). Pointe à droite fermé, vers le bas ouvert. */
+.form__more::before {
+  content: '';
+  align-self: center;
+  width: 5px;
+  height: 5px;
+  margin: 0 1px 0 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.form__more[aria-expanded='true']::before {
+  transform: rotate(45deg);
+}
+
+@media (hover: hover) {
+  .form__more:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 
 .form__more-body {
@@ -1264,7 +1288,7 @@ textarea:focus-visible {
 }
 
 .settings__path {
-  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-family: var(--mt-font-mono);
 }
 
 /* Groupe de boutons radio (mode de mise à jour) : sans le cadre natif du fieldset. */
@@ -1308,7 +1332,7 @@ textarea:focus-visible {
 }
 
 .settings__body code {
-  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-family: var(--mt-font-mono);
   color: var(--mt-text);
   user-select: text;
 }
@@ -1368,7 +1392,7 @@ textarea:focus-visible {
 
 .aliases__name {
   flex: none;
-  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-family: var(--mt-font-mono);
   font-weight: 700;
   color: var(--mt-text);
   user-select: text;
@@ -1400,11 +1424,11 @@ textarea:focus-visible {
   min-height: 24px;
   padding: 3px 8px;
   border-radius: var(--mt-radius-sm);
-  border: 1px solid var(--mt-card-border);
+  border: 1px solid var(--mt-field-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text);
   text-align: left;
-  font-family: Consolas, 'Cascadia Mono', ui-monospace, monospace;
+  font-family: var(--mt-font-mono);
   transition: border-color 120ms ease, color 120ms ease;
 }
 

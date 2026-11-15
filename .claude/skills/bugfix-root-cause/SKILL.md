@@ -9,5 +9,6 @@ description: Corriger un bug de Map Traveller par la cause racine — reproduire
 2. Localiser via CodeGraph (`codegraph query <symbole>`) puis lecture ciblée.
 3. **Reproduire par un test qui échoue** (Vitest pour toute logique pure). Pas de correctif sans reproduction, sauf impossibilité justifiée (UI Windows, Rust sans cargo).
 4. Corriger la cause, pas le symptôme. Pas de rustine dans un composant si l'erreur est dans une fonction pure.
-5. `npm run typecheck && npm run lint && npm test`.
+5. `npm run check`. Trois tentatives au maximum sur un même échec ; au-delà, s'arrêter et exposer ce qui a été essayé.
 6. Rapport : cause, correctif, test ajouté, ce qui reste non vérifié.
+7. Ajouter une note dans `docs/agent-notes.md` : le test ajouté est le garde-fou.

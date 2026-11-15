@@ -6,6 +6,16 @@ Spécification de référence : [docs/cahier-des-charges.md](docs/cahier-des-cha
 
 ## Commandes
 
+`npm run help` affiche le menu complet. **Utiliser les cibles du menu** plutôt que de reconstruire une commande : elles portent les bons arguments, et la CI lance les mêmes.
+
+| Moment | Cible |
+|---|---|
+| Avant de commencer | `npm run context -- <mots>` |
+| Pendant le travail | `npm run check` (typecheck + lint + tests) |
+| Un seul test | `npm test -- tests/<fichier>.test.ts` |
+| Avant de rendre la main | `npm run check:full` (ajoute le build des deux pages) |
+| Après un push, pour le Rust | `npm run ci:watch` |
+
 ```bash
 npm install            # dépendances front + CLI Tauri
 npm run dev            # UI seule dans le navigateur (fallback navigator.clipboard + localStorage)
@@ -39,6 +49,38 @@ src-tauri/tauri.release.conf.json  # surcharge des builds de tag (fichiers de mi
 tests/                   # Vitest
 ```
 
+## Où commencer
+
+| Tâche | Lire en premier | Skill |
+|---|---|---|
+| Ce qui est copié par un clic ou une touche | `src/features/commands/`, `src/features/farm/`, leurs tests | `copy-rules` |
+| Format du catalogue, réglages, fichiers | `src/features/catalog/schema.ts`, `src/features/settings/`, `src-tauri/src/storage.rs` | `catalog-storage` |
+| Cartes, panneaux, formulaire, palette (visuel) | `src/styles/tokens.css`, `src/styles/app.css`, `src/components/` | `ui-da-pnj` |
+| Palette de recherche | `src/features/palette/`, `src/palette/`, `src-tauri/src/palette.rs` | `copy-rules`, `ui-da-pnj` |
+| Publication, versions, mises à jour | `.github/workflows/windows.yml`, `scripts/` | `ci-release-windows` |
+| Bug signalé | reproduire par un test avant de corriger | `bugfix-root-cause` |
+
+## Ne pas toucher sans demander
+
+- `plugins.updater.pubkey` et `identifier` dans `tauri.conf.json` : les installations existantes en dépendent.
+- Les secrets GitHub et tout ce qui touche à la signature.
+- Un tag déjà publié, une Release publiée.
+- Le format de `catalog.json` sans monter `schemaVersion` : les données des utilisateurs en dépendent.
+- L'historique Git (réécriture, force-push).
+- Dans le doute sur la portée d'un changement : s'arrêter et demander.
+
+## Validation de l'interface
+
+Les tests ne voient ni un chevauchement, ni un texte illisible, ni un débordement. Tout changement visuel se contrôle dans le navigateur (`npm run dev`, puis `npm run dev:stop`).
+
+1. **Le texte d'abord** : état du DOM, `getComputedStyle`, `elementsFromPoint`, console sans erreur. Une capture ne vient qu'ensuite.
+2. **Données de contrôle** : `tests/fixtures/demo-catalog.json` couvre chaque cas (deux étapes, Farm avec position répétée, nom long, commande vide). Le charger dans `localStorage` sous la clé `map-traveller:catalog`, puis vider `localStorage` en fin de contrôle.
+3. **Taille** : ne pas émuler la taille de la fenêtre (captures rognées) ; fixer `#root` à 510 × 300, ou 560 × 380 pour `palette.html`.
+4. **Survol** : un survol simulé n'est pas fiable. Forcer l'état par une feuille de style de test, ou lire le style calculé.
+5. **Question précise** par capture (« le nom tient-il sur deux lignes sans toucher le repère ? »), jamais « est-ce joli ? ».
+6. **Deux tentatives de correction au maximum** à partir de captures ; au-delà, s'arrêter et montrer le résultat.
+7. Ce qui n'est visible que sur l'application installée (dialogues Windows, palette devant le jeu, mises à jour) est à lister comme **non vérifié**.
+
 ## Invariants (ne jamais enfreindre)
 
 1. `command` = texte brut. Jamais reconstruit, normalisé, réordonné ni tronqué silencieusement.
@@ -59,8 +101,12 @@ tests/                   # Vitest
 
 ## Workflow Claude
 
+- **Proportionner l'effort.** Petite modification à faible risque : la faire, lire le diff, lancer `npm run check`. Un plan n'est utile que si la tâche traverse plusieurs couches, touche aux données des utilisateurs, à la publication ou à la sécurité, ou si la demande est ambiguë. Un plan reste court : hypothèses, questions ouvertes, fichiers probables, commandes de validation.
+- **Fermer la boucle** : écrire, vérifier, lire la sortie, corriger. Trois tours au maximum sur un même échec, puis s'arrêter et exposer le problème (skill `review-loop`).
+- **Garder la trace des frictions** : en fin de tâche, noter dans `docs/agent-notes.md` chaque correction demandée par l'utilisateur et chaque erreur trouvée en revue. Une erreur vue deux fois devient un test, un script ou une règle.
+- Les règles ci-dessus disent pourquoi elles existent. Si une règle ne semble pas s'appliquer au cas présent et que la raison n'est pas claire : s'arrêter et demander, plutôt que de l'appliquer à l'aveugle ou de la contourner.
 - Recherche de code : **CodeGraph d'abord** (`codegraph query <nom>` ou `sqlite3 .codegraph/codegraph.db ...`), puis lecture ciblée.
-- Skills projet : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request`.
+- Skills projet : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request`, `review-loop`.
 - Agents : `architecte` (cadrage) → `implementation` → `reviewer` (tâche moyenne/complexe). Spécialistes : `tauri-rust`, `ui-da`.
 - Ne jamais committer ni pousser sans demande explicite.
 - **Toute livraison poussée sur `main` se termine par une version et un tag** (`npm run version:set -- X.Y.Z`, commit `Version X.Y.Z`, `git tag vX.Y.Z`, push) : sans tag, GitHub ne publie pas de `.exe`. Détail et cas particuliers : skill `ci-release-windows`.

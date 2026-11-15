@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 3,
+  "destinations": [
+    { "id": "demo-gardien", "name": "Gardien du pont", "category": "npc", "zone": "Zone fictive", "aliases": [], "tags": ["demo"], "image": null, "command": "/zaap 5 -18;/travel 1 1", "sortOrder": 0, "enabled": true, "twoStep": false, "command2": "" },
+    { "id": "demo-antre", "name": "Antre des profondeurs oubliées", "category": "dungeon", "zone": "Zone fictive", "aliases": [], "tags": ["demo"], "image": null, "command": "/zaap 1 2;/travel 3 4", "sortOrder": 0, "enabled": true, "twoStep": false, "command2": "" },
+    { "id": "demo-temple", "name": "Temple en deux temps", "category": "dungeon", "zone": "", "aliases": [], "tags": ["demo"], "image": null, "command": "/zaap 5 -18;/travel 1 1", "sortOrder": 0, "enabled": true, "twoStep": true, "command2": "/travel 2 2;/travel 3 3" },
+    { "id": "demo-marchande", "name": "Marchande itinérante du port", "category": "npc", "zone": "", "aliases": [], "tags": ["demo"], "image": null, "command": "/travel 4 4", "sortOrder": 0, "enabled": true, "twoStep": true, "command2": "/travel 5 5" },
+    { "id": "demo-clairiere", "name": "Clairière", "category": "place", "zone": "", "aliases": [], "tags": ["demo"], "image": null, "command": "/travel 7 7", "sortOrder": 0, "enabled": true, "twoStep": false, "command2": "" },
+    { "id": "demo-tremble", "name": "Tremble", "category": "farm", "zone": "", "aliases": [], "tags": ["demo"], "image": null, "command": "/travel 1 1;/travel 2 2;/travel 3 3;/travel 2 2;/travel 5 5", "sortOrder": 0, "enabled": true, "twoStep": false, "command2": "" },
+    { "id": "demo-frene", "name": "Frêne", "category": "farm", "zone": "", "aliases": [], "tags": ["demo"], "image": null, "command": "/zaap 9 9;/travel 1 1;/travel 4 4", "sortOrder": 0, "enabled": true, "twoStep": false, "command2": "" },
+    { "id": "demo-vide", "name": "Sans commande", "category": "npc", "zone": "", "aliases": [], "tags": ["demo"], "image": null, "command": "", "sortOrder": 0, "enabled": true, "twoStep": false, "command2": "" }
+  ]
+}

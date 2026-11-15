@@ -195,6 +195,8 @@ L'import/export ZIP intégré est prévu, voir la feuille de route.
 
 ```bash
 npm install          # dépendances
+npm run help         # menu complet des commandes du dépôt
+npm run check        # typecheck + lint + tests (check:full ajoute le build)
 npm run dev          # UI seule dans le navigateur (http://localhost:1420)
 npm run tauri dev    # application native complète (Rust requis)
 npm run typecheck    # TypeScript
@@ -301,7 +303,7 @@ Ne présenter la fonction comme fiable qu'après l'étape 5.
 Le dossier `.claude/` contient le paramétrage du projet :
 
 - **hooks** : blocage de l'édition des fichiers générés, typecheck après édition TS, sync CodeGraph au démarrage ;
-- **skills** : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request` ;
+- **skills** : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request`, `review-loop` ;
 - **agents** : `architecte`, `implementation`, `reviewer`, `tauri-rust`, `ui-da`.
 
 Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](https://www.npmjs.com/package/@colbymchenry/codegraph) (`.codegraph/`) est local à chaque machine (`codegraph init -i` pour le créer).

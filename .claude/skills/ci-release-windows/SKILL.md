@@ -48,7 +48,7 @@ Plugin updater de Tauri, index `https://github.com/Kahinh/map_traveller/releases
 
 ## Diagnostic d'un échec
 
-`gh run list --limit 5` puis `gh run view <id> --log-failed`. Identifier l'étape, reproduire en local si possible (`npm run typecheck`, `npm test`), sinon corriger d'après le log Rust.
+`npm run ci:watch` attend le build du commit courant et résume les étapes en échec et les erreurs de compilation (`npm run ci:watch -- <id>` pour un run précis). À défaut : `gh run list --limit 5` puis `gh run view <id> --log-failed`. Identifier l'étape, reproduire en local si possible (`npm run typecheck`, `npm test`), sinon corriger d'après le log Rust.
 
 ## Interdits
 

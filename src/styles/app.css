@@ -252,9 +252,10 @@ textarea:focus-visible {
    `content-visibility` fait de `.card` un contexte d'empilement et rogne tout ce qui dépasse :
    aucun effet ne sort du cadre (ni ombre ni contour externes). Empilement, du fond vers le
    dessus :
-     image ou dégradé teinté (auto)
-     → voile de survol / appui `::after` du bouton ou de la zone (auto, après l'image)
-     → trait diagonal (auto)
+     image ou dégradé teinté (auto ; carte à deux étapes : dans le calque découpé `.card__art`,
+       avec son reflet et le dégradé du nom)
+     → contour d'un triangle `::before`, voile de survol / appui `::after` du bouton ou de la
+       zone (auto, après l'image)
      → pastille Farm, repères 1 / 2, nom sur son dégradé (z 1)
      → liseré de survol / focus de la carte classique, reflet `.card::before` (z 2)
      → contour et coche de copie (z 3)
@@ -396,6 +397,18 @@ textarea:focus-visible {
   letter-spacing: 0.04em;
 }
 
+/* Dégradé du nom, déclaré une seule fois : peint par `.card__name` sur une carte classique, par
+   le calque découpé `.card__art::after` sur une carte à deux étapes. */
+.card {
+  --mt-name-scrim: linear-gradient(
+    to top,
+    var(--mt-scrim-strong) 0%,
+    var(--mt-scrim-mid) 36%,
+    var(--mt-scrim-soft) 66%,
+    var(--mt-scrim-clear) 100%
+  );
+}
+
 /* Nom en surimpression : dégradé qui part du transparent, hauteur minimale fixe quel que
    soit le nombre de lignes, texte en bas sur deux lignes au plus. */
 .card__name {
@@ -409,13 +422,7 @@ textarea:focus-visible {
   align-items: flex-end;
   justify-content: center;
   padding: 0 5px 4px;
-  background: linear-gradient(
-    to top,
-    var(--mt-scrim-strong) 0%,
-    var(--mt-scrim-mid) 36%,
-    var(--mt-scrim-soft) 66%,
-    var(--mt-scrim-clear) 100%
-  );
+  background: var(--mt-name-scrim);
 }
 
 .card__label {
@@ -567,29 +574,84 @@ textarea:focus-visible {
 }
 
 /* Calques décoratifs : ils ne doivent jamais intercepter un clic. */
-.card--split .card__img,
-.card--split .card__placeholder,
+.card__art,
 .card__name,
 .card__badge,
 .card__check,
-.card__divider,
 .card__step {
   pointer-events: none;
 }
 
 /* ---------- Carte à deux étapes ----------
-   Une seule image ; deux boutons couvrant toute la carte, découpés en triangles par
-   `clip-path` (la découpe vaut aussi pour la zone qui reçoit les clics et pour son voile
-   `::after`). Les variables `--mt-zone-1` / `--mt-zone-2` sont la SEULE définition de la
-   géométrie : tout calque lié à une zone (retour de copie, surbrillance) doit les
-   réutiliser. Les deux polygones partagent exactement la diagonale bas-gauche → haut-droite.
+   Deux triangles séparés par un interstice transparent de `--mt-split-gap` (diagonale
+   bas-gauche → haut-droite). La carte elle-même n'a ni fond ni bordure : tout ce qui est
+   peint (fond, image unique, reflet, dégradé du nom) est dans `.card__art`, découpé une seule
+   fois par `--mt-zone-both` ; l'interstice laisse voir ce qu'il y a réellement derrière.
+   Les deux boutons couvrent toute la carte et sont découpés chacun par son triangle
+   (`--mt-zone-1` / `--mt-zone-2`) : la découpe vaut pour la zone qui reçoit les clics, son
+   contour `::before` et son voile `::after`. Ces variables sont la SEULE définition de la
+   géométrie : tout calque lié à une zone (retour de copie, surbrillance) les réutilise.
    Aucune transformation au survol sur les zones ni sur la carte : la frontière bougerait. */
 .card--split {
-  --mt-zone-1: polygon(0 0, 100% 0, 0 100%); /* haut-gauche : étape 1 */
-  --mt-zone-2: polygon(100% 0, 100% 100%, 0 100%); /* bas-droite : étape 2 */
+  /* Recul de chaque triangle le long des côtés : demi-interstice × √2. Carte carrée uniquement. */
+  --mt-zone-cut: calc(var(--mt-split-gap) * 0.7071);
+  /* haut-gauche : étape 1 */
+  --mt-zone-1: polygon(0 0, calc(100% - var(--mt-zone-cut)) 0, 0 calc(100% - var(--mt-zone-cut)));
+  /* bas-droite : étape 2 */
+  --mt-zone-2: polygon(100% var(--mt-zone-cut), 100% 100%, var(--mt-zone-cut) 100%);
+  /* Les deux triangles en un seul tracé : aller-retour de surface nulle entre les deux. */
+  --mt-zone-both: polygon(
+    0 0, calc(100% - var(--mt-zone-cut)) 0, 0 calc(100% - var(--mt-zone-cut)), 0 0,
+    100% var(--mt-zone-cut), 100% 100%, var(--mt-zone-cut) 100%, 100% var(--mt-zone-cut)
+  );
+  border: 0;
+  background: none;
+}
+
+/* Le reflet de la carte passe sur le calque découpé (sinon il peindrait l'interstice). */
+.card--split::before {
+  content: none;
+}
+
+.card__art {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--mt-radius);
+  overflow: hidden;
+  background: var(--mt-card-bg);
+  clip-path: var(--mt-zone-both);
+}
+
+/* Reflet : mêmes ombres internes que `.card::before`, au-dessus de l'image et du dégradé. */
+.card__art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--mt-radius);
+  box-shadow:
+    inset 0 1px 0 var(--mt-card-sheen),
+    inset 0 0 0 1px var(--mt-card-inner);
+}
+
+/* Dégradé du nom, découpé avec l'image ; le texte, lui, reste entier au-dessus. */
+.card__art::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  background: var(--mt-name-scrim);
+}
+
+.card--split .card__name {
+  background: none;
 }
 
 .card__zone {
+  --zone-edge: var(--mt-card-border);
+  --zone-edge-w: 1px;
   position: absolute;
   inset: 0;
   width: 100%;
@@ -604,22 +666,47 @@ textarea:focus-visible {
   clip-path: var(--mt-zone-2);
 }
 
-/* Liseré du triangle : le `clip-path` ne garde que ses deux côtés extérieurs ; le trait
-   diagonal, au-dessus, marque le troisième. */
-.card__zone::after {
-  background-color: var(--mt-highlight-zone);
-  box-shadow: inset 0 0 0 1px var(--mt-highlight-edge);
+/* Contour du triangle sur ses trois côtés : ombre interne pour les deux côtés extérieurs, bande
+   centrée sur la diagonale, plus large que l'interstice de l'épaisseur du trait, dont le
+   `clip-path` de la zone ne garde que le bord qui la longe. Survol, focus et copie ne changent
+   que `--zone-edge` / `--zone-edge-w`. */
+.card__zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--mt-radius);
+  box-shadow: inset 0 0 0 var(--zone-edge-w) var(--zone-edge);
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - var(--mt-split-gap) / 2 - var(--zone-edge-w)),
+    var(--zone-edge) calc(50% - var(--mt-split-gap) / 2 - var(--zone-edge-w)),
+    var(--zone-edge) calc(50% + var(--mt-split-gap) / 2 + var(--zone-edge-w)),
+    transparent calc(50% + var(--mt-split-gap) / 2 + var(--zone-edge-w))
+  );
+  pointer-events: none;
 }
 
-/* `clip-path` rogne le contour de focus : voile et liseré accent le remplacent, nettement
-   distincts du voile clair de survol. */
+.card__zone::after {
+  border-radius: var(--mt-radius);
+  background-color: var(--mt-highlight-zone);
+}
+
+@media (hover: hover) {
+  .card__zone:hover {
+    --zone-edge: var(--mt-highlight-edge);
+  }
+}
+
+/* `clip-path` rogne le contour de focus : voile et contour accent 2 px le remplacent,
+   nettement distincts du voile clair de survol. */
 .card__zone:focus-visible {
+  --zone-edge: var(--mt-accent);
+  --zone-edge-w: 2px;
   outline: none;
 }
 
 .card__zone:focus-visible::after {
   background-color: var(--mt-focus);
-  box-shadow: inset 0 0 0 2px var(--mt-accent);
   opacity: 1;
 }
 
@@ -633,22 +720,6 @@ textarea:focus-visible {
 .card--split .card__placeholder {
   padding-bottom: 0;
   color: var(--mt-ph-ink-faint);
-}
-
-/* Trait diagonal : avec `to bottom right`, la ligne des 50 % relie le coin bas-gauche au
-   coin haut-droit. Cœur clair bordé d'un halo sombre, lisible sur image claire ou sombre. */
-.card__divider {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom right,
-    transparent calc(50% - 1.5px),
-    var(--mt-divider-halo) calc(50% - 1px),
-    var(--mt-divider) calc(50% - 0.25px),
-    var(--mt-divider) calc(50% + 0.25px),
-    var(--mt-divider-halo) calc(50% + 1px),
-    transparent calc(50% + 1.5px)
-  );
 }
 
 /* Repères « 1 » et « 2 » : petites pastilles rondes au cœur de chaque triangle. Le « 1 »
@@ -698,18 +769,35 @@ textarea:focus-visible {
   }
 }
 
-/* Retour de copie limité à la zone cliquée : même découpe que la zone. */
+/* Retour de copie limité à la zone cliquée : même découpe que la zone. Le contour de carte
+   `.card::after` ne suivrait que deux côtés du triangle : le contour de la zone copiée le
+   remplace. */
 .card--split .card__check {
   display: block;
   padding-bottom: 0;
 }
 
-.card--split.is-part-1::after,
+.card--split.is-copied::after,
+.card--split.is-warning::after {
+  content: none;
+}
+
+.card--split.is-copied.is-part-1 .card__zone--1,
+.card--split.is-copied.is-part-2 .card__zone--2 {
+  --zone-edge: var(--mt-accent);
+  --zone-edge-w: 2px;
+}
+
+.card--split.is-warning.is-part-1 .card__zone--1,
+.card--split.is-warning.is-part-2 .card__zone--2 {
+  --zone-edge: var(--mt-warning);
+  --zone-edge-w: 2px;
+}
+
 .card__check--1 {
   clip-path: var(--mt-zone-1);
 }
 
-.card--split.is-part-2::after,
 .card__check--2 {
   clip-path: var(--mt-zone-2);
 }

@@ -49,6 +49,14 @@ Sur une carte à deux étapes, la coche recouvrait le « 1 » ou le « 2 ». Vu 
 Une longue commande avec un script Node en ligne et du texte français (apostrophes, accents graves) a échoué à l'analyse du shell.
 **Garde-fou :** écrire le script dans un fichier temporaire, puis l'exécuter. Pas de script de plus de quelques lignes en ligne de commande.
 
+### 2026-11-15 — `test-fragile` — Seuil de 50 ms de `palettePerf.test.ts` sous charge
+Pendant l'issue n°12 (CSS seul), un `npm run check` a échoué une fois sur ce test (« requête … < 50 ms »), puis neuf passages consécutifs ont réussi. Cause : machine chargée par plusieurs worktrees qui testaient en parallèle, pas le code.
+**Garde-fou :** aucun, à surveiller. Si cela se reproduit, mesurer une médiane sur plusieurs passes plutôt qu'un passage unique.
+
+### 2026-11-15 — `outil-trompeur` — Worktrees parallèles : ports et cache Vite partagés
+Le port choisi pour un second serveur Vite était déjà pris par une autre tâche, et Vite annonce « Re-optimizing dependencies because vite config has changed » : `node_modules` est un lien vers le même dossier, donc le cache `node_modules/.vite` est commun à tous les worktrees.
+**Garde-fou :** aucun, à surveiller. Un port par tâche, fixé dans la consigne, avec `--strictPort`.
+
 ### 2026-11-14 — `non-vérifié` — Partie native jamais lancée
 La palette, les raccourcis configurables, l'import d'images, l'ouverture du dossier de données et les mises à jour ont été écrits sans pouvoir être exécutés. La CI prouve qu'ils compilent.
 **Garde-fou :** listes de tests manuels dans les commentaires de clôture des issues n°3, n°4, n°5 et n°6. À retirer d'ici quand l'utilisateur les aura déroulées.

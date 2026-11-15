@@ -39,14 +39,12 @@
   --mt-chip-bg: rgba(14, 15, 26, 0.72);
   --mt-chip-ring: rgba(241, 241, 255, 0.28);
   --mt-icon-halo: rgba(14, 15, 26, 0.7);
-  /* Trait diagonal d'une carte à deux étapes : cœur clair, halo sombre. */
-  --mt-divider: rgba(241, 241, 255, 0.7);
-  --mt-divider-halo: rgba(14, 15, 26, 0.45);
   /* Retour de copie : léger lavis d'accent sous la pastille cochée. */
   --mt-copied-wash: rgba(229, 240, 82, 0.14);
 
   --mt-card-size: 90px;
   --mt-gap: 6px;
+  --mt-split-gap: 4px; /* interstice des cartes à deux étapes, mesuré perpendiculairement à la diagonale */
   --mt-radius: 10px;
   --mt-radius-sm: 6px;
   --mt-titlebar-h: 30px;

@@ -2,8 +2,10 @@
 //!
 //! - Déclarée dans `tauri.conf.json` avec `"create": false` : toutes ses propriétés (taille,
 //!   sans décorations, toujours au premier plan, absente de la barre des tâches, invisible,
-//!   couleur de fond) y sont lues. Elle est créée à la PREMIÈRE utilisation, puis seulement
-//!   masquée et réaffichée.
+//!   couleur de fond) y sont lues. Elle est créée masquée DÈS LE LANCEMENT (`preload_palette`,
+//!   appelée dans `setup`, issue n°14) pour que la première ouverture soit aussi rapide que les
+//!   suivantes, puis seulement masquée et réaffichée. Si ce préchargement échoue, elle est créée
+//!   à la première utilisation, comme avant.
 //! - Affichage : centrée sur l'écran principal, puis focus, puis événement `palette:shown`.
 //! - Perte de focus → masquée, sauf dans les `FOCUS_GRACE` qui suivent un affichage.
 //! - Le retour du focus à la fenêtre précédente est laissé au comportement natif de Windows.
@@ -11,7 +13,7 @@
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, WebviewWindow, WebviewWindowBuilder, Window};
+use tauri::{App, AppHandle, Emitter, Manager, PhysicalPosition, WebviewWindow, WebviewWindowBuilder, Window, Wry};
 
 /// Libellé de la fenêtre : cible des capabilities (`capabilities/palette.json`) et exclue
 /// du plugin qui mémorise la position des fenêtres.
@@ -54,6 +56,30 @@ pub fn toggle_palette(app: &AppHandle) {
     });
 }
 
+/// Ouvre la palette (menu de la zone de notification) : comme `toggle_palette`, mais n'a jamais
+/// pour effet de la masquer.
+pub fn open_palette(app: &AppHandle) {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        if let Err(e) = show_palette(&app) {
+            eprintln!("{e}");
+        }
+    });
+}
+
+/// Crée la palette, masquée, si elle n'existe pas encore. Appelée dans `setup` (fil principal,
+/// avant la boucle d'événements). Un échec n'empêche pas le démarrage ; la palette sera alors
+/// créée à la première utilisation.
+pub fn preload_palette(app: &App) {
+    let _guard = SHOW_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+    if app.get_webview_window(PALETTE_LABEL).is_some() {
+        return;
+    }
+    if let Err(e) = create_palette(app) {
+        eprintln!("{e}");
+    }
+}
+
 /// Crée la palette si besoin, la centre sur l'écran principal, l'affiche, lui donne le focus
 /// et émet `palette:shown`. À appeler hors du fil principal (voir `toggle_palette`).
 pub fn show_palette(app: &AppHandle) -> Result<(), String> {
@@ -75,7 +101,7 @@ pub fn show_palette(app: &AppHandle) -> Result<(), String> {
 }
 
 /// Crée la fenêtre (invisible) à partir de sa déclaration dans `tauri.conf.json`.
-fn create_palette(app: &AppHandle) -> Result<WebviewWindow, String> {
+fn create_palette<M: Manager<Wry>>(app: &M) -> Result<WebviewWindow, String> {
     let config = app
         .config()
         .app

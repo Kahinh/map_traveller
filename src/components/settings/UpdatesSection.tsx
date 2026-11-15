@@ -13,7 +13,7 @@ const MODE_OPTIONS: { mode: UpdateMode; label: string; hint: string }[] = [
   {
     mode: 'auto',
     label: 'Automatique',
-    hint: "Une vérification a lieu au lancement de l'application ; une nouvelle version est alors téléchargée puis installée.",
+    hint: "Une vérification a lieu à l'ouverture de la fenêtre (lancement, retour depuis la zone de notification, au plus une toutes les deux minutes) ; une nouvelle version est alors téléchargée puis installée. Rien n'est vérifié tant que l'application est dans la zone de notification.",
   },
 ];
 

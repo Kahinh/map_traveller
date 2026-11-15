@@ -7,6 +7,9 @@
  *   y compris à l'intérieur de l'objet `updates`.
  * - `updates.lastCheckedAt`, `updates.lastSeenVersion` et `updates.lastAutoInstallVersion` sont
  *   écrits par le moteur de mise à jour (`useUpdater`) ; absents ou invalides → non définis.
+ * - `tray.minimizeToTray` (issue n°14) : écrit par l'interface, LU par Rust au moment de réduire
+ *   (`src-tauri/src/main_window.rs`) ; `true` si absent ou invalide, comme côté Rust. Les autres
+ *   clés de `tray` sont conservées.
  * - `shortcuts` appartient à Rust (`set_shortcut`) : l'interface le lit mais ne l'écrit jamais ;
  *   `mergeSettings` le reprend tel quel du fichier, et Rust le protège de son côté (`save_store`).
  */
@@ -27,9 +30,16 @@ export interface UpdateSettings {
   lastAutoInstallVersion?: string;
 }
 
+/** Zone de notification (issue n°14). */
+export interface TraySettings {
+  /** Réduire et le raccourci « afficher / masquer » envoient l'application dans la zone de notification. */
+  minimizeToTray: boolean;
+}
+
 export interface Settings {
   alwaysOnTop: boolean;
   updates: UpdateSettings;
+  tray: TraySettings;
   /** Lecture seule côté interface : modifié uniquement par les commandes Rust. */
   shortcuts: Record<ShortcutAction, string>;
 }
@@ -38,12 +48,15 @@ export interface Settings {
 export interface SettingsPatch {
   alwaysOnTop?: boolean;
   updates?: Partial<UpdateSettings>;
+  tray?: Partial<TraySettings>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   alwaysOnTop: true,
   // Hors ligne par défaut : aucune connexion sans choix explicite de l'utilisateur.
   updates: { mode: 'manual' },
+  // Activé par défaut (décision 6 de l'issue n°14) : le bouton fermer, lui, quitte toujours.
+  tray: { minimizeToTray: true },
   shortcuts: { ...DEFAULT_SHORTCUTS },
 };
 
@@ -100,10 +113,16 @@ export function parseSettings(input: unknown): Settings {
     palette = DEFAULT_SHORTCUTS.palette;
   }
   const updates = isRecord(data.updates) ? data.updates : {};
+  const tray = isRecord(data.tray) ? data.tray : {};
   return {
     // Comportement historique : seul `false` désactive le premier plan.
     alwaysOnTop: data.alwaysOnTop !== false,
     updates: parseUpdateSettings(updates),
+    // Seul un booléen est lu ; sinon la valeur par défaut (même règle que Rust).
+    tray: {
+      minimizeToTray:
+        typeof tray.minimizeToTray === 'boolean' ? tray.minimizeToTray : DEFAULT_SETTINGS.tray.minimizeToTray,
+    },
     shortcuts: { toggleMain, palette },
   };
 }
@@ -117,21 +136,25 @@ export function applySettingsPatch(settings: Settings, patch: SettingsPatch): Se
     ...settings,
     alwaysOnTop: patch.alwaysOnTop ?? settings.alwaysOnTop,
     updates: { ...settings.updates, ...definedUpdateFields(patch.updates ?? {}) },
+    tray: { minimizeToTray: patch.tray?.minimizeToTray ?? settings.tray.minimizeToTray },
   };
 }
 
 /**
  * Objet à écrire : le contenu actuel du fichier (`raw`, toutes clés conservées, `shortcuts`
- * compris) avec les seules clés que l'interface possède remplacées. Dans `updates`, seuls
+ * compris) avec les seules clés que l'interface possède remplacées. Dans `tray`, seul
+ * `minimizeToTray` est remplacé. Dans `updates`, seuls
  * `mode` et les champs DÉFINIS du moteur de mise à jour sont remplacés : les autres champs
  * (écrits par une version plus récente) sont conservés, de même qu'un champ connu non défini.
  */
 export function mergeSettings(raw: unknown, settings: Settings): Record<string, unknown> {
   const base = isRecord(raw) ? raw : {};
   const updates = isRecord(base.updates) ? base.updates : {};
+  const tray = isRecord(base.tray) ? base.tray : {};
   return {
     ...base,
     alwaysOnTop: settings.alwaysOnTop,
     updates: { ...updates, ...definedUpdateFields(settings.updates), mode: settings.updates.mode },
+    tray: { ...tray, minimizeToTray: settings.tray.minimizeToTray },
   };
 }

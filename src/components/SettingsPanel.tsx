@@ -1,7 +1,10 @@
 import { useEffect, useId, useRef, type ComponentType } from 'react';
+import type { AliasesBinding } from '../app/useAliases';
+import type { Destination } from '../features/catalog/schema';
 import type { Settings, SettingsPatch } from '../features/settings/settings';
 import { UPDATER_NOT_AVAILABLE, type UpdaterBinding } from '../features/updates/types';
 import { Panel } from './Panel';
+import { AliasesSection } from './settings/AliasesSection';
 import { DataSection } from './settings/DataSection';
 import { DisplaySection } from './settings/DisplaySection';
 import { ShortcutsSection } from './settings/ShortcutsSection';
@@ -22,6 +25,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'updates', label: 'Mises à jour', render: UpdatesSection },
   { id: 'data', label: 'Données', render: DataSection },
   { id: 'display', label: 'Affichage', render: DisplaySection },
+  { id: 'aliases', label: 'Alias', render: AliasesSection },
   { id: 'shortcuts', label: 'Raccourcis', render: ShortcutsSection },
 ] as const satisfies readonly SectionDef[];
 
@@ -34,6 +38,8 @@ interface Props {
   settings: Settings;
   /** Moteur de mise à jour, fourni par l'issue n°5 ; indisponible par défaut. */
   updater?: UpdaterBinding;
+  aliases: AliasesBinding;
+  destinations: readonly Destination[];
   onSectionChange: (section: SettingsSectionId) => void;
   onChange: (patch: SettingsPatch) => void;
   onClose: () => void;
@@ -47,6 +53,8 @@ export function SettingsPanel({
   section,
   settings,
   updater = UPDATER_NOT_AVAILABLE,
+  aliases,
+  destinations,
   onSectionChange,
   onChange,
   onClose,
@@ -84,7 +92,14 @@ export function SettingsPanel({
         ))}
       </nav>
       <div className="form__body settings__body" role="tabpanel" id={`${uid}-panel`} aria-labelledby={tabId(current.id)}>
-        <Section key={current.id} settings={settings} onChange={onChange} updater={updater} />
+        <Section
+          key={current.id}
+          settings={settings}
+          onChange={onChange}
+          updater={updater}
+          aliases={aliases}
+          destinations={destinations}
+        />
       </div>
     </Panel>
   );

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildDictionary } from '../src/features/aliases/aliases';
 import type { Destination } from '../src/features/catalog/schema';
 import { farmResumeCommand, parseFarmRoute } from '../src/features/farm/farmRoute';
 import {
@@ -215,5 +216,59 @@ describe('parcours Farm dans la palette', () => {
   it('favori : marqué sur ses lignes', () => {
     const { entries } = search([tremble], 'tremble', ['tremble']);
     expect(entries.every((e) => e.favorite)).toBe(true);
+  });
+});
+
+describe('recherche tolérante dans la palette (issue n°10)', () => {
+  const dictionary = buildDictionary([{ term: 'hdv', expansions: ['hôtel des ventes'] }], {
+    custom: [],
+    disabledDefaults: [],
+  });
+  const list = [
+    dest({ id: 'hb', name: 'Hôtel des ventes de Bonta', command: '/zaap 1 1;/travel 2 2' }),
+    dest({ id: 'hk', name: 'Hôtel des ventes de Brâkmar', command: '/travel 3 3' }),
+    dest({ id: 'meu', name: 'Donjon du Meulou', category: 'dungeon', command: '/travel 4 4' }),
+    dest({ id: 'tremble', name: 'Tremble', category: 'farm', command: TREMBLE }),
+  ];
+  const titles = (query: string) =>
+    searchPalette(buildPaletteIndex(list, new Set(), dictionary), query, PALETTE_LIMIT).entries.map((e) => e.title);
+
+  it('alias du dictionnaire : toutes les destinations concernées, puis affinage', () => {
+    expect(titles('HDV')).toEqual(['Hôtel des ventes de Bonta', 'Hôtel des ventes de Brâkmar']);
+    expect(titles('hdv brakmar')).toEqual(['Hôtel des ventes de Brâkmar']);
+  });
+
+  it('les commandes copiées ne changent pas : texte brut, mêmes règles', () => {
+    const [entry] = searchPalette(buildPaletteIndex(list, new Set(), dictionary), 'hdv bonta', PALETTE_LIMIT).entries;
+    expect(entry?.choices).toEqual([{ label: '', hint: '', primary: '/travel 2 2', secondary: '/zaap 1 1;/travel 2 2' }]);
+  });
+
+  it('faute de frappe et mots de liaison', () => {
+    expect(titles('melou donjon')).toEqual(['Donjon du Meulou']);
+    expect(titles('donjon de la meulou')).toEqual(['Donjon du Meulou']);
+  });
+
+  it('parcours Farm avec une faute et une position : la reprise reste trouvée par indice', () => {
+    const { entries } = searchPalette(buildPaletteIndex(list, new Set(), dictionary), 'farm tremle 2 2', PALETTE_LIMIT);
+    expect(entries[0]?.kind).toBe('farm-step');
+    expect(entries[0]?.choices[0]?.primary).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
+  });
+
+  it('un PNJ au nom proche n\'empêche pas de retrouver le parcours à une faute près', () => {
+    const withNpc = [...list, dest({ id: 'pnj', name: 'Tremlbe garde', category: 'npc', command: '/travel 9 9' })];
+    const { entries } = searchPalette(buildPaletteIndex(withNpc, new Set(), dictionary), 'tremlbe 2 2', PALETTE_LIMIT);
+    expect(entries[0]?.kind).toBe('farm-step');
+    expect(entries[0]?.choices[0]?.primary).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
+  });
+
+  it('favoris fournis à la recherche : l\'index n\'a pas à être reconstruit quand ils changent', () => {
+    const index = buildPaletteIndex(list, new Set(), dictionary);
+    expect(searchPalette(index, '', PALETTE_LIMIT).entries[0]?.favorite).toBe(false);
+    const withFav = searchPalette(index, '', PALETTE_LIMIT, new Set(['meu'])).entries;
+    expect(withFav[0]).toMatchObject({ title: 'Donjon du Meulou', favorite: true });
+  });
+
+  it('sans dictionnaire, la palette se comporte comme avant', () => {
+    expect(searchPalette(buildPaletteIndex(list, new Set()), 'hdv', PALETTE_LIMIT).entries).toEqual([]);
   });
 });

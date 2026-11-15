@@ -15,6 +15,7 @@ Source : cahier des charges §6.3, §7, §8.
 | `catalog.json.bak` | version précédente, restaurable |
 | `favorites.json` | `{ "ids": [...] }` par identifiant stable |
 | `settings.json` | toujours devant, raccourci, position/taille |
+| `aliases.json` | alias de recherche personnalisés (`custom`) et alias livrés désactivés (`disabledDefaults`) ; créé à la première personnalisation |
 | `images/` | images copiées, nom interne unique, référencées en `images/<nom>` |
 
 ## Invariants
@@ -30,8 +31,13 @@ Source : cahier des charges §6.3, §7, §8.
 
 ## Recherche et réglages
 
-- Recherche : `rankDestinations` classe par préfixe du nom (0) > début de mot (1) > contenu du nom (2) > alias / tags / zone / catégorie (3), puis favori, puis `compareDestinations`. Un mot désigne une catégorie s'il est le **début** d'un mot-clé de `CATEGORY_KEYWORDS`, sur 2 lettres au moins (`matchesCategory`) : jamais par simple inclusion.
-- La palette relit `catalog.json` et `favorites.json` à chaque affichage, sans copie du catalogue.
+- Recherche : un seul moteur pour la grille (`filterDestinations`) et la palette (`searchIndexRank`), dans `src/features/catalog/`.
+  - `searchText.ts` : `normalizeText` (accents, casse, ligatures), `tokenize` (découpe sur tout ce qui n'est ni lettre ni chiffre), `queryTokens` (sans mots de liaison, sauf s'ils sont seuls), `boundedPrefixDistance`.
+  - `searchIndex.ts` : index par **vocabulaire** construit une fois par catalogue et par dictionnaire (`buildSearchIndex`, `getSearchIndex`). Coût d'un mot par destination (`COST`) : début du nom ou alias entier de la fiche (0) > début d'un autre mot du nom (1) > contenu dans le nom (2) > début d'un mot d'alias (3) > tag, zone, catégorie (4) > faute de frappe (6). Tous les mots doivent correspondre ; le coût total est la **somme** : l'ordre des mots tapés ne compte pas. À coût égal : favori, puis `compareDestinations`.
+  - Fautes de frappe : **seconde passe uniquement**, quand la recherche exacte ne renvoie rien ; mots de 4 lettres et plus, même initiale, nom et alias seulement.
+  - Un mot désigne une catégorie s'il est le **début** d'un mot-clé de `CATEGORY_KEYWORDS`, sur 2 lettres au moins, ou égale un mot de `CATEGORY_EXACT_KEYWORDS` (`categoriesForWord`) : jamais par simple inclusion.
+- Alias (`src/features/aliases/aliases.ts`) : dictionnaire **global**, un terme (un seul mot) → une ou plusieurs significations. Un terme vaut la meilleure de ses significations, chacune exigeant tous ses mots en début de mot. Alias livrés dans `resources/aliases.default.json` (embarqués, jamais copiés) ; personnalisations dans `aliases.json`. Dictionnaire effectif = livrés − désactivés, un alias personnalisé remplaçant l'alias livré du même terme. Écriture par `useAliases` (disque avant l'état) : clés inconnues du fichier et d'une entrée conservées, entrées illisibles réécrites telles quelles ; un fichier illisible, d'une `schemaVersion` plus récente ou dont la racine n'est pas un objet n'est jamais réécrit (`aliasesFileProblem`). Le champ `aliases` d'une destination existe toujours, mais le mécanisme attendu est le dictionnaire : ne pas demander de saisie carte par carte.
+- La palette relit `catalog.json`, `aliases.json` et `favorites.json` à chaque affichage ; un fichier dont le texte n'a pas changé n'est ni revalidé ni réindexé. Elle n'écrit jamais.
 - `settings.json` : modèle pur dans `src/features/settings/settings.ts` (`parseSettings` tolérant, `mergeSettings` conserve les clés inconnues). La clé `shortcuts` est écrite uniquement par Rust (`shortcuts.rs`, verrou partagé avec `save_store`).
 
 - `settings.json` contient `alwaysOnTop`, `updates.mode` (`manual` par défaut) et `shortcuts` (Rust seul). Les réglages passent par `useSettings` (rien n'est écrit avant la fin du chargement ; écritures l'une après l'autre).

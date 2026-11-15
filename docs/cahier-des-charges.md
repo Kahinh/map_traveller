@@ -128,6 +128,8 @@ Prévoir contrôle de format réel, taille maximale configurable (valeur initial
 
 Étoile en coin de carte, indépendante des clics de copie et d'ouverture. Les favoris sont enregistrés localement par identifiant stable. Vue Favoris mélange les catégories, y compris Farm. Recherche instantanée sur nom, alias, tags et zone, insensible à la casse et aux accents. Recherche de « vortex » → carte Vortex. Tri stable par `sortOrder` puis nom ; état vide explicite. Prévoir des performances correctes avec plusieurs milliers de destinations.
 
+> **Addendum — recherche tolérante et dictionnaire d'alias (issue n°10).** La recherche de la fenêtre et de la palette ignore aussi la ponctuation, les tirets, les mots de liaison (sauf s'ils sont seuls) et l'ordre des mots ; elle déplie les ligatures (« coeur » trouve « Cœur »). Si rien ne correspond exactement, elle tolère une faute de frappe sur les mots de 4 lettres et plus ; un résultat approximatif n'apparaît jamais à côté d'un résultat exact. Un **dictionnaire global d'alias** remplace un mot de la requête par sa signification (`hdv` → « hôtel des ventes ») pour toutes les destinations : il se renseigne une seule fois, dans Paramètres › Alias, jamais carte par carte. Les alias livrés (`resources/aliases.default.json`) se désactivent ou se remplacent ; les personnalisations sont dans `aliases.json` et survivent aux mises à jour. Classement : coût par mot (nom, alias, tags et zone, catégorie, faute), somme sur la requête, puis favori, puis `sortOrder` et nom.
+
 ## 8. Catalogue JSON : schéma et stockage
 
 ### 8.1 Exemple de structure

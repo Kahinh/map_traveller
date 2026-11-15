@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { buildDictionary } from '../src/features/aliases/aliases';
 import type { Destination } from '../src/features/catalog/schema';
 import { parseFarmRoute } from '../src/features/farm/farmRoute';
 import { buildPaletteIndex, PALETTE_LIMIT, searchPalette } from '../src/features/palette/entries';
@@ -52,5 +53,36 @@ describe('performance de la palette', () => {
       expect(elapsed, `requête « ${q} »`).toBeLessThan(50);
     }
     expect(parse).not.toHaveBeenCalled();
+  });
+
+  it('6 500 destinations (catalogue visé par l\'issue n°8) : index construit une fois, frappe rapide, alias et fautes compris', () => {
+    // Vocabulaire varié : chaque destination a un mot propre, comme un vrai catalogue.
+    const kinds = ['Hôtel des ventes', 'Atelier des bijoutiers', 'Donjon', 'Zaap', 'Comptoir'];
+    const list = Array.from({ length: 6500 }, (_, i) =>
+      dest(i, { name: `${kinds[i % kinds.length]} de Ville${i} fictive`, category: i % 5 === 2 ? 'dungeon' : 'place' }),
+    );
+    const dictionary = buildDictionary([{ term: 'hdv', expansions: ['hôtel des ventes'] }], {
+      custom: [],
+      disabledDefaults: [],
+    });
+
+    let t = performance.now();
+    const index = buildPaletteIndex(list, new Set(['d3']), dictionary);
+    expect(performance.now() - t, 'construction de l\'index').toBeLessThan(300);
+
+    // Frappe progressive, comme au clavier : chaque requête ne recalcule que son dernier mot.
+    const typed = ['h', 'hd', 'hdv', 'hdv ', 'hdv v', 'hdv vi', 'hdv ville12', 'bijoutier ville4', 'donjon', 'vilel123', ''];
+    for (const q of typed) {
+      t = performance.now();
+      const { entries } = searchPalette(index, q, PALETTE_LIMIT);
+      const elapsed = performance.now() - t;
+      expect(entries.length).toBeLessThanOrEqual(PALETTE_LIMIT);
+      expect(elapsed, `requête « ${q} »`).toBeLessThan(50);
+    }
+    expect(searchPalette(index, 'hdv ville12', PALETTE_LIMIT).entries.map((e) => e.title)).toContain(
+      'Hôtel des ventes de Ville120 fictive',
+    );
+    // Faute de frappe : trouvée en seconde passe, dans le même budget.
+    expect(searchPalette(index, 'vilel123', PALETTE_LIMIT).entries.length).toBeGreaterThan(0);
   });
 });

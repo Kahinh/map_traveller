@@ -52,3 +52,20 @@ Une longue commande avec un script Node en ligne et du texte français (apostrop
 ### 2026-11-14 — `non-vérifié` — Partie native jamais lancée
 La palette, les raccourcis configurables, l'import d'images, l'ouverture du dossier de données et les mises à jour ont été écrits sans pouvoir être exécutés. La CI prouve qu'ils compilent.
 **Garde-fou :** listes de tests manuels dans les commentaires de clôture des issues n°3, n°4, n°5 et n°6. À retirer d'ici quand l'utilisateur les aura déroulées.
+
+### 2026-11-15 — `violation-principe` — Réécriture d'un fichier que l'on ne comprend qu'en partie
+Première version du dictionnaire d'alias (issue n°10) : `aliases.json` était relu de façon tolérante puis réécrit en entier. Une entrée illisible par cette version, une clé inconnue dans une entrée ou une `schemaVersion` plus récente disparaissaient donc sans message à la première action. Trouvé en revue.
+**Garde-fou :** `mergeUserAliases` conserve ce qu'il ne comprend pas, `aliasesFileProblem` interdit toute écriture sur un fichier d'une version plus récente ou d'une forme inattendue ; tests dans `tests/aliases.test.ts`. Règle à retenir pour tout nouveau fichier de données : lecture tolérante ne veut pas dire réécriture destructive.
+
+### 2026-11-15 — `test-fragile` — Filtrer après avoir cherché annule la seconde passe
+La reprise Farm par position cherchait dans tout le catalogue puis ne gardait que les parcours. La tolérance aux fautes ne se déclenchant que si la recherche exacte ne trouve rien, un PNJ au nom proche suffisait à l'empêcher. Trouvé en revue.
+**Garde-fou :** `searchIndexRank` reçoit le filtre (`accept`) et l'applique AVANT de décider de la seconde passe ; tests dans `tests/searchIndex.test.ts` et `tests/paletteEntries.test.ts`.
+
+### 2026-11-15 — `test-fragile` — Bandeau d'erreur jamais effacé quand on saute un rechargement
+En ne revalidant plus le catalogue quand son texte n'a pas changé, la palette n'effaçait plus une erreur de chargement passagère. Trouvé en revue.
+**Garde-fou :** deux états distincts dans `Palette.tsx` (erreur de lecture, effacée à chaque succès ; catalogue invalide, liée au texte du fichier). Aucun test : à contrôler sur l'application installée.
+
+### 2026-11-15 — `non-vérifié` — Issue n°10 sur l'application installée
+Le Rust (`store_file("aliases")`) n'a pas été compilé en local (bibliothèques système absentes) : validé par la CI. Non exécutés : écriture réelle de `aliases.json` et de son `.bak`, survie des alias à une mise à jour installée, palette devant le jeu avec un alias, rubrique « Alias » sous WebView2 et à 150 %.
+**Garde-fou :** liste de tests manuels dans la description de la PR.
+

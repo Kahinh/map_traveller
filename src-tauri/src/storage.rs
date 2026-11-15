@@ -1,6 +1,7 @@
 //! Stockage local (CdC §8.2).
 //!
-//! Dossier : `%APPDATA%\MapTraveller\` (`catalog.json`, `favorites.json`, `settings.json`, `images/`).
+//! Dossier : `%APPDATA%\MapTraveller\` (`catalog.json`, `favorites.json`, `settings.json`,
+//! `aliases.json`, `images/`).
 //! - Le seed livré n'est copié que si `catalog.json` n'existe pas : une mise à jour
 //!   n'écrase jamais les données utilisateur.
 //! - Écriture atomique : `*.tmp` puis renommage ; copie `*.bak` de la version précédente.
@@ -68,6 +69,8 @@ fn store_file(name: &str) -> Result<&'static str, String> {
         "catalog" => Ok("catalog.json"),
         "favorites" => Ok("favorites.json"),
         "settings" => Ok(SETTINGS_FILE),
+        // Alias de recherche personnalisés (issue n°10) ; les alias livrés sont dans l'interface.
+        "aliases" => Ok("aliases.json"),
         other => Err(format!("Stockage inconnu : {other}")),
     }
 }
@@ -209,6 +212,7 @@ mod tests {
     #[test]
     fn store_names_are_whitelisted() {
         assert!(store_file("catalog").is_ok());
+        assert_eq!(store_file("aliases"), Ok("aliases.json"));
         assert!(store_file("../secret").is_err());
     }
 

@@ -1,6 +1,6 @@
 [package]
 name = "map-traveller"
-version = "0.5.0"
+version = "0.6.0"
 description = "Map Traveller — copie de commandes /travel"
 edition = "2021"
 publish = false

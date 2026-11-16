@@ -1,7 +1,7 @@
 {
   "name": "map-traveller",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Application Windows flottante qui copie des commandes /travel dans le presse-papiers.",
   "type": "module",
   "scripts": {

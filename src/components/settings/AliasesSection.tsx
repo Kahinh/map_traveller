@@ -12,6 +12,7 @@ import {
   type UserAliases,
 } from '../../features/aliases/aliases';
 import { getSearchIndex, searchIndexMatch } from '../../features/catalog/searchIndex';
+import { Switch } from '../controls';
 import type { SettingsSectionProps } from './types';
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -151,7 +152,7 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
           type="text"
           value={draft.meaning}
           onChange={(e) => setDraft((d) => ({ ...d, meaning: e.target.value }))}
-          placeholder="Signifie… (plusieurs : séparer par des virgules)"
+          placeholder="Significations, séparées par des virgules"
           aria-label="Signification, plusieurs séparées par des virgules"
           aria-invalid={error?.field === 'expansions' || undefined}
           aria-describedby={error?.field === 'expansions' ? errorId : undefined}
@@ -179,17 +180,19 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
           const count = counts.get(row.key);
           const origin = row.origin === 'default' ? 'fourni' : row.overridesDefault ? 'personnalisé, remplace l\'alias fourni' : 'personnalisé';
           return (
-            <li key={row.key} className={`aliases__row${row.enabled ? '' : ' is-off'}`}>
-              <span className="aliases__head">
-                <span className="aliases__name">{row.term}</span>
-                <span className="aliases__meanings">{row.expansions.join(' · ')}</span>
-              </span>
-              <span className="aliases__foot">
-                <span className="form__hint aliases__info">
+            <li key={row.key} className={`setting aliases__row${row.enabled ? '' : ' is-off'}`}>
+              <span className="setting__text">
+                <span className="aliases__head">
+                  <span className="aliases__name">{row.term}</span>
+                  <span className="aliases__meanings">{row.expansions.join(' · ')}</span>
+                </span>
+                <span className="setting__description">
                   {origin}
                   {' · '}
                   {row.enabled && count !== undefined ? countLabel(count) : 'désactivé'}
                 </span>
+              </span>
+              <span className="setting__control">
                 {row.origin === 'custom' ? (
                   confirming === row.key ? (
                     <>
@@ -229,15 +232,13 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
                         Personnaliser
                       </button>
                     )}
-                    <button
-                      type="button"
-                      className="btn"
+                    <Switch
+                      checked={row.enabled}
                       disabled={locked}
-                      aria-label={`${row.enabled ? 'Désactiver' : 'Réactiver'} l'alias ${row.term}`}
-                      onClick={() => void apply(setDefaultEnabled(user, row.term, !row.enabled))}
-                    >
-                      {row.enabled ? 'Désactiver' : 'Réactiver'}
-                    </button>
+                      label={`Alias ${row.term} actif`}
+                      title={row.enabled ? 'Désactiver' : 'Réactiver'}
+                      onChange={(enabled) => void apply(setDefaultEnabled(user, row.term, enabled))}
+                    />
                   </>
                 )}
               </span>
@@ -245,7 +246,7 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
           );
         })}
       </ul>
-      {aliases.loaded && rows.length === 0 && <p className="form__hint">Aucun alias pour l'instant.</p>}
+      {aliases.loaded && rows.length === 0 && <p className="form__hint">Aucun alias pour l'instant</p>}
       <p className="form__hint">
         Les alias fournis ne sont jamais modifiés : vous pouvez les désactiver ou les remplacer. Vos alias sont dans{' '}
         <code>aliases.json</code> et survivent aux mises à jour.

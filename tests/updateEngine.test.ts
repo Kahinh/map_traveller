@@ -205,7 +205,7 @@ describe('describeUpdateError', () => {
     expect(r.message).toContain('Quelque chose d’imprévu');
     expect(describeUpdateError({ message: 'objet' }).message).toContain('objet');
     expect(describeUpdateError(undefined).message).toContain('La mise à jour a échoué');
-    expect(describeUpdateError('').message).toBe('La mise à jour a échoué.');
+    expect(describeUpdateError('').message).toBe('La mise à jour a échoué');
   });
 
   it('détail long tronqué, jamais d’exception sur une valeur exotique', () => {
@@ -258,7 +258,7 @@ describe('shouldAutoInstall', () => {
 describe('installedUpdateNotice', () => {
   it('annonce la version courante si elle diffère de la dernière vue', () => {
     expect(installedUpdateNotice('9.0.1', '9.0.0')).toBe('9.0.1');
-    expect(installedUpdateMessage('9.0.1')).toBe('Mise à jour 9.0.1 installée.');
+    expect(installedUpdateMessage('9.0.1')).toBe('Mise à jour 9.0.1 installée');
   });
 
   it('rien au premier lancement, à version égale ou version inconnue', () => {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { truncateMiddle } from '../../features/settings/path';
 import { copyText } from '../../lib/tauri/clipboard';
 import { BROWSER_DATA_DIR_MESSAGE, canAccessDataDir, getDataDir, openDataDir } from '../../lib/tauri/dataDir';
+import { SettingRow } from '../controls';
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -70,38 +71,45 @@ export function DataSection() {
 
   return (
     <>
-      <div className="form__field">
-        <span className="form__label">Dossier des données</span>
-        {ready ? (
-          <span className="settings__value settings__path" title={dir}>
-            {truncateMiddle(dir, PATH_MAX_CHARS)}
+      <div className="settings__block">
+        <SettingRow
+          label="Dossier des données"
+          description={
+            ready ? (
+              <span className="settings__value settings__path" title={dir}>
+                {truncateMiddle(dir, PATH_MAX_CHARS)}
+              </span>
+            ) : available ? (
+              dir === undefined ? (
+                '…'
+              ) : (
+                '—'
+              )
+            ) : (
+              <span className="settings__notice">{BROWSER_DATA_DIR_MESSAGE}</span>
+            )
+          }
+        >
+          {/* Toujours présent (vide au repos) pour que le message soit annoncé par les lecteurs d'écran. */}
+          <span className="form__hint" role="status">
+            {copied ? 'Chemin copié' : ''}
           </span>
-        ) : (
-          <span className="settings__value">{available && dir === undefined ? '…' : '—'}</span>
+          <button type="button" className="btn" disabled={!ready} onClick={() => void onOpen()}>
+            Ouvrir
+          </button>
+          <button type="button" className="btn" disabled={!ready} onClick={() => void onCopy()}>
+            Copier le chemin
+          </button>
+        </SettingRow>
+        {error && (
+          <p className="form__error" role="alert">
+            {error}
+          </p>
         )}
       </div>
 
-      <div className="settings__actions">
-        <button type="button" className="btn" disabled={!ready} onClick={() => void onOpen()}>
-          Ouvrir le dossier
-        </button>
-        <button type="button" className="btn" disabled={!ready} onClick={() => void onCopy()}>
-          Copier le chemin
-        </button>
-        {/* Toujours présent (vide au repos) pour que le message soit annoncé par les lecteurs d'écran. */}
-        <span className="form__hint" role="status">
-          {copied ? 'Chemin copié.' : ''}
-        </span>
-      </div>
-      {!available && <p className="form__hint settings__notice">{BROWSER_DATA_DIR_MESSAGE}</p>}
-      {error && (
-        <p className="form__error" role="alert">
-          {error}
-        </p>
-      )}
-
-      <div className="form__field">
-        <span className="form__label">Contenu</span>
+      <div className="settings__block">
+        <h3 className="settings__heading">Contenu</h3>
         <ul className="form__hint settings__list">
           <li>
             <code>catalog.json</code> : vos destinations (le catalogue)
@@ -125,16 +133,19 @@ export function DataSection() {
         </ul>
       </div>
 
-      <p className="form__hint">Pour sauvegarder vos données, copiez ce dossier.</p>
-      <p className="form__hint settings__notice">
-        Fermez l'application avant de modifier ces fichiers à la main : sinon, elle les réécrit à la prochaine
-        modification.
-      </p>
-      <p className="form__hint">
-        Windows contient aussi deux dossiers techniques nommés <code>{APP_IDENTIFIER}</code>, l'un dans{' '}
-        <code>%APPDATA%</code> (position et taille de la fenêtre), l'autre dans <code>%LOCALAPPDATA%</code> (cache de
-        l'affichage). Ils ne contiennent aucune de vos données.
-      </p>
+      <div className="settings__block">
+        <h3 className="settings__heading">Sauvegarde</h3>
+        <p className="form__hint">Pour sauvegarder vos données, copiez ce dossier.</p>
+        <p className="form__hint settings__notice">
+          Fermez l'application avant de modifier ces fichiers à la main : sinon, elle les réécrit à la prochaine
+          modification.
+        </p>
+        <p className="form__hint">
+          Windows contient aussi deux dossiers techniques nommés <code>{APP_IDENTIFIER}</code>, l'un dans{' '}
+          <code>%APPDATA%</code> (position et taille de la fenêtre), l'autre dans <code>%LOCALAPPDATA%</code> (cache de
+          l'affichage). Ils ne contiennent aucune de vos données.
+        </p>
+      </div>
     </>
   );
 }

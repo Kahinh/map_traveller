@@ -50,7 +50,7 @@ describe('describeUpdateState', () => {
 
   it('à jour : version installée citée si connue', () => {
     expect(describeUpdateState({ status: 'up-to-date', checkedAt: 0 }, '1.2.3')).toContain('1.2.3');
-    expect(describeUpdateState({ status: 'up-to-date', checkedAt: 0 }, null)).toBe('Vous utilisez la dernière version.');
+    expect(describeUpdateState({ status: 'up-to-date', checkedAt: 0 }, null)).toBe('Vous utilisez la dernière version');
   });
 
   it('téléchargement : pourcentage borné, absent si la taille est inconnue', () => {

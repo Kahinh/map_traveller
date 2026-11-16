@@ -146,8 +146,8 @@ export function searchPalette(
       const several = farms.length > 1;
       notice =
         position.y === undefined
-          ? `Aucune position ${formatPosition(position)},… dans ${several ? 'les parcours' : 'le parcours'}.`
-          : `Position ${formatPosition(position)} absente ${several ? 'des parcours' : 'du parcours'}.`;
+          ? `Aucune position ${formatPosition(position)},… dans ${several ? 'les parcours' : 'le parcours'}`
+          : `Position ${formatPosition(position)} absente ${several ? 'des parcours' : 'du parcours'}`;
     }
   }
 

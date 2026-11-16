@@ -8,7 +8,7 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from 'react';
-import { SearchIcon } from '../components/icons';
+import { ArrowIcon, SearchIcon } from '../components/icons';
 import { buildDictionary, EMPTY_DICTIONARY, type AliasDictionary } from '../features/aliases/aliases';
 import type { Destination } from '../features/catalog/schema';
 import type { ClickButton } from '../features/commands/cardParts';
@@ -103,6 +103,8 @@ export function Palette() {
     [index, query, favorites, hasQuery],
   );
   const choiceCounts = useMemo(() => entries.map((e) => e.choices.length), [entries]);
+  /** Catégorie par destination, pour l'icône des vignettes sans image : une fois par catalogue. */
+  const categoryOf = useMemo(() => new Map(destinations.map((d) => [d.id, d.category])), [destinations]);
 
   const nav = slot.entries === entries ? slot.nav : navReducer(slot.nav, { type: 'results' }, choiceCounts);
   const selected = nav.index >= 0 ? entries[nav.index] : undefined;
@@ -211,7 +213,7 @@ export function Palette() {
       if (text === null) {
         setStatus({
           kind: 'warning',
-          text: entry.kind === 'farm-step' ? 'Fin de parcours : rien à copier.' : 'Aucune commande à copier.',
+          text: entry.kind === 'farm-step' ? 'Fin de parcours : rien à copier' : 'Aucune commande à copier',
         });
         return;
       }
@@ -331,7 +333,7 @@ export function Palette() {
           value={query}
           onChange={onChange}
           onKeyDown={onKeyDown}
-          placeholder="Rechercher une destination ou un parcours…"
+          placeholder="Rechercher une destination ou un parcours"
           aria-label="Rechercher une destination ou un parcours"
           role="combobox"
           aria-autocomplete="list"
@@ -358,6 +360,7 @@ export function Palette() {
           <PaletteRow
             key={entry.key}
             entry={entry}
+            category={categoryOf.get(entry.destinationId) ?? null}
             index={i}
             id={optionId(i)}
             selected={i === nav.index}
@@ -379,13 +382,23 @@ export function Palette() {
           ) : (
             <>
               <span>
-                <kbd>↑</kbd>
-                <kbd>↓</kbd> naviguer
+                <kbd title="Flèche haut">
+                  <ArrowIcon className="palette__arrow" />
+                </kbd>
+                <kbd title="Flèche bas">
+                  <ArrowIcon className="palette__arrow palette__arrow--down" />
+                </kbd>{' '}
+                naviguer
               </span>
               {showSteps && (
                 <span>
-                  <kbd>←</kbd>
-                  <kbd>→</kbd> étape
+                  <kbd title="Flèche gauche">
+                    <ArrowIcon className="palette__arrow palette__arrow--left" />
+                  </kbd>
+                  <kbd title="Flèche droite">
+                    <ArrowIcon className="palette__arrow palette__arrow--right" />
+                  </kbd>{' '}
+                  étape
                 </span>
               )}
               <span>

@@ -238,25 +238,25 @@ export function validateAliasEntry(entry: AliasEntry, user: UserAliases, previou
   const onExpansions = (message: string): AliasError => ({ field: 'expansions', message });
 
   const term = entry.term.trim();
-  if (term === '') return onTerm('Alias requis.');
-  if (term.length > ALIAS_TERM_MAX) return onTerm(`Alias trop long (${ALIAS_TERM_MAX} caractères au plus).`);
+  if (term === '') return onTerm('Alias requis');
+  if (term.length > ALIAS_TERM_MAX) return onTerm(`Alias trop long (${ALIAS_TERM_MAX} caractères au plus)`);
   const key = normalizeTerm(term);
-  if (key === null) return onTerm('Un alias est un seul mot, sans espace ni ponctuation.');
-  if (STOP_WORDS.has(key)) return onTerm(`« ${term} » est un mot de liaison : il est ignoré par la recherche.`);
+  if (key === null) return onTerm('Un alias est un seul mot, sans espace ni ponctuation');
+  if (STOP_WORDS.has(key)) return onTerm(`« ${term} » est un mot de liaison : il est ignoré par la recherche`);
 
   const previousKey = previousTerm === undefined ? null : normalizeTerm(previousTerm);
   if (key !== previousKey && user.custom.some((e) => normalizeTerm(e.term) === key)) {
-    return onTerm(`L'alias « ${term} » existe déjà : modifiez-le.`);
+    return onTerm(`L'alias « ${term} » existe déjà : modifiez-le`);
   }
 
   if (entry.expansions.some((e) => e.trim().length > ALIAS_EXPANSION_MAX)) {
-    return onExpansions(`Signification trop longue (${ALIAS_EXPANSION_MAX} caractères au plus).`);
+    return onExpansions(`Signification trop longue (${ALIAS_EXPANSION_MAX} caractères au plus)`);
   }
   const expansions = cleanExpansions(entry.expansions);
   if (expansions.length === 0) {
-    return onExpansions('Indiquez au moins une signification (mots de liaison seuls exclus).');
+    return onExpansions('Indiquez au moins une signification (mots de liaison seuls exclus)');
   }
-  if (expansions.length > ALIAS_EXPANSIONS_MAX) return onExpansions(`${ALIAS_EXPANSIONS_MAX} significations au plus.`);
+  if (expansions.length > ALIAS_EXPANSIONS_MAX) return onExpansions(`${ALIAS_EXPANSIONS_MAX} significations au plus`);
   return null;
 }
 

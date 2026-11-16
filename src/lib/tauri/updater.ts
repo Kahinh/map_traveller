@@ -18,7 +18,7 @@ import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updat
 import { UpdateTimeoutError } from '../../features/updates/updates';
 import { isTauri } from './env';
 
-export const UPDATER_BROWSER_MESSAGE = "Disponible dans l'application installée.";
+export const UPDATER_BROWSER_MESSAGE = "Disponible dans l'application installée";
 
 /** Délai maximal de la requête de vérification, transmis au plugin (ms). */
 export const CHECK_TIMEOUT_MS = 15_000;

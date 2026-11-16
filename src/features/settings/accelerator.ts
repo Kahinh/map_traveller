@@ -125,14 +125,14 @@ function keyFromEvent(e: KeyLike): string | null {
 export function captureAccelerator(e: KeyLike): CaptureResult {
   if (e.key === 'Escape') return { kind: 'cancel' };
   if (e.metaKey || META_KEYS.has(e.key)) {
-    return { kind: 'invalid', message: "La touche Windows n'est pas acceptée dans un raccourci." };
+    return { kind: 'invalid', message: "La touche Windows n'est pas acceptée dans un raccourci" };
   }
   if (MODIFIER_KEYS.has(e.key)) return { kind: 'pending' };
   const key = keyFromEvent(e);
   if (key === null) {
-    return { kind: 'invalid', message: 'Touche non prise en charge : utilisez une lettre, un chiffre, F1 à F12 ou Espace.' };
+    return { kind: 'invalid', message: 'Touche non prise en charge : utilisez une lettre, un chiffre, F1 à F12 ou Espace' };
   }
-  if (!e.ctrlKey && !e.altKey) return { kind: 'invalid', message: 'Le raccourci doit contenir Ctrl ou Alt.' };
+  if (!e.ctrlKey && !e.altKey) return { kind: 'invalid', message: 'Le raccourci doit contenir Ctrl ou Alt' };
   const accelerator = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', key].filter(Boolean).join('+');
   return { kind: 'ok', accelerator };
 }

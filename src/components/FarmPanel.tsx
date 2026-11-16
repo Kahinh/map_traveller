@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react';
 import type { FarmRoute } from '../features/farm/farmRoute';
+import { MarkIcon, PlayIcon } from './icons';
 import { Panel } from './Panel';
 
 interface Props {
@@ -45,14 +46,18 @@ export function FarmPanel({ name, route, currentStep, feedbackKey, onStart, onSt
     >
       {route.issues.length > 0 && (
         <div className="farm-panel__issues">
-          {route.issues.length} segment(s) non reconnu(s), absents des étapes :{' '}
+          {route.issues.length > 1
+            ? `${route.issues.length} segments non reconnus, absents des étapes : `
+            : '1 segment non reconnu, absent des étapes : '}
           {route.issues.map((i) => `« ${i.segment.trim() || '(vide)'} »`).join(', ')}
         </div>
       )}
 
       <div className="grid-scroll">
         {total === 0 ? (
-          <p className="empty">Aucune étape /travel reconnue dans ce parcours.</p>
+          <div className="empty">
+            <p className="empty__title">Aucune étape /travel reconnue dans ce parcours</p>
+          </div>
         ) : (
           <div className="grid grid--steps">
             <button
@@ -61,7 +66,8 @@ export function FarmPanel({ name, route, currentStep, feedbackKey, onStart, onSt
               title="Copier le parcours complet"
               {...bothClicks(onStart)}
             >
-              ▶ Début
+              <PlayIcon />
+              Début
             </button>
             {route.steps.map((s) => {
               const cls = [
@@ -84,6 +90,7 @@ export function FarmPanel({ name, route, currentStep, feedbackKey, onStart, onSt
                   {...bothClicks(() => onStep(s.index))}
                 >
                   <span className="step__index">{s.index + 1}</span>
+                  {s.index === currentStep && <MarkIcon className="step__mark" />}
                   {s.label}
                 </button>
               );

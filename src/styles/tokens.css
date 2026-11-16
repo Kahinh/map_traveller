@@ -3,8 +3,8 @@
 :root {
   --mt-bg: #252739;
   --mt-bg-raised: #2e3047;
-  --mt-titlebar-from: #646392;
-  --mt-titlebar-to: #4b4d77;
+  /* Barre de titre : aplat violet, sans dégradé (issue n°13, B1). */
+  --mt-titlebar: #4b4d77;
   --mt-card-bg: #393b58;
   --mt-card-border: #505273;
   --mt-text: #f1f1ff;
@@ -16,20 +16,32 @@
   --mt-warning: #f0a052;
   --mt-danger: #c9485b; /* fonds seulement (bouton de suppression, fermeture) */
   --mt-danger-text: #ee7385; /* tout texte rouge : 5,2 sur le fond, 4,6 sur les champs */
-  /* Contour des champs de saisie (pas des cartes ni des boutons) : 3,2 sur les champs. */
+  /* Contour des champs de saisie et des interrupteurs (pas des cartes ni des boutons) : 3,2 sur les champs. */
   --mt-field-border: #7a7ca6;
+  /* Filet discret : bas de la barre de titre et de la tête de palette, séparation des réglages. */
+  --mt-hairline: rgba(241, 241, 255, 0.1);
   --mt-shadow: rgba(0, 0, 0, 0.35);
   --mt-hover: rgba(241, 241, 255, 0.08);
-  /* Fond de focus clavier des zones d'une carte à deux étapes. */
+  /* Rappel du mode gestion (liseré de la grille). */
   --mt-accent-soft: rgba(229, 240, 82, 0.28);
+
+  /* Anneau de focus unique (issue n°13, A6) : 2 px d'accent à 60 %, décalé de 2 px. Dans un
+     conteneur qui rogne (onglets défilants, carte), le même anneau est posé à l'intérieur. */
+  --mt-focus-ring: rgba(229, 240, 82, 0.6);
+  --mt-focus-ring-w: 2px;
+  --mt-focus-ring-offset: 2px;
 
   /* Surbrillance des cartes (issue n°2) : voile porté par le bouton cliquable. */
   --mt-highlight: rgba(241, 241, 255, 0.16); /* voile clair au survol */
   --mt-highlight-zone: rgba(241, 241, 255, 0.28); /* voile d'un triangle : plus marqué, la surface est plus petite */
   --mt-highlight-edge: rgba(241, 241, 255, 0.55); /* liseré interne */
-  --mt-focus: rgba(229, 240, 82, 0.3); /* voile accent au focus clavier */
+  --mt-focus: rgba(229, 240, 82, 0.3); /* voile accent au focus clavier d'un triangle */
   --mt-press: rgba(20, 21, 34, 0.25); /* voile sombre à l'appui */
-  --mt-transition: 120ms ease;
+
+  /* Mouvement (issue n°13, A7) : une seule courbe, deux durées. Propriétés toujours nommées. */
+  --mt-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --mt-dur-fast: 120ms; /* survol, appui, interrupteurs */
+  --mt-dur-enter: 180ms; /* apparition d'un panneau, d'une bulle, d'une coche */
 
   /* Carte : nom en surimpression sur un dégradé (scrim) qui part du transparent. */
   --mt-scrim-strong: rgba(14, 15, 26, 0.9);
@@ -44,35 +56,38 @@
   /* Retour de copie : léger lavis d'accent sous la pastille cochée. */
   --mt-copied-wash: rgba(229, 240, 82, 0.14);
 
+  /* Espacement (issue n°13, A4) : grille de 4 px ; le demi-pas ne sert que dans un petit contrôle. */
+  --mt-space-half: 2px;
+  --mt-space-1: 4px;
+  --mt-space-2: 8px;
+  --mt-space-3: 12px;
+  --mt-space-4: 16px;
+  --mt-space-6: 24px;
+
   --mt-card-size: 90px;
-  --mt-gap: 6px;
+  /* Écart de la grille : lu par `useGridWindow` (grille fenêtrée), ne pas renommer. */
+  --mt-gap: var(--mt-space-2);
   --mt-split-gap: 4px; /* interstice des cartes à deux étapes, mesuré perpendiculairement à la diagonale */
   --mt-radius: 10px;
   --mt-radius-sm: 6px;
-  --mt-titlebar-h: 30px;
+  --mt-radius-xs: 4px; /* touches, petits contrôles intérieurs */
+  --mt-titlebar-h: 32px;
+  --mt-control-h: 24px; /* boutons, champs d'une ligne, onglets, contrôles segmentés */
+
+  /* Icônes : un seul jeu (`icons.tsx`, grille 16, trait 1,5), trois tailles d'affichage. */
+  --mt-icon-lg: 16px; /* boutons, recherche, icône de catégorie */
+  --mt-icon-md: 14px; /* étoile et coche d'une carte */
+  --mt-icon-sm: 12px; /* dans une pastille ou à côté d'un texte de 11 px */
 
   /* Typographie (issue n°13) : aucune taille ni pile de police écrite ailleurs, rien sous 10 px. */
   --mt-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mt-font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
-  --mt-font-size-xs: 10px; /* pastilles, repères, numéros d'étape, touches */
+  --mt-font-size-xs: 10px; /* pastilles, repères, numéros d'étape, touches, nombres des onglets */
   --mt-font-size-sm: 11px; /* noms de carte, onglets, boutons, libellés */
-  --mt-font-size: 12px; /* corps */
+  --mt-font-size: 12px; /* corps, titre de la fenêtre */
   --mt-font-size-md: 13px; /* titre d'une ligne de palette */
   --mt-font-size-lg: 14px; /* champ de recherche de la palette */
-  --mt-font-size-monogram: 26px; /* initiales d'une carte sans image */
   --mt-font-weight-regular: 400;
+  --mt-font-weight-medium: 500;
   --mt-font-weight-semibold: 600;
-  --mt-font-weight-bold: 700;
-}
-
-/* Carte sans image : la teinte `--card-hue` (0–359) est posée en `style` par le composant,
-   dérivée du nom. Les tons sont déclarés ici, sur l'élément qui porte la teinte : une
-   variable dérivée se calcule là où elle est déclarée, pas sur `:root`. Saturation et
-   luminosité basses pour rester sobre et cohérent avec le thème. */
-.card__placeholder {
-  --mt-ph-top: hsl(var(--card-hue, 240) 24% 35%);
-  --mt-ph-bottom: hsl(var(--card-hue, 240) 30% 17%);
-  --mt-ph-glow: hsl(var(--card-hue, 240) 45% 62% / 0.3);
-  --mt-ph-ink: hsl(var(--card-hue, 240) 35% 88% / 0.5);
-  --mt-ph-ink-faint: hsl(var(--card-hue, 240) 35% 88% / 0.22);
 }

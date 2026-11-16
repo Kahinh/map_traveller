@@ -12,9 +12,17 @@ import {
 import { CATEGORIES, TWO_STEP_CATEGORIES, type Category } from '../features/catalog/schema';
 import { canImportImages, pickAndImportImage } from '../lib/tauri/images';
 import { CardName } from './CompactCard';
+import { Segmented, Switch, type SegmentedOption } from './controls';
+import { ChevronIcon } from './icons';
 import { CardVisual } from './Thumb';
 import { Panel } from './Panel';
 import { SplitCardArt } from './SplitCardArt';
+
+/** Options du contrôle segmenté « Catégorie », dans l'ordre du schéma. */
+const CATEGORY_OPTIONS: readonly SegmentedOption<Category>[] = CATEGORIES.map((c) => ({
+  value: c,
+  label: CATEGORY_FORM_LABELS[c],
+}));
 
 interface Props {
   /** Brouillon d'ouverture : sert aussi de référence pour détecter les modifications. */
@@ -48,7 +56,7 @@ const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 /** Valeur copiée affichée telle quelle (jamais réécrite), ou mention « rien à copier ». */
 function Copied({ value }: { value: string | null }) {
   return value === null ? (
-    <em className="form__preview-none">rien à copier</em>
+    <span className="form__preview-none">rien à copier</span>
   ) : (
     <code className="form__preview-value">{value}</code>
   );
@@ -64,9 +72,9 @@ function PreviewRows({ preview }: { preview: DraftPreview }) {
             {steps.length} étape{steps.length > 1 ? 's' : ''}
           </span>
           {steps.length > 0 ? (
-            <span className="form__preview-steps">{steps.map((s) => s.label).join(' → ')}</span>
+            <span className="form__preview-steps">{steps.map((s) => s.label).join(' · ')}</span>
           ) : (
-            <em className="form__preview-none">aucune étape /travel reconnue</em>
+            <span className="form__preview-none">aucune étape /travel reconnue</span>
           )}
         </div>
         {zaapPrefix !== null && (
@@ -285,24 +293,16 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
             <span className="form__label" id={`${uid}-category-label`}>
               Catégorie
             </span>
-            <div className="segmented" role="radiogroup" aria-labelledby={`${uid}-category-label`}>
-              {CATEGORIES.map((c: Category) => (
-                <button
-                  key={c}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.category === c}
-                  className={`segmented__item${draft.category === c ? ' is-active' : ''}`}
-                  onClick={() => set('category', c)}
-                >
-                  {CATEGORY_FORM_LABELS[c]}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              value={draft.category}
+              options={CATEGORY_OPTIONS}
+              onChange={(c) => set('category', c)}
+              labelledBy={`${uid}-category-label`}
+            />
           </div>
 
           <div className="form__field">
-            <span className="form__label">Image et aperçu de la carte</span>
+            <span className="form__label">Image et aperçu</span>
             <div className="form__image">
               <div
                 className={`card form__card${twoStep ? ' card--split' : ''}`}
@@ -310,9 +310,9 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
                 title={draft.image ?? undefined}
               >
                 {twoStep ? (
-                  <SplitCardArt key={draft.image ?? ''} name={draft.name} image={draft.image} />
+                  <SplitCardArt key={draft.image ?? ''} category={draft.category} image={draft.image} />
                 ) : (
-                  <CardVisual key={draft.image ?? ''} name={draft.name} image={draft.image} />
+                  <CardVisual key={draft.image ?? ''} category={draft.category} image={draft.image} />
                 )}
                 {draft.category === 'farm' && <span className="card__badge">Farm</span>}
                 <CardName name={draft.name.trim() || 'Sans nom'} />
@@ -339,10 +339,10 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
                   Retirer
                 </button>
                 {!imageAvailable && (
-                  <p className="form__hint">Import d'images disponible dans l'application installée.</p>
+                  <p className="form__hint">Import d'images disponible dans l'application installée</p>
                 )}
                 {imageAvailable && !imageError && (
-                  <p className="form__hint">PNG, JPEG ou WebP, 10 Mo maximum. Sans image : initiales.</p>
+                  <p className="form__hint">PNG, JPEG ou WebP, 10 Mo au plus · sans image : icône de la catégorie</p>
                 )}
               </div>
             </div>
@@ -355,15 +355,18 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
           </div>
 
           {twoStepAvailable && (
-            <label className="form__check">
-              <input
-                type="checkbox"
+            <div className="form__switch">
+              <Switch
+                id={`${uid}-two-step`}
                 checked={draft.twoStep}
-                onChange={(e) => set('twoStep', e.target.checked)}
+                onChange={(checked) => set('twoStep', checked)}
+                describedBy={`${uid}-two-step-hint`}
               />
-              Trajet en deux étapes
-              <span className="form__hint">étape 1 : accès · étape 2 : sur place</span>
-            </label>
+              <label htmlFor={`${uid}-two-step`}>Trajet en deux étapes</label>
+              <span className="form__hint" id={`${uid}-two-step-hint`}>
+                étape 1 : accès · étape 2 : sur place
+              </span>
+            </div>
           )}
 
           <div className="form__field">
@@ -408,6 +411,7 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
             aria-controls={`${uid}-more`}
             onClick={() => setMoreOpen((o) => !o)}
           >
+            <ChevronIcon className="form__more-chevron" />
             {moreOpen ? 'Moins d\'options' : 'Plus d\'options'}
             <span className="form__hint">zone, alias, tags, ordre</span>
           </button>

@@ -109,3 +109,7 @@ La hauteur du contenu est vérifiée dans le navigateur (48 px pour la barre seu
 **À contrôler sur l'application installée :** la fenêtre s'ouvre réduite à la barre ; elle grandit et se rétracte à la frappe sans clignotement ; la barre ne bouge pas ; un clic juste sous la barre atteint bien la fenêtre du dessous ; mise à l'échelle 150 % ; second écran.
 **Garde-fou :** `clamp_height` testé en Rust ; si `set_size` est refusé, l'erreur est journalisée et la fenêtre garde sa taille.
 
+
+### 2026-11-16 — `test-fragile` — Seuils de `palettePerf.test.ts`, deuxième occurrence
+Lot 2 de l'issue n°13 (apparence et textes seulement, aucun code de recherche touché) : `npm run check:full` a échoué trois fois de suite sur « requête « vilel123 » < 50 ms » (53 à 69 ms) et une fois sur « construction de l'index < 300 ms » (334 ms). Lancé seul, le fichier passe 4 fois sur 4 ; toute la suite passe avec `vitest run --no-file-parallelism` (377 tests). Cause : 21 fichiers testés en parallèle sur 8 cœurs, avec d'autres worktrees actifs.
+**Garde-fou :** aucun encore. Vue deux fois, l'erreur doit devenir un garde-fou : mesurer une médiane sur plusieurs passes, ou isoler ce fichier (`poolMatchGlobs` / projet Vitest séparé sans parallélisme). À décider avec l'utilisateur.

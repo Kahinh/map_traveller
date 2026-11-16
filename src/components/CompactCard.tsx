@@ -94,7 +94,7 @@ export const CompactCard = memo(function CompactCard({
     const part = feedback ? feedbackPart : null;
     return (
       <div className={`card card--split${feedback && part ? ` is-${feedback} is-part-${part}` : ''}`} data-id={d.id}>
-        <SplitCardArt name={d.name} image={d.image} />
+        <SplitCardArt category={d.category} image={d.image} />
         {([1, 2] as const).map((p) => (
           <button
             key={p}
@@ -131,7 +131,7 @@ export const CompactCard = memo(function CompactCard({
         onClick={() => onAction(d, 1, 'left')}
         onContextMenu={contextMenu(1)}
       >
-        <CardVisual name={d.name} image={d.image} />
+        <CardVisual category={d.category} image={d.image} />
         {isFarm && !manage && <span className="card__badge">Farm</span>}
         <CardName name={d.name} />
         {feedback === 'copied' && (

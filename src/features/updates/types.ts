@@ -33,7 +33,7 @@ export type UpdaterBinding =
 /** Valeur par défaut tant que le moteur de l'issue n°5 n'est pas livré. */
 export const UPDATER_NOT_AVAILABLE: UpdaterBinding = {
   available: false,
-  reason: 'Disponible dans une prochaine version.',
+  reason: 'Disponible dans une prochaine version',
 };
 
 /** Vrai si une recherche peut être lancée depuis cet état (aucune opération en cours). */
@@ -57,9 +57,9 @@ export function describeUpdateState(state: UpdateState, currentVersion: string |
     case 'checking':
       return 'Recherche en cours…';
     case 'up-to-date':
-      return currentVersion ? `Vous utilisez la dernière version (${currentVersion}).` : 'Vous utilisez la dernière version.';
+      return currentVersion ? `Vous utilisez la dernière version (${currentVersion})` : 'Vous utilisez la dernière version';
     case 'available':
-      return `Version ${state.version} disponible.`;
+      return `Version ${state.version} disponible`;
     case 'downloading': {
       const percent =
         state.total !== null && state.total > 0
@@ -70,9 +70,9 @@ export function describeUpdateState(state: UpdateState, currentVersion: string |
         : `Téléchargement de la version ${state.version}… ${percent} %`;
     }
     case 'ready':
-      return `Version ${state.version} téléchargée : installation dès la fermeture du formulaire.`;
+      return `Version ${state.version} téléchargée : installation dès la fermeture du formulaire`;
     case 'installing':
-      return `Installation de la version ${state.version} : l'application va redémarrer.`;
+      return `Installation de la version ${state.version} : l'application va redémarrer`;
     case 'error':
       return state.message;
   }

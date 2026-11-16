@@ -5,6 +5,7 @@
 import { CATEGORY_LABELS, type Destination } from '../catalog/schema';
 import type { SearchIndex } from '../catalog/searchIndex';
 import type { FarmRoute } from '../farm/farmRoute';
+import type { ZaapCatalog } from '../zaaps/zaaps';
 
 /** Ce qu'une case (ou la ligne entière) copie. */
 export interface PaletteChoice {
@@ -18,12 +19,13 @@ export interface PaletteChoice {
   secondary: string | null;
 }
 
-export type PaletteEntryKind = 'card' | 'farm-start' | 'farm-step';
+export type PaletteEntryKind = 'card' | 'farm-start' | 'farm-step' | 'zaap';
 
 export interface PaletteEntry {
   /** Clé React stable : `[destinationId, kind]` ou `[destinationId, kind, indiceÉtape]` en JSON. */
   key: string;
   kind: PaletteEntryKind;
+  /** Identifiant de la destination, ou du zaap pour une ligne `zaap`. */
   destinationId: string;
   /** Nom de la destination. */
   title: string;
@@ -48,6 +50,8 @@ export interface PaletteIndex {
   search: SearchIndex;
   /** Parcours analysé par identifiant de destination Farm. */
   routes: ReadonlyMap<string, FarmRoute>;
+  /** Référentiel des zaaps livré (recherche « proche X,Y », issue n°7). */
+  zaaps: ZaapCatalog;
 }
 
 /** Début du sous-titre : catégorie, puis zone si renseignée (distingue deux noms identiques). */

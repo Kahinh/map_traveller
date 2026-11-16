@@ -37,8 +37,8 @@ function Icon({
 
 /**
  * Repère de position, signature du produit : le losange et son point central de l'icône de
- * l'application, à plat, d'une seule couleur. N'apparaît qu'à deux endroits : la barre de titre
- * et l'étape courante d'un parcours Farm.
+ * l'application, à plat, d'une seule couleur. N'apparaît qu'à trois endroits : la barre de titre,
+ * l'étape courante d'un parcours Farm et les zaaps proposés par la palette (« proche X,Y »).
  */
 export const MarkIcon = ({ className }: { className?: string }) => (
   <Icon className={className}>

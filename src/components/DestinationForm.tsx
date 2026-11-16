@@ -10,7 +10,7 @@ import {
   type DraftPreview,
 } from '../features/catalog/editor';
 import { CATEGORIES, TWO_STEP_CATEGORIES, type Category } from '../features/catalog/schema';
-import { canImportImages, pickAndImportImage } from '../lib/tauri/images';
+import { canImportImages, pickAndImportImage } from '../lib/tauri/imageImport';
 import { CardName } from './CompactCard';
 import { Segmented, Switch, type SegmentedOption } from './controls';
 import { ChevronIcon } from './icons';

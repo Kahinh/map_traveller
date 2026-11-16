@@ -21,6 +21,15 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
+### 2026-11-17 — `outil-trompeur` — « cargo ne compile pas en local » n'était pas une fatalité
+Les notes précédentes concluaient que le Rust ne pouvait pas être compilé dans le conteneur (bibliothèques système absentes). Il suffit de les installer : `apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev`, puis `cargo test` et `cargo clippy` passent dans `src-tauri/` (sous Linux : le code `cfg(windows)` reste vérifié par la CI seulement).
+**Garde-fou :** cette note. Tenter l'installation avant de déclarer le Rust « non compilé ».
+
+### 2026-11-17 — `non-vérifié` — Zaap le plus proche (n°7) et vignettes (n°14, A4)
+Vérifié : tests Vitest et Rust ; palette dans Chrome (`proche -20,-20`, saisie incomplète ou invalide dans la barre, hauteur 48 / 204 px, pied d'aide) ; chaîne `createImageBitmap` → `OffscreenCanvas` → WebP 256 × 256 dans Chrome.
+Non vérifié : coordonnées et syntaxe `/zaap X Y` des 48 zaaps en jeu ; fabrication réelle des vignettes sous WebView2 (`read_image` en `ArrayBuffer`, `save_thumbnail` en corps brut avec l'en-tête `x-image`), affichage par le protocole `asset:`, retour à l'original quand la vignette manque.
+**Garde-fou :** listes dans les commentaires de clôture des issues n°7 et n°14.
+
 ### 2026-11-16 — `correction-humaine` — Refonte lancée dans une direction déjà refusée
 Une refonte « surfaces neutres sombres », dictée par un skill de design appliqué à la lettre, contredisait la décision de l'auteur (palette violette conservée, écrite dans l'issue n°13). Elle a été arrêtée et jetée.
 **Garde-fou :** section « Fondations » de `ui-da-pnj` ; avant tout travail de design, lire l'issue de design en cours et faire `git fetch` : une autre session livre des PR en parallèle.

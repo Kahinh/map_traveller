@@ -19,6 +19,18 @@ import {
   parsePaletteQuery,
 } from './farmQuery';
 import { paletteKey, subtitleBase, type PaletteEntry, type PaletteIndex } from './types';
+import {
+  DEFAULT_WORLD,
+  EMPTY_ZAAPS,
+  formatDistance,
+  NEAR_EXAMPLE,
+  nearestZaaps,
+  parseNearQuery,
+  zaapTripCommand,
+  type MapPosition,
+  type NearestZaap,
+  type ZaapCatalog,
+} from '../zaaps/zaaps';
 
 export type { PaletteChoice, PaletteEntry, PaletteEntryKind, PaletteIndex } from './types';
 
@@ -40,6 +52,7 @@ export function buildPaletteIndex(
   destinations: readonly Destination[],
   favorites: ReadonlySet<string>,
   dictionary: AliasDictionary = EMPTY_DICTIONARY,
+  zaaps: ZaapCatalog = EMPTY_ZAAPS,
 ): PaletteIndex {
   const search = buildSearchIndex(destinations, dictionary);
   const active = search.docs;
@@ -47,7 +60,7 @@ export function buildPaletteIndex(
   for (const d of active) {
     if (d.category === 'farm') routes.set(d.id, parseFarmRoute(d.command));
   }
-  return { destinations: active, favorites, search, routes };
+  return { destinations: active, favorites, search, routes, zaaps };
 }
 
 /**
@@ -72,6 +85,48 @@ export function cardEntry(d: Destination, favorite: boolean): PaletteEntry {
       secondary: partCommand(part, 'right'),
     })),
   };
+}
+
+/**
+ * Ligne d'un zaap proposé pour la position tapée. Entrée / clic gauche : trajet complet (zaap
+ * puis `/travel` vers la position) ; Ctrl+Entrée / clic droit : la commande du zaap seule.
+ */
+export function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry {
+  const { zaap, distance } = near;
+  const trip = zaapTripCommand(zaap, target);
+  return {
+    key: paletteKey(zaap.id, 'zaap'),
+    kind: 'zaap',
+    destinationId: zaap.id,
+    title: zaap.name,
+    subtitle: `Zaap ${zaap.x},${zaap.y} · ${zaap.zone} · ${formatDistance(distance)}`,
+    image: null,
+    favorite: false,
+    choices: [{ label: '', hint: '', primary: trip, secondary: zaap.command }],
+  };
+}
+
+/**
+ * Recherche « proche X,Y » (issue n°7) : les zaaps les plus proches, ou un message court.
+ * `null` si la requête n'est pas une recherche de zaap.
+ */
+export function searchNearestZaap(zaaps: ZaapCatalog, query: string): PaletteSearchResult | null {
+  const near = parseNearQuery(query, zaaps.worlds);
+  switch (near.kind) {
+    case 'none':
+      return null;
+    case 'incomplete':
+      return { entries: [], notice: `Position attendue : ${NEAR_EXAMPLE}` };
+    case 'invalid':
+      return { entries: [], notice: near.message };
+  }
+  const world = near.world?.id ?? DEFAULT_WORLD;
+  const found = nearestZaaps(zaaps.zaaps, near.position, world);
+  if (found.length === 0) {
+    const name = near.world?.name ?? zaaps.worlds.find((w) => w.id === world)?.name ?? world;
+    return { entries: [], notice: `Aucun zaap répertorié dans ${name}` };
+  }
+  return { entries: found.map((n) => zaapEntry(n, near.position)), notice: null };
 }
 
 export interface PaletteSearchResult {
@@ -108,6 +163,10 @@ export function searchPalette(
   limit: number,
   favorites: ReadonlySet<string> = index.favorites,
 ): PaletteSearchResult {
+  // « proche X,Y » : recherche du zaap le plus proche, exclusive des autres résultats.
+  const zaapResult = searchNearestZaap(index.zaaps, query);
+  if (zaapResult) return { entries: zaapResult.entries.slice(0, Math.max(0, limit)), notice: zaapResult.notice };
+
   const { routes } = index;
   const isFav = (d: Destination) => favorites.has(d.id);
 

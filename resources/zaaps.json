@@ -1,0 +1,454 @@
+{
+  "schemaVersion": 1,
+  "source": "Teckium, « Les 48 zaaps de Dofus 3 et leurs coordonnées », https://teckium.fr/pnj-dofus-3/zaap/95-cite-d-astrub/ (relevé du 16/11/2026). Coordonnées non vérifiées en jeu.",
+  "worlds": [
+    {
+      "id": "douze",
+      "name": "Monde des Douze",
+      "aliases": [
+        "douze"
+      ]
+    },
+    {
+      "id": "incarnam",
+      "name": "Incarnam",
+      "aliases": [
+        "incarnam"
+      ]
+    }
+  ],
+  "zaaps": [
+    {
+      "id": "zaap-arche-de-vili",
+      "name": "Arche de Vili",
+      "zone": "Profondeurs d'Astrub",
+      "world": "douze",
+      "x": 15,
+      "y": -20,
+      "command": "/zaap 15 -20"
+    },
+    {
+      "id": "zaap-bord-de-la-foret-malefique",
+      "name": "Bord de la forêt maléfique",
+      "zone": "Amakna",
+      "world": "douze",
+      "x": -1,
+      "y": 13,
+      "command": "/zaap -1 13"
+    },
+    {
+      "id": "zaap-champs-de-cania",
+      "name": "Champs de Cania",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -27,
+      "y": -36,
+      "command": "/zaap -27 -36"
+    },
+    {
+      "id": "zaap-chateau-d-amakna",
+      "name": "Château d'Amakna",
+      "zone": "Amakna",
+      "world": "douze",
+      "x": 3,
+      "y": -5,
+      "command": "/zaap 3 -5"
+    },
+    {
+      "id": "zaap-cimetiere",
+      "name": "Cimetière",
+      "zone": "Incarnam",
+      "world": "incarnam",
+      "x": 3,
+      "y": 0,
+      "command": "/zaap 3 0"
+    },
+    {
+      "id": "zaap-cimetiere-primitif",
+      "name": "Cimetière primitif",
+      "zone": "Montagne des Koalaks",
+      "world": "douze",
+      "x": -12,
+      "y": 19,
+      "command": "/zaap -12 19"
+    },
+    {
+      "id": "zaap-cite-d-astrub",
+      "name": "Cité d'Astrub",
+      "zone": "Astrub",
+      "world": "douze",
+      "x": 5,
+      "y": -18,
+      "command": "/zaap 5 -18"
+    },
+    {
+      "id": "zaap-coin-des-bouftous",
+      "name": "Coin des Bouftous",
+      "zone": "Amakna",
+      "world": "douze",
+      "x": 5,
+      "y": 7,
+      "command": "/zaap 5 7"
+    },
+    {
+      "id": "zaap-crocuzko",
+      "name": "Crocuzko",
+      "zone": "Archipel des Écailles",
+      "world": "douze",
+      "x": -83,
+      "y": -15,
+      "command": "/zaap -83 -15"
+    },
+    {
+      "id": "zaap-coeur-immacule",
+      "name": "Cœur immaculé",
+      "zone": "Bonta",
+      "world": "douze",
+      "x": -31,
+      "y": -56,
+      "command": "/zaap -31 -56"
+    },
+    {
+      "id": "zaap-dunes-des-ossements",
+      "name": "Dunes des ossements",
+      "zone": "Saharach",
+      "world": "douze",
+      "x": 15,
+      "y": -58,
+      "command": "/zaap 15 -58"
+    },
+    {
+      "id": "zaap-entree-du-chateau-de-harebourg",
+      "name": "Entrée du château de Harebourg",
+      "zone": "Île de Frigost",
+      "world": "douze",
+      "x": -67,
+      "y": -77,
+      "command": "/zaap -67 -77"
+    },
+    {
+      "id": "zaap-foire-du-trool",
+      "name": "Foire du Trool",
+      "zone": "Foire du Trool",
+      "world": "douze",
+      "x": -11,
+      "y": -36,
+      "command": "/zaap -11 -36"
+    },
+    {
+      "id": "zaap-futaie-enneigee",
+      "name": "Futaie enneigée",
+      "zone": "Archipel de Valonia",
+      "world": "douze",
+      "x": 39,
+      "y": -82,
+      "command": "/zaap 39 -82"
+    },
+    {
+      "id": "zaap-la-bourgade",
+      "name": "La Bourgade",
+      "zone": "Île de Frigost",
+      "world": "douze",
+      "x": -78,
+      "y": -41,
+      "command": "/zaap -78 -41"
+    },
+    {
+      "id": "zaap-la-cuirasse",
+      "name": "La Cuirasse",
+      "zone": "Brâkmar",
+      "world": "douze",
+      "x": -26,
+      "y": 37,
+      "command": "/zaap -26 37"
+    },
+    {
+      "id": "zaap-laboratoires-abandonnes",
+      "name": "Laboratoires abandonnés",
+      "zone": "Île des Wabbits",
+      "world": "douze",
+      "x": 27,
+      "y": -14,
+      "command": "/zaap 27 -14"
+    },
+    {
+      "id": "zaap-lac-de-cania",
+      "name": "Lac de Cania",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -3,
+      "y": -42,
+      "command": "/zaap -3 -42"
+    },
+    {
+      "id": "zaap-lac-originel",
+      "name": "Lac originel",
+      "zone": "La Source",
+      "world": "douze",
+      "x": 20,
+      "y": 67,
+      "command": "/zaap 20 67"
+    },
+    {
+      "id": "zaap-massif-de-cania",
+      "name": "Massif de Cania",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -13,
+      "y": -28,
+      "command": "/zaap -13 -28"
+    },
+    {
+      "id": "zaap-mont-des-tombeaux",
+      "name": "Mont des Tombeaux",
+      "zone": "Île de Grobe",
+      "world": "douze",
+      "x": 40,
+      "y": -44,
+      "command": "/zaap 40 -44"
+    },
+    {
+      "id": "zaap-montagne-des-craqueleurs",
+      "name": "Montagne des Craqueleurs",
+      "zone": "Amakna",
+      "world": "douze",
+      "x": -5,
+      "y": -8,
+      "command": "/zaap -5 -8"
+    },
+    {
+      "id": "zaap-nimotopia",
+      "name": "Nimotopia",
+      "zone": "Nimotopia",
+      "world": "douze",
+      "x": -67,
+      "y": 29,
+      "command": "/zaap -67 29"
+    },
+    {
+      "id": "zaap-plage-de-la-tortue",
+      "name": "Plage de la Tortue",
+      "zone": "Île de Moon",
+      "world": "douze",
+      "x": 35,
+      "y": 12,
+      "command": "/zaap 35 12"
+    },
+    {
+      "id": "zaap-plaine-des-porkass",
+      "name": "Plaine des Porkass",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -5,
+      "y": -23,
+      "command": "/zaap -5 -23"
+    },
+    {
+      "id": "zaap-plaine-des-scarafeuilles",
+      "name": "Plaine des Scarafeuilles",
+      "zone": "Amakna",
+      "world": "douze",
+      "x": -1,
+      "y": 24,
+      "command": "/zaap -1 24"
+    },
+    {
+      "id": "zaap-plaines-rocheuses",
+      "name": "Plaines Rocheuses",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -17,
+      "y": -47,
+      "command": "/zaap -17 -47"
+    },
+    {
+      "id": "zaap-port-de-madrestam",
+      "name": "Port de Madrestam",
+      "zone": "Amakna",
+      "world": "douze",
+      "x": 7,
+      "y": -4,
+      "command": "/zaap 7 -4"
+    },
+    {
+      "id": "zaap-paturages",
+      "name": "Pâturages",
+      "zone": "Incarnam",
+      "world": "incarnam",
+      "x": 2,
+      "y": -5,
+      "command": "/zaap 2 -5"
+    },
+    {
+      "id": "zaap-rivage-sufokien",
+      "name": "Rivage sufokien",
+      "zone": "Baie de Sufokia",
+      "world": "douze",
+      "x": 10,
+      "y": 22,
+      "command": "/zaap 10 22"
+    },
+    {
+      "id": "zaap-route-des-roulottes",
+      "name": "Route des Roulottes",
+      "zone": "Landes de Sidimote",
+      "world": "douze",
+      "x": -25,
+      "y": 12,
+      "command": "/zaap -25 12"
+    },
+    {
+      "id": "zaap-route-des-ames",
+      "name": "Route des âmes",
+      "zone": "Incarnam",
+      "world": "incarnam",
+      "x": -1,
+      "y": -3,
+      "command": "/zaap -1 -3"
+    },
+    {
+      "id": "zaap-routes-rocailleuses",
+      "name": "Routes Rocailleuses",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -20,
+      "y": -20,
+      "command": "/zaap -20 -20"
+    },
+    {
+      "id": "zaap-sufokia",
+      "name": "Sufokia",
+      "zone": "Baie de Sufokia",
+      "world": "douze",
+      "x": 13,
+      "y": 26,
+      "command": "/zaap 13 26"
+    },
+    {
+      "id": "zaap-tainela",
+      "name": "Tainéla",
+      "zone": "Astrub",
+      "world": "douze",
+      "x": 1,
+      "y": -32,
+      "command": "/zaap 1 -32"
+    },
+    {
+      "id": "zaap-temple-des-alliances",
+      "name": "Temple des alliances",
+      "zone": "Baie de Sufokia",
+      "world": "douze",
+      "x": 13,
+      "y": 35,
+      "command": "/zaap 13 35"
+    },
+    {
+      "id": "zaap-terres-desacrees",
+      "name": "Terres Désacrées",
+      "zone": "Landes de Sidimote",
+      "world": "douze",
+      "x": -15,
+      "y": 25,
+      "command": "/zaap -15 25"
+    },
+    {
+      "id": "zaap-village-cotier",
+      "name": "Village côtier",
+      "zone": "Île d'Otomaï",
+      "world": "douze",
+      "x": -46,
+      "y": 18,
+      "command": "/zaap -46 18"
+    },
+    {
+      "id": "zaap-village-d-amakna",
+      "name": "Village d'Amakna",
+      "zone": "Amakna",
+      "world": "douze",
+      "x": -2,
+      "y": 0,
+      "command": "/zaap -2 0"
+    },
+    {
+      "id": "zaap-village-de-pandala",
+      "name": "Village de Pandala",
+      "zone": "Île de Pandala",
+      "world": "douze",
+      "x": 20,
+      "y": -29,
+      "command": "/zaap 20 -29"
+    },
+    {
+      "id": "zaap-village-de-la-canopee",
+      "name": "Village de la Canopée",
+      "zone": "Île d'Otomaï",
+      "world": "douze",
+      "x": -54,
+      "y": 16,
+      "command": "/zaap -54 16"
+    },
+    {
+      "id": "zaap-village-des-brigandins",
+      "name": "Village des Brigandins",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -15,
+      "y": -23,
+      "command": "/zaap -15 -23"
+    },
+    {
+      "id": "zaap-village-des-dopeuls",
+      "name": "Village des Dopeuls",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": -34,
+      "y": -8,
+      "command": "/zaap -34 -8"
+    },
+    {
+      "id": "zaap-village-des-kanigs",
+      "name": "Village des Kanigs",
+      "zone": "Plaines de Cania",
+      "world": "douze",
+      "x": 0,
+      "y": -56,
+      "command": "/zaap 0 -56"
+    },
+    {
+      "id": "zaap-village-des-zoths",
+      "name": "Village des Zoths",
+      "zone": "Île d'Otomaï",
+      "world": "douze",
+      "x": -53,
+      "y": 18,
+      "command": "/zaap -53 18"
+    },
+    {
+      "id": "zaap-village-des-eleveurs",
+      "name": "Village des Éleveurs",
+      "zone": "Montagne des Koalaks",
+      "world": "douze",
+      "x": -16,
+      "y": 1,
+      "command": "/zaap -16 1"
+    },
+    {
+      "id": "zaap-village-enseveli",
+      "name": "Village enseveli",
+      "zone": "Île de Frigost",
+      "world": "douze",
+      "x": -77,
+      "y": -73,
+      "command": "/zaap -77 -73"
+    },
+    {
+      "id": "zaap-ile-de-la-cawotte",
+      "name": "Île de la Cawotte",
+      "zone": "Île des Wabbits",
+      "world": "douze",
+      "x": 25,
+      "y": -4,
+      "command": "/zaap 25 -4"
+    }
+  ]
+}

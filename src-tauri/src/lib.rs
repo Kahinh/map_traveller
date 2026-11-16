@@ -92,6 +92,8 @@ pub fn run() {
             storage::data_dir,
             storage::open_data_dir,
             images::import_image,
+            images::read_image,
+            images::save_thumbnail,
             palette::hide_palette,
             palette::set_palette_height,
             main_window::minimize_main,

@@ -205,7 +205,7 @@ fn create_and_show(app: &AppHandle) -> Result<(), String> {
     reveal(&window)
 }
 
-fn ensure_main(window: &Window) -> Result<(), String> {
+pub(crate) fn ensure_main(window: &Window) -> Result<(), String> {
     if window.label() == MAIN_LABEL {
         Ok(())
     } else {

@@ -98,6 +98,7 @@ Le formulaire :
 - **Fautes de frappe** : si rien ne correspond exactement, la recherche tolère une faute (deux à partir de 8 lettres) sur les mots de 4 lettres et plus. Un résultat approximatif n'apparaît jamais quand un résultat exact existe.
 - **Carte à deux étapes** : une seule ligne, avec les cases **1** et **2** sur la ligne sélectionnée.
 - **Parcours Farm** : le nom du parcours liste « parcours complet » puis chaque position. Le nom suivi d'une position reprend directement la suite : avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`. Si le parcours repasse par la même position, une ligne par passage est proposée.
+- **Zaap le plus proche** : `proche -20,-20` (ou `proche -20 -20`, `proche [-20,-20]`) liste les trois zaaps les plus proches de cette position, du plus proche au plus lointain, avec leurs coordonnées, leur zone et la distance. `Entrée` copie le **trajet complet** (`/zaap …;/travel -20 -20`, ou le zaap seul si la position est celle du zaap) ; `Ctrl+Entrée` copie **le zaap seul**. `proche incarnam 2,-4` cherche parmi les zaaps d'Incarnam, qui ont leurs propres coordonnées et ne sont jamais comparés au Monde des Douze. La distance est comptée **en cartes** (horizontal + vertical, distance de Manhattan), à vol d'oiseau : la mer, les obstacles et les accès ne sont pas pris en compte, le zaap le plus proche n'est donc pas toujours le trajet le plus court. Ex aequo : ordre alphabétique. « proche » suivi de mots sans chiffre reste une recherche normale.
 - **Limite** : la palette s'affiche devant le jeu en mode fenêtré ou sans bordure. En plein écran exclusif, Windows peut l'empêcher d'apparaître.
 
 ### Paramètres
@@ -183,7 +184,7 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `favorites.json` | identifiants des favoris |
 | `settings.json` | préférences (premier plan, réduction dans la zone de notification `tray.minimizeToTray`, raccourcis, mode de mise à jour et date de la dernière vérification…) |
 | `aliases.json` | vos alias de recherche et les alias fournis que vous avez désactivés (créé à la première personnalisation). Ce que l'application ne comprend pas dans ce fichier est conservé tel quel ; un fichier illisible ou d'une version plus récente n'est jamais réécrit |
-| `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON) |
+| `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON), et leurs vignettes `img-….thumb.webp` |
 
 - Windows contient aussi deux dossiers techniques nommés `app.maptraveller`, l'un dans `%APPDATA%` (position de la fenêtre), l'autre dans `%LOCALAPPDATA%` (cache de la vue web). Ils ne contiennent aucune donnée de l'utilisateur.
 - Au premier lancement, le catalogue d'exemple (`resources/catalog.seed.json`) est copié dans ce dossier.
@@ -191,6 +192,7 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 - Une version **0.1.x** refuse un `catalog.json` au schéma 3 (« version plus récente que l'application ») **sans le modifier**. Revenir à une version antérieure demande donc de restaurer une sauvegarde au schéma 2.
 - Les mises à jour **n'écrasent jamais** vos données. Les alias fournis avec l'application sont embarqués dans celle-ci et peuvent évoluer d'une version à l'autre ; vos alias personnalisés et vos désactivations, rangés dans `aliases.json`, ne sont jamais touchés.
 - Une image retirée d'une carte, ou importée dans un formulaire annulé, reste dans `images/` : aucun fichier n'est supprimé automatiquement.
+- **Vignettes** : la grille et la palette affichent une copie réduite de chaque image (carré central de 256 px, WebP de quelques Ko), `img-….thumb.webp`, à côté de l'original. Elle est fabriquée à l'import, ou au premier affichage pour une image importée avant la version 0.7.0. L'original n'est jamais modifié ; une vignette supprimée est simplement refaite.
 - Chaque écriture est atomique (fichier temporaire puis remplacement). La version précédente est gardée en `.bak`.
 - **Sauvegarde manuelle :** copier tout le dossier `%APPDATA%\MapTraveller\`.
 - **Restauration :** recopier ce dossier, application fermée.
@@ -198,6 +200,8 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 L'import/export ZIP intégré est prévu, voir la feuille de route.
 
 > Le catalogue livré ne contient que des **exemples fictifs**. Les vrais trajets sont à saisir vous-même.
+>
+> Seule exception : le **référentiel des zaaps** de la recherche « proche » (`resources/zaaps.json`, 48 zaaps, embarqué dans l'application, lecture seule). Il est relevé sur [Teckium](https://teckium.fr/pnj-dofus-3/zaap/95-cite-d-astrub/) et **n'a pas été vérifié en jeu**. Les commandes suivent la convention de l'application (`/zaap X Y`).
 
 ---
 
@@ -233,7 +237,8 @@ src/
   features/catalog/    # PUR — schéma, validation, éditeur (editor.ts), recherche : texte (searchText.ts), index et classement (searchIndex.ts), grille fenêtrée (gridWindow.ts)
   features/aliases/    # PUR — dictionnaire global d'alias de recherche (livrés + personnalisés)
   features/updates/    # PUR — machine à états des mises à jour, messages d'erreur, décisions au lancement
-  lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images, mises à jour (updater.ts)
+  features/zaaps/      # PUR — référentiel des zaaps, recherche « proche X,Y » (distance de Manhattan)
+  lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images (vignettes : thumbnails.ts ; import : imageImport.ts), mises à jour (updater.ts)
   components/          # React : WindowHeader, CategoryTabs, CompactCard, Panel, FarmPanel, DestinationForm
   app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useAliases, useCopyFeedback, useUpdater, useGridWindow (rangées visibles seulement)
   styles/              # tokens.css (DA) + app.css
@@ -243,12 +248,13 @@ src-tauri/
   src/tray.rs          # icône et menu de la zone de notification
   src/palette.rs       # palette, créée masquée dès le lancement
   src/storage.rs       # %APPDATA%\MapTraveller, écriture atomique + .bak
-  src/images.rs        # import d'images : taille, format réel, copie sous nom unique
+  src/images.rs        # import d'images : taille, format réel, copie sous nom unique ; relecture et vignettes
   capabilities/        # permissions minimales
   tauri.conf.json
   tauri.release.conf.json  # surcharge des builds de tag : fichiers de mise à jour signés
 resources/catalog.seed.json   # seed lecture seule (fictif)
 resources/aliases.default.json # alias de recherche livrés (lecture seule, embarqués dans l'interface)
+resources/zaaps.json          # référentiel des 48 zaaps (source citée, non vérifié en jeu), embarqué dans la palette
 scripts/make-latest-json.mjs  # latest.json + contrôles avant et après publication
 tests/                        # Vitest
 .github/workflows/windows.yml # CI + installateur
@@ -345,12 +351,14 @@ Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](http
 - [x] Workflow GitHub Actions + installateur NSIS
 - [x] Éditeur intégré : créer / modifier / dupliquer / supprimer, aperçu clic gauche/droit et étapes Farm
 - [x] Import d'images (dialogue Windows, contrôle du format, copie dans `images/`)
-- [ ] Vignettes réduites à l'import (images lourdes) et nettoyage explicite des images orphelines
+- [x] Vignettes réduites (256 px, WebP) pour la grille et la palette
+- [ ] Nettoyage explicite des images orphelines
 - [ ] Import / export ZIP complet, import JSON seul
 - [x] Palette de recherche globale (seconde fenêtre, reprise Farm par position, étapes 1 / 2)
 - [x] Raccourcis globaux configurables, panneau Paramètres
 - [x] Rubriques Paramètres : mises à jour (version, mode), dossier des données, affichage
 - [x] Recherche tolérante (ordre des mots, mots de liaison, fautes de frappe) et dictionnaire global d'alias
+- [x] Zaap le plus proche d'une position dans la palette (`proche X,Y`)
 - [ ] Mises à jour manuelles et automatiques depuis les Releases signées (livrées, à valider par le protocole en deux versions)
 - [ ] Validation sur Windows 11 propre, mise à l'échelle 100 % / 150 %, multi-écrans
 

@@ -8,6 +8,13 @@
 //! - Nom interne composé uniquement de `[a-z0-9-]` ; un fichier existant n'est jamais écrasé.
 //! - Le fichier source n'est jamais modifié ni supprimé ; son contenu n'est ni exécuté ni décodé.
 //! - Aucun fichier n'est supprimé automatiquement, sauf la copie partielle d'un import échoué.
+//!
+//! Vignettes (issue n°14, A4) : la grille et la palette affichent une copie réduite
+//! `images/<nom>.thumb.webp` (256 px de petit côté au plus), produite DANS LA PAGE (canvas),
+//! sans bibliothèque d'images en Rust. Rust ne fait que relire l'original (`read_image`) et
+//! enregistrer la vignette reçue (`save_thumbnail`), après contrôle du nom, de la taille et du
+//! format. L'original n'est jamais modifié ni supprimé ; seule une vignette peut être remplacée.
+//! Ces deux commandes sont réservées à la fenêtre principale.
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{ErrorKind, Read, Write};
@@ -15,8 +22,10 @@ use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use tauri::AppHandle;
+use tauri::ipc::{InvokeBody, Request, Response};
+use tauri::{AppHandle, Window};
 
+use crate::main_window::ensure_main;
 use crate::storage::app_data_dir;
 
 /// Taille maximale d'une image importée : 10 Mo.
@@ -138,6 +147,91 @@ pub fn import_into(source: &Path, images_dir: &Path) -> Result<String, String> {
     Err("Aucun nom de fichier libre pour l'image : réessayez.".to_string())
 }
 
+/// Taille maximale d'une vignette reçue de la page : 1 Mo (une vignette WebP de 256 px pèse
+/// quelques dizaines de Ko).
+pub const MAX_THUMB_BYTES: usize = 1024 * 1024;
+
+/// Suffixe des vignettes, à la place de l'extension de l'original.
+const THUMB_SUFFIX: &str = ".thumb.webp";
+
+/// Nom de fichier d'une image importée par `import_into` (`images/<[a-z0-9-]+>.<png|jpg|webp>`),
+/// sans le préfixe `images/`, et sa racine. `None` pour tout autre chemin, une vignette comprise :
+/// aucun chemin libre, aucun `..`, aucun séparateur.
+fn imported_name(relative: &str) -> Option<(&str, &str)> {
+    let name = relative.strip_prefix("images/")?;
+    let (stem, ext) = name.rsplit_once('.')?;
+    let stem_ok = !stem.is_empty()
+        && stem.len() <= 128
+        && stem.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+    (stem_ok && matches!(ext, "png" | "jpg" | "webp")).then_some((name, stem))
+}
+
+/// Relit une image importée, bornée à `MAX_IMAGE_BYTES`.
+pub fn read_imported(relative: &str, images_dir: &Path) -> Result<Vec<u8>, String> {
+    let (name, _) = imported_name(relative).ok_or_else(|| "Chemin d'image refusé.".to_string())?;
+    let mut data = Vec::new();
+    File::open(images_dir.join(name))
+        .map_err(|e| format!("Image illisible : {e}"))?
+        .take(MAX_IMAGE_BYTES + 1)
+        .read_to_end(&mut data)
+        .map_err(|e| format!("Lecture de l'image impossible : {e}"))?;
+    if data.len() as u64 > MAX_IMAGE_BYTES {
+        return Err(too_large(data.len() as u64));
+    }
+    Ok(data)
+}
+
+/// Enregistre la vignette WebP d'une image importée. Écriture dans un fichier temporaire puis
+/// renommage : une vignette n'est jamais lue à moitié écrite. Renvoie son chemin relatif.
+pub fn write_thumbnail(relative: &str, data: &[u8], images_dir: &Path) -> Result<String, String> {
+    let (name, stem) = imported_name(relative).ok_or_else(|| "Chemin d'image refusé.".to_string())?;
+    if data.len() > MAX_THUMB_BYTES {
+        return Err("Vignette trop lourde.".to_string());
+    }
+    if detect_format(data) != Some(ImageFormat::Webp) {
+        return Err("Vignette refusée : WebP attendu.".to_string());
+    }
+    if !images_dir.join(name).is_file() {
+        return Err("Image d'origine introuvable.".to_string());
+    }
+    let target = images_dir.join(format!("{stem}{THUMB_SUFFIX}"));
+    let temp = images_dir.join(format!("{stem}{THUMB_SUFFIX}.tmp"));
+    let written = File::create(&temp)
+        .and_then(|mut out| out.write_all(data).and_then(|()| out.sync_all()))
+        .and_then(|()| fs::rename(&temp, &target));
+    if let Err(e) = written {
+        let _ = fs::remove_file(&temp);
+        return Err(format!("Enregistrement de la vignette impossible : {e}"));
+    }
+    Ok(format!("{IMAGES_DIR}/{stem}{THUMB_SUFFIX}"))
+}
+
+/// Octets d'une image importée, pour en faire la vignette dans la page. Fenêtre principale
+/// uniquement.
+#[tauri::command]
+pub async fn read_image(app: AppHandle, window: Window, relative: String) -> Result<Response, String> {
+    ensure_main(&window)?;
+    let images_dir = app_data_dir(&app)?.join(IMAGES_DIR);
+    read_imported(&relative, &images_dir).map(Response::new)
+}
+
+/// Enregistre la vignette produite par la page. Corps brut (les octets WebP), image d'origine
+/// dans l'en-tête `x-image`. Fenêtre principale uniquement.
+#[tauri::command]
+pub fn save_thumbnail(app: AppHandle, window: Window, request: Request<'_>) -> Result<String, String> {
+    ensure_main(&window)?;
+    let relative = request
+        .headers()
+        .get("x-image")
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| "Image d'origine non précisée.".to_string())?;
+    let InvokeBody::Raw(data) = request.body() else {
+        return Err("Vignette attendue en octets bruts.".to_string());
+    };
+    let images_dir = app_data_dir(&app)?.join(IMAGES_DIR);
+    write_thumbnail(relative, data, &images_dir)
+}
+
 /// Importe une image choisie dans le dialogue natif. Renvoie `images/<nom>.<ext>`.
 /// Asynchrone : la lecture (jusqu'à 10 Mo) ne bloque pas le fil de l'interface.
 #[tauri::command]
@@ -239,5 +333,71 @@ mod tests {
         // La source n'a pas été touchée.
         assert_eq!(fs::read(&source).unwrap(), JPEG);
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// Chemin relatif de la vignette d'une image importée (même règle que l'interface).
+    fn thumbnail_path(relative: &str) -> Option<String> {
+        imported_name(relative).map(|(_, stem)| format!("{IMAGES_DIR}/{stem}{THUMB_SUFFIX}"))
+    }
+
+    #[test]
+    fn thumbnail_paths_only_for_imported_names() {
+        assert_eq!(
+            thumbnail_path("images/img-1a-2b-0.png").as_deref(),
+            Some("images/img-1a-2b-0.thumb.webp")
+        );
+        assert_eq!(thumbnail_path("images/img-1.jpg").as_deref(), Some("images/img-1.thumb.webp"));
+        for bad in [
+            "images/img-1.thumb.webp",
+            "images/../catalog.json",
+            "images/sub/img-1.png",
+            "images/IMG-1.png",
+            "images/img-1.gif",
+            "images/.png",
+            "img-1.png",
+            "/images/img-1.png",
+            "images\\img-1.png",
+            "",
+        ] {
+            assert_eq!(thumbnail_path(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn writes_and_replaces_a_thumbnail_without_touching_the_original() {
+        let dir = test_dir("thumb");
+        fs::write(dir.join("img-1.png"), PNG).unwrap();
+        let rel = write_thumbnail("images/img-1.png", WEBP, &dir).unwrap();
+        assert_eq!(rel, "images/img-1.thumb.webp");
+        assert_eq!(fs::read(dir.join("img-1.thumb.webp")).unwrap(), WEBP);
+        // Remplacement d'une vignette existante : autorisé.
+        let mut other = WEBP.to_vec();
+        other.push(0);
+        write_thumbnail("images/img-1.png", &other, &dir).unwrap();
+        assert_eq!(fs::read(dir.join("img-1.thumb.webp")).unwrap(), other);
+        assert_eq!(fs::read(dir.join("img-1.png")).unwrap(), PNG);
+        assert!(!dir.join("img-1.thumb.webp.tmp").exists());
+    }
+
+    #[test]
+    fn refuses_bad_thumbnails() {
+        let dir = test_dir("thumb-bad");
+        fs::write(dir.join("img-1.png"), PNG).unwrap();
+        assert!(write_thumbnail("images/img-1.png", PNG, &dir).is_err());
+        assert!(write_thumbnail("images/img-2.png", WEBP, &dir).is_err());
+        assert!(write_thumbnail("images/../img-1.png", WEBP, &dir).is_err());
+        let mut huge = WEBP.to_vec();
+        huge.resize(MAX_THUMB_BYTES + 1, 0);
+        assert!(write_thumbnail("images/img-1.png", &huge, &dir).is_err());
+        assert!(!dir.join("img-1.thumb.webp").exists());
+    }
+
+    #[test]
+    fn reads_only_imported_images() {
+        let dir = test_dir("read");
+        fs::write(dir.join("img-1.png"), PNG).unwrap();
+        assert_eq!(read_imported("images/img-1.png", &dir).unwrap(), PNG);
+        assert!(read_imported("images/../img-1.png", &dir).is_err());
+        assert!(read_imported("images/img-2.png", &dir).is_err());
     }
 }

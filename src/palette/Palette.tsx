@@ -20,6 +20,7 @@ import {
   type PaletteSearchResult,
 } from '../features/palette/entries';
 import { navReducer, type NavAction, type NavState } from '../features/palette/navigation';
+import { DEFAULT_ZAAPS } from '../features/zaaps/defaultZaaps';
 import { copyText } from '../lib/tauri/clipboard';
 import { initImages } from '../lib/tauri/images';
 import { hidePalette, onPaletteShown, setPaletteHeight } from '../lib/tauri/palette';
@@ -96,7 +97,10 @@ export function Palette() {
 
   // Index construit une fois par catalogue ou dictionnaire chargé (ni à chaque affichage, ni
   // quand seuls les favoris changent) ; à chaque frappe, seul le dernier mot tapé est recherché.
-  const index = useMemo(() => buildPaletteIndex(destinations, NO_FAVORITES, dictionary), [destinations, dictionary]);
+  const index = useMemo(
+    () => buildPaletteIndex(destinations, NO_FAVORITES, dictionary, DEFAULT_ZAAPS),
+    [destinations, dictionary],
+  );
   const hasQuery = query.trim() !== '';
   const { entries, notice } = useMemo(
     () => (hasQuery ? searchPalette(index, query, PALETTE_LIMIT, favorites) : NO_RESULT),
@@ -308,6 +312,8 @@ export function Palette() {
 
   const showSteps = selected !== undefined && selected.choices.length > 1;
   const showZaapHint = selected?.choices.some((c) => c.primary !== c.secondary) ?? false;
+  // Ligne « zaap le plus proche » : Entrée copie le trajet complet, Ctrl+Entrée le zaap seul.
+  const zaapRow = selected?.kind === 'zaap';
   const loadError = readError ?? catalogError;
   const trimmed = query.trim();
 
@@ -319,6 +325,8 @@ export function Palette() {
   if (!hasResults) {
     if (status) barInfo = status;
     else if (!loaded) barInfo = { kind: 'warning', text: 'Chargement…' };
+    // Sans résultat, le message tient dans la barre : la fenêtre reste réduite à la barre.
+    else if (notice && !loadError) barInfo = { kind: 'warning', text: notice };
     else if (trimmed && !loadError) barInfo = { kind: 'warning', text: 'Aucun résultat' };
   }
 
@@ -333,7 +341,7 @@ export function Palette() {
           value={query}
           onChange={onChange}
           onKeyDown={onKeyDown}
-          placeholder="Rechercher une destination ou un parcours"
+          placeholder="Rechercher, ou proche -20,-20 pour le zaap le plus proche"
           aria-label="Rechercher une destination ou un parcours"
           role="combobox"
           aria-autocomplete="list"
@@ -351,7 +359,7 @@ export function Palette() {
         )}
       </div>
 
-      {(loadError || notice) && (
+      {(loadError || (notice && hasResults)) && (
         <p className={`palette__notice${loadError ? ' is-error' : ''}`}>{loadError ?? notice}</p>
       )}
 
@@ -402,11 +410,11 @@ export function Palette() {
                 </span>
               )}
               <span>
-                <kbd>Entrée</kbd> copier
+                <kbd>Entrée</kbd> {zaapRow ? 'trajet complet' : 'copier'}
               </span>
               {showZaapHint && (
                 <span>
-                  <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> avec Zaap
+                  <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> {zaapRow ? 'zaap seul' : 'avec Zaap'}
                 </span>
               )}
               <span>

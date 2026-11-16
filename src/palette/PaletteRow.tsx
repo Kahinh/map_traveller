@@ -1,5 +1,5 @@
 import { memo, type MouseEvent } from 'react';
-import { StarIcon } from '../components/icons';
+import { MarkIcon, StarIcon } from '../components/icons';
 import { CardVisual } from '../components/Thumb';
 import type { Category } from '../features/catalog/schema';
 import type { ClickButton } from '../features/commands/cardParts';
@@ -75,7 +75,13 @@ export const PaletteRow = memo(function PaletteRow({
       onContextMenu={onContextMenu}
     >
       <span className="palette__thumb">
-        <CardVisual category={category} image={entry.image} />
+        {entry.kind === 'zaap' ? (
+          <span className="card__placeholder" aria-hidden>
+            <MarkIcon />
+          </span>
+        ) : (
+          <CardVisual category={category} image={entry.image} />
+        )}
       </span>
       <span className="palette__text">
         <span className="palette__title">

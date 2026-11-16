@@ -139,24 +139,24 @@ export function validateDraft(draft: DestinationDraft): DraftErrors {
   const errors: DraftErrors = {};
   const twoStep = draftIsTwoStep(draft);
 
-  if (isBlank(draft.name)) errors.name = 'Nom requis.';
+  if (isBlank(draft.name)) errors.name = 'Nom requis';
 
   if (isBlank(draft.command)) {
-    errors.command = twoStep ? 'Commande 1 requise.' : 'Commande requise.';
+    errors.command = twoStep ? 'Commande 1 requise' : 'Commande requise';
   } else if (draft.category === 'farm') {
     const route = parseFarmRoute(draft.command);
     if (!isValidFarmRoute(route)) {
-      if (route.steps.length === 0) errors.command = 'Aucune étape /travel reconnue dans ce parcours.';
+      if (route.steps.length === 0) errors.command = 'Aucune étape /travel reconnue dans ce parcours';
       else
-        errors.command = `Segment(s) non reconnu(s) : ${route.issues.map((i) => segmentLabel(i.segment)).join(', ')}.`;
+        errors.command = `Segment(s) non reconnu(s) : ${route.issues.map((i) => segmentLabel(i.segment)).join(', ')}`;
     }
   }
 
-  if (twoStep && isBlank(draft.command2)) errors.command2 = 'Commande 2 requise.';
+  if (twoStep && isBlank(draft.command2)) errors.command2 = 'Commande 2 requise';
 
-  if (draft.image !== null && !isSafeImagePath(draft.image)) errors.image = 'Chemin d\'image invalide.';
+  if (draft.image !== null && !isSafeImagePath(draft.image)) errors.image = 'Chemin d\'image invalide';
 
-  if (parseSortOrder(draft.sortOrder) === null) errors.sortOrder = 'Nombre entier attendu (vide = 0).';
+  if (parseSortOrder(draft.sortOrder) === null) errors.sortOrder = 'Nombre entier attendu (vide = 0)';
 
   return errors;
 }

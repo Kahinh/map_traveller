@@ -189,7 +189,7 @@ export function describeUpdateError(error: unknown): UpdateErrorInfo {
   const detail = raw.trim().replace(/\s+/g, ' ');
   const shown = detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL - 1)}…` : detail;
   return {
-    message: shown ? `La mise à jour a échoué : ${shown}` : 'La mise à jour a échoué.',
+    message: shown ? `La mise à jour a échoué : ${shown}` : 'La mise à jour a échoué',
     retryable: true,
   };
 }
@@ -234,5 +234,5 @@ export function installedUpdateNotice(currentVersion: string | null, lastSeenVer
 
 /** Texte de l'annonce après une mise à jour. */
 export function installedUpdateMessage(version: string): string {
-  return `Mise à jour ${version} installée.`;
+  return `Mise à jour ${version} installée`;
 }

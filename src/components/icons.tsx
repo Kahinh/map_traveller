@@ -1,19 +1,27 @@
-/** Icônes SVG originales, héritent de `currentColor` (rendu net à 100 % et 150 %). */
+/**
+ * Icônes SVG originales : un seul jeu, grille de 16, trait de 1,5, extrémités arrondies,
+ * `currentColor`. Taille d'affichage donnée par la feuille de style (`--mt-icon-*`) ; les
+ * attributs `width` / `height` ne servent qu'avant le chargement des styles.
+ */
 import type { ReactNode } from 'react';
+import type { Category } from '../features/catalog/schema';
 
 function Icon({
   children,
   filled = false,
   strokeWidth = 1.5,
+  className,
 }: {
   children: ReactNode;
   filled?: boolean;
   strokeWidth?: number;
+  className?: string;
 }) {
   return (
     <svg
-      width="14"
-      height="14"
+      className={className}
+      width="16"
+      height="16"
       viewBox="0 0 16 16"
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
@@ -26,6 +34,18 @@ function Icon({
     </svg>
   );
 }
+
+/**
+ * Repère de position, signature du produit : le losange et son point central de l'icône de
+ * l'application, à plat, d'une seule couleur. N'apparaît qu'à deux endroits : la barre de titre
+ * et l'étape courante d'un parcours Farm.
+ */
+export const MarkIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M8 1.75L14.25 8 8 14.25 1.75 8z" />
+    <circle cx="8" cy="8" r="1.75" fill="currentColor" stroke="none" />
+  </Icon>
+);
 
 export const PinIcon = ({ filled }: { filled: boolean }) => (
   <Icon filled={filled}>
@@ -63,6 +83,20 @@ export const BackIcon = () => (
   </Icon>
 );
 
+/** Chevron de dépliage : pointe à droite ; la feuille de style le tourne quand le bloc est ouvert. */
+export const ChevronIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M6.5 4L10.5 8l-4 4" />
+  </Icon>
+);
+
+/** Flèche d'une touche du clavier : pointe vers le haut ; la feuille de style l'oriente. */
+export const ArrowIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M8 13V3M4 7l4-4 4 4" />
+  </Icon>
+);
+
 export const PlusIcon = () => (
   <Icon>
     <path d="M8 3v10M3 8h10" />
@@ -76,11 +110,18 @@ export const PencilIcon = () => (
   </Icon>
 );
 
-/** Loupe du champ de recherche de la palette. */
+/** Loupe des champs de recherche. */
 export const SearchIcon = () => (
   <Icon>
     <circle cx="7" cy="7" r="4.25" />
     <path d="M10.2 10.2L13.5 13.5" />
+  </Icon>
+);
+
+/** Lancement du parcours complet (« Début » du panneau Farm). */
+export const PlayIcon = () => (
+  <Icon>
+    <path d="M5 3.5v9L12 8z" />
   </Icon>
 );
 
@@ -103,3 +144,50 @@ export const StarIcon = ({ filled }: { filled: boolean }) => (
     <path d={STAR_PATH} />
   </Icon>
 );
+
+/** PNJ : une silhouette. */
+const NpcIcon = () => (
+  <Icon>
+    <circle cx="8" cy="5.25" r="2.5" />
+    <path d="M3 13.5c0-2.75 2.25-4.5 5-4.5s5 1.75 5 4.5" />
+  </Icon>
+);
+
+/** Donjon : une tour crénelée et sa porte. */
+const DungeonIcon = () => (
+  <Icon>
+    <path d="M3.5 14V2.5h2.25V4.5h1.5v-2h1.5v2h1.5v-2h2.25V14z" />
+    <path d="M6.5 14v-2.75a1.5 1.5 0 0 1 3 0V14" />
+  </Icon>
+);
+
+/** Lieu-dit : un poteau indicateur à deux panneaux. */
+const PlaceIcon = () => (
+  <Icon>
+    <path d="M8 1.75v12.5M5.5 14.25h5" />
+    <path d="M8 3h4.25l1.5 1.75-1.5 1.75H8" />
+    <path d="M8 8H3.75l-1.5 1.75 1.5 1.75H8" />
+  </Icon>
+);
+
+/** Farm : un parcours qui relie deux positions. */
+const FarmIcon = () => (
+  <Icon>
+    <circle cx="3.75" cy="12.25" r="1.75" />
+    <circle cx="12.25" cy="3.75" r="1.75" />
+    <path d="M5.5 12.25h3.25a2 2 0 0 0 0-4h-1.5a2 2 0 0 1 0-4h3.25" />
+  </Icon>
+);
+
+const CATEGORY_ICONS: Record<Category, () => ReactNode> = {
+  npc: NpcIcon,
+  dungeon: DungeonIcon,
+  place: PlaceIcon,
+  farm: FarmIcon,
+};
+
+/** Icône d'une catégorie (carte sans image, vignette de la palette). */
+export function CategoryIcon({ category }: { category: Category }) {
+  const Glyph = CATEGORY_ICONS[category];
+  return <Glyph />;
+}

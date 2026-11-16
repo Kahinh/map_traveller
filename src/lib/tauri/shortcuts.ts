@@ -13,7 +13,7 @@ import {
 } from '../../features/settings/accelerator';
 import { isTauri } from './env';
 
-export const BROWSER_SHORTCUTS_MESSAGE = "Réglage disponible uniquement dans l'application installée.";
+export const BROWSER_SHORTCUTS_MESSAGE = "Réglage disponible uniquement dans l'application installée";
 
 /** Vrai si les raccourcis peuvent être modifiés (application installée). */
 export function canConfigureShortcuts(): boolean {

@@ -1,5 +1,5 @@
 import { closeWindow, minimizeWindow } from '../lib/tauri/window';
-import { CloseIcon, GearIcon, MinimizeIcon, PinIcon } from './icons';
+import { CloseIcon, GearIcon, MarkIcon, MinimizeIcon, PinIcon } from './icons';
 
 interface Props {
   alwaysOnTop: boolean;
@@ -15,15 +15,13 @@ interface Props {
 export function WindowHeader({ alwaysOnTop, onToggleAlwaysOnTop, settingsOpen, settingsDisabled, onToggleSettings }: Props) {
   const pinLabel = `Toujours au premier plan : ${alwaysOnTop ? 'activé' : 'désactivé'}`;
   const settingsTitle = settingsDisabled
-    ? "Paramètres (indisponibles pendant l'édition)"
+    ? "Paramètres indisponibles pendant l'édition"
     : settingsOpen
       ? 'Fermer les paramètres (Échap)'
       : 'Paramètres';
   return (
     <header className="titlebar" data-tauri-drag-region>
-      <span className="titlebar__logo" aria-hidden>
-        MT
-      </span>
+      <MarkIcon className="titlebar__mark" />
       <span className="titlebar__title" data-tauri-drag-region>
         Map Traveller
       </span>

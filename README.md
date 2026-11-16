@@ -67,7 +67,7 @@ Le formulaire :
 |---|---|
 | **Nom** | obligatoire |
 | **Catégorie** | PNJ, Donjon, Lieu-dit ou Farm ; changer de catégorie n'efface rien |
-| **Image** | facultative ; sans image, la carte affiche les initiales |
+| **Image** | facultative ; sans image, la carte affiche l'icône de sa catégorie |
 | **Trajet en deux étapes** | PNJ et Donjons uniquement, décoché par défaut ; affiche « Commande 1 » et « Commande 2 » |
 | **Commande** | obligatoire, texte libre sur plusieurs lignes, **enregistré exactement tel que saisi** |
 | **Plus d'options** | zone, alias et tags (séparés par des virgules), ordre d'affichage (entier, vide = 0) |

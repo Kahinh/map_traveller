@@ -1,9 +1,9 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
-import { CategoryTabs } from '../components/CategoryTabs';
+import { CategoryTabs, VIEWS } from '../components/CategoryTabs';
 import { CompactCard } from '../components/CompactCard';
 import { DestinationForm } from '../components/DestinationForm';
 import { FarmPanel } from '../components/FarmPanel';
-import { PencilIcon, PlusIcon } from '../components/icons';
+import { PencilIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { DEFAULT_SETTINGS_SECTION, SettingsPanel, type SettingsSectionId } from '../components/SettingsPanel';
 import { WindowHeader } from '../components/WindowHeader';
 import {
@@ -33,7 +33,7 @@ type PanelState =
   | { type: 'editor'; draft: DestinationDraft; key: number }
   | { type: 'settings'; section: SettingsSectionId };
 
-const NOTHING_TO_COPY = 'Aucune commande à copier.';
+const NOTHING_TO_COPY = 'Aucune commande à copier';
 const FARM_KEY = 'farm:';
 
 /** Le menu contextuel du navigateur n'a pas sa place dans l'app, sauf dans les champs de saisie. */
@@ -52,10 +52,11 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 const isCategory = (v: ViewFilter): v is Category => CATEGORIES.includes(v as Category);
 
-function emptyMessage(view: ViewFilter, query: string): string {
-  if (query.trim()) return `Aucun résultat pour « ${query.trim()} ».`;
-  if (view === 'favorites') return 'Aucun favori : cliquez sur ☆ pour en ajouter.';
-  return 'Aucune destination dans cette catégorie.';
+/** État vide d'une vue : un titre, et une indication quand il y a quelque chose à faire. */
+function emptyMessage(view: ViewFilter, query: string): { title: string; hint?: string } {
+  if (query.trim()) return { title: `Aucun résultat pour « ${query.trim()} »`, hint: 'Échap pour effacer la recherche' };
+  if (view === 'favorites') return { title: 'Aucun favori', hint: "Cliquez sur l'étoile d'une carte pour l'ajouter" };
+  return { title: 'Aucune destination dans cette catégorie' };
 }
 
 export function App() {
@@ -211,7 +212,7 @@ export function App() {
     }
     revealRef.current = saved.enabled ? saved.id : null;
     setRevealTick((t) => t + 1);
-    notify('Destination enregistrée.');
+    notify('Destination enregistrée');
   };
 
   const onDeleteDestination = async (id: string) => {
@@ -230,7 +231,7 @@ export function App() {
       delete next[id];
       return next;
     });
-    notify('Destination supprimée.');
+    notify('Destination supprimée');
   };
 
   const onDuplicate = (id: string) => {
@@ -266,12 +267,25 @@ export function App() {
     reveal(index);
   }, [visible, reveal, revealTick]);
 
+  // Nombre de destinations par onglet, hors recherche : même filtre que la grille, requête vide.
+  const tabCounts = useMemo(
+    () =>
+      ready
+        ? (Object.fromEntries(
+            VIEWS.map((v) => [v.id, filterDestinations(destinations, v.id, '', favorites, dictionary).length]),
+          ) as Record<ViewFilter, number>)
+        : undefined,
+    [ready, destinations, favorites, dictionary],
+  );
+
   const farmId = panel?.type === 'farm' ? panel.id : null;
   const farm = useMemo(() => destinations.find((d) => d.id === farmId) ?? null, [destinations, farmId]);
   const farmRoute = useMemo(() => (farm ? parseFarmRoute(farm.command) : null), [farm]);
 
   const setFarmStep = (id: string, step: number) => setFarmProgress((p) => ({ ...p, [id]: step }));
   const farmStep = farm ? (farmProgress[farm.id] ?? -1) : -1;
+
+  const emptyView = ready && destinations.length > 0 && visible.length === 0 ? emptyMessage(view, deferredQuery) : null;
 
   const manageLabel = manageMode ? 'Quitter le mode gestion (Échap)' : 'Gérer les destinations';
 
@@ -287,20 +301,27 @@ export function App() {
 
       {/* Sous le formulaire ou les paramètres, rien ne doit recevoir le focus clavier ni les clics. */}
       <div className="toolbar" inert={overlayOpen}>
-        <input
-          ref={searchRef}
-          className="search"
-          type="search"
-          placeholder="Rechercher une destination…"
-          aria-label="Rechercher une destination"
-          title="Tapez directement pour rechercher · Échap pour effacer"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          spellCheck={false}
-          autoComplete="off"
-        />
+        {/* Loupe à gauche, rappel du raccourci à droite tant que le champ est vide (CSS seul). */}
+        <label className="search">
+          <SearchIcon />
+          <input
+            ref={searchRef}
+            className="search__input"
+            type="search"
+            placeholder="Rechercher"
+            aria-label="Rechercher une destination"
+            title="Tapez directement pour rechercher · Échap pour effacer"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            spellCheck={false}
+            autoComplete="off"
+          />
+          <kbd className="search__key" aria-hidden>
+            Ctrl F
+          </kbd>
+        </label>
         <div className="toolbar__row">
-          <CategoryTabs value={view} onChange={setView} />
+          <CategoryTabs value={view} onChange={setView} counts={tabCounts} />
           <button
             type="button"
             className="icon-btn"
@@ -326,24 +347,30 @@ export function App() {
       </div>
 
       <main ref={gridScrollRef} className={`grid-scroll${manageMode ? ' is-managing' : ''}`} inert={overlayOpen}>
-        {load.status === 'loading' && <p className="empty">Chargement…</p>}
+        {load.status === 'loading' && (
+          <div className="empty">
+            <p className="empty__title">Chargement…</p>
+          </div>
+        )}
         {load.status === 'error' && (
-          <p className="empty">
-            Catalogue illisible, il n'a pas été modifié.
-            <br />
-            {load.message}
-          </p>
+          <div className="empty">
+            <p className="empty__title">Catalogue illisible, il n'a pas été modifié</p>
+            <p className="empty__hint empty__detail">{load.message}</p>
+          </div>
         )}
         {ready && destinations.length === 0 && (
           <div className="empty">
-            <p className="empty__text">Aucune destination pour l'instant.</p>
+            <p className="empty__title">Aucune destination pour l'instant</p>
             <button type="button" className="btn btn--primary" onClick={onNew}>
               Créer une destination
             </button>
           </div>
         )}
-        {ready && destinations.length > 0 && visible.length === 0 && (
-          <p className="empty">{emptyMessage(view, deferredQuery)}</p>
+        {emptyView && (
+          <div className="empty">
+            <p className="empty__title">{emptyView.title}</p>
+            {emptyView.hint && <p className="empty__hint">{emptyView.hint}</p>}
+          </div>
         )}
         <div ref={gridRef} className="grid" style={gridStyle}>
           {visible.slice(gridStart, gridEnd).map((d) => (
@@ -371,11 +398,11 @@ export function App() {
           onClose={() => setPanel(null)}
           onStart={() => {
             setFarmStep(farm.id, -1);
-            void copy(`${FARM_KEY}start`, farmStartCommand(farmRoute), 'Parcours vide.');
+            void copy(`${FARM_KEY}start`, farmStartCommand(farmRoute), 'Parcours vide');
           }}
           onStep={(i) => {
             setFarmStep(farm.id, i);
-            void copy(`${FARM_KEY}${i}`, farmResumeCommand(farmRoute, i), 'Fin de parcours : rien à copier.');
+            void copy(`${FARM_KEY}${i}`, farmResumeCommand(farmRoute, i), 'Fin de parcours : rien à copier');
           }}
         />
       )}

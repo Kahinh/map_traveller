@@ -1,5 +1,12 @@
 @import './tokens.css';
 
+/* Règles transverses (issue n°13, lot 2) :
+   - espacement sur la grille de 4 px (`--mt-space-*`) ; un demi-pas de 2 px seulement dans un
+     petit contrôle ;
+   - un seul anneau de focus (`--mt-focus-ring`), décalé ; posé à l'intérieur là où un parent rogne ;
+   - mouvement : `--mt-ease` et deux durées, propriétés nommées, rien qui boucle ;
+   - survol : toujours sous `@media (hover: hover)`, jamais par React. */
+
 * {
   box-sizing: border-box;
 }
@@ -30,11 +37,9 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible {
-  outline: 1px solid var(--mt-accent);
-  outline-offset: 1px;
+:focus-visible {
+  outline: var(--mt-focus-ring-w) solid var(--mt-focus-ring);
+  outline-offset: var(--mt-focus-ring-offset);
 }
 
 .app {
@@ -44,69 +49,69 @@ textarea:focus-visible {
   position: relative;
 }
 
-/* ---------- Barre de titre ---------- */
+/* ---------- Barre de titre : aplat violet, filet discret en bas ---------- */
 .titlebar {
   flex: none;
   height: var(--mt-titlebar-h);
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 4px 0 8px;
-  background: linear-gradient(90deg, var(--mt-titlebar-from), var(--mt-titlebar-to));
+  padding: 0 var(--mt-space-half) 0 var(--mt-space-2);
+  background: var(--mt-titlebar);
+  box-shadow: inset 0 -1px 0 var(--mt-hairline);
+}
+
+/* Repère de position (signature) : ne reçoit aucun clic, la barre reste déplaçable. */
+.titlebar__mark {
+  flex: none;
+  width: var(--mt-icon-lg);
+  height: var(--mt-icon-lg);
+  margin-right: var(--mt-space-2);
+  color: var(--mt-text);
+  pointer-events: none;
 }
 
 .titlebar__title {
   flex: 1;
-  font-weight: var(--mt-font-weight-semibold);
-  letter-spacing: 0.02em;
+  min-width: 0;
+  font-weight: var(--mt-font-weight-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.titlebar__logo {
-  /* 20 px de large : « MT » en 10 px gras occupe 16 px, il lui faut une marge. */
-  width: 20px;
-  height: 16px;
-  border-radius: 4px;
-  background: var(--mt-accent);
-  color: var(--mt-accent-ink);
-  font-size: var(--mt-font-size-xs);
-  font-weight: var(--mt-font-weight-bold);
-  display: grid;
-  place-items: center;
-  margin-right: 6px;
-  flex: none;
-  pointer-events: none;
-}
-
+/* ---------- Boutons icône ---------- */
 .icon-btn {
-  width: 24px;
-  height: 22px;
-  border-radius: var(--mt-radius-sm);
+  flex: none;
+  width: var(--mt-control-h);
+  height: var(--mt-control-h);
   display: grid;
   place-items: center;
+  border-radius: var(--mt-radius-sm);
   color: var(--mt-text-muted);
-  flex: none;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition:
+    background-color var(--mt-dur-fast) var(--mt-ease),
+    color var(--mt-dur-fast) var(--mt-ease);
 }
 
+.icon-btn svg {
+  width: var(--mt-icon-lg);
+  height: var(--mt-icon-lg);
+}
+
+/* Barre de titre : boutons de 28 px, icônes en texte clair (contraste sur l'aplat). L'anneau
+   de focus est posé à l'intérieur : la barre est à peine plus haute que ses boutons. */
 .titlebar .icon-btn {
+  width: 28px;
+  height: 28px;
   color: var(--mt-text);
 }
 
-.icon-btn:hover {
-  background: var(--mt-hover);
-  color: var(--mt-text);
+.titlebar .icon-btn:focus-visible {
+  outline-offset: calc(-1 * var(--mt-focus-ring-w));
 }
 
 .icon-btn.is-active {
   color: var(--mt-accent);
-}
-
-.icon-btn--close:hover {
-  background: var(--mt-danger);
-  color: var(--mt-text);
 }
 
 .icon-btn:disabled {
@@ -116,22 +121,36 @@ textarea:focus-visible {
   color: var(--mt-text-muted);
 }
 
-/* ---------- Boutons texte (formulaire, état vide) ---------- */
+@media (hover: hover) {
+  .icon-btn:hover:not(:disabled) {
+    background: var(--mt-hover);
+    color: var(--mt-text);
+  }
+
+  .icon-btn.is-active:hover:not(:disabled) {
+    color: var(--mt-accent);
+  }
+
+  .icon-btn--close:hover:not(:disabled) {
+    background: var(--mt-danger);
+    color: var(--mt-text);
+  }
+}
+
+/* ---------- Boutons texte (formulaire, Paramètres, état vide) ---------- */
 .btn {
-  height: 24px;
-  padding: 0 10px;
+  flex: none;
+  height: var(--mt-control-h);
+  padding: 0 var(--mt-space-3);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-card-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text);
   font-size: var(--mt-font-size-sm);
   white-space: nowrap;
-  flex: none;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
-}
-
-.btn:hover:not(:disabled) {
-  border-color: var(--mt-text-muted);
+  transition:
+    background-color var(--mt-dur-fast) var(--mt-ease),
+    border-color var(--mt-dur-fast) var(--mt-ease);
 }
 
 .btn:disabled {
@@ -139,15 +158,12 @@ textarea:focus-visible {
   cursor: default;
 }
 
+/* Action principale : seul bouton en accent. */
 .btn--primary {
   background: var(--mt-accent);
   border-color: var(--mt-accent);
   color: var(--mt-accent-ink);
-  font-weight: var(--mt-font-weight-semibold);
-}
-
-.btn--primary:hover:not(:disabled) {
-  border-color: var(--mt-text);
+  font-weight: var(--mt-font-weight-medium);
 }
 
 .btn--danger {
@@ -160,46 +176,105 @@ textarea:focus-visible {
   color: var(--mt-danger-text);
 }
 
-.btn--danger-ghost:hover:not(:disabled) {
-  border-color: var(--mt-danger);
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    border-color: var(--mt-text-muted);
+  }
+
+  .btn--primary:hover:not(:disabled) {
+    border-color: var(--mt-text);
+  }
+
+  .btn--danger-ghost:hover:not(:disabled) {
+    border-color: var(--mt-danger);
+  }
 }
 
-/* ---------- Barre d'outils ---------- */
+/* ---------- Barre d'outils : recherche, onglets, « + » et crayon ---------- */
 .toolbar {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 6px 8px 4px;
+  gap: var(--mt-space-1);
+  padding: var(--mt-space-2) var(--mt-space-2) var(--mt-space-1);
 }
 
+/* Champ de recherche : loupe à gauche, rappel `Ctrl F` à droite tant qu'il est vide. Le contour
+   reste celui des champs (contraste 3) ; l'anneau de focus entoure tout le champ. */
 .search {
-  width: 100%;
-  height: 24px;
-  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: var(--mt-space-2);
+  height: var(--mt-control-h);
+  padding: 0 var(--mt-space-1) 0 var(--mt-space-2);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-field-border);
   background: var(--mt-bg-raised);
+  color: var(--mt-text-muted);
+  cursor: text;
+  transition: border-color var(--mt-dur-fast) var(--mt-ease);
+}
+
+.search svg {
+  flex: none;
+  width: var(--mt-icon-md);
+  height: var(--mt-icon-md);
+}
+
+.search:focus-within {
+  outline: var(--mt-focus-ring-w) solid var(--mt-focus-ring);
+  outline-offset: var(--mt-focus-ring-offset);
+}
+
+.search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--mt-text);
   font: inherit;
   outline: none;
-  transition: border-color 120ms ease;
 }
 
-.search:focus {
-  border-color: var(--mt-accent);
+.search__input:focus-visible {
   outline: none;
 }
 
-.search::placeholder {
+.search__input::placeholder {
   color: var(--mt-text-muted);
+}
+
+/* Touche affichée : discrète, masquée dès que le champ contient du texte (CSS seul). */
+.search__key {
+  flex: none;
+  height: 16px;
+  padding: 0 var(--mt-space-1);
+  border: 1px solid var(--mt-card-border);
+  border-radius: var(--mt-radius-xs);
+  color: var(--mt-text-muted);
+  font: inherit;
+  font-size: var(--mt-font-size-xs);
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.search__input:not(:placeholder-shown) ~ .search__key {
+  display: none;
+}
+
+@media (hover: hover) {
+  .search:hover {
+    border-color: var(--mt-text-muted);
+  }
 }
 
 /* Onglets (défilement horizontal) + boutons « + » et crayon, toujours visibles à droite. */
 .toolbar__row {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--mt-space-half);
 }
 
 .toolbar__row .tabs {
@@ -209,47 +284,80 @@ textarea:focus-visible {
 
 .tabs {
   display: flex;
-  gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
+/* Onglet : texte seul ; l'onglet actif passe en texte clair, souligné d'un trait d'accent de 2 px.
+   Le conteneur défile (donc rogne) : l'anneau de focus est posé à l'intérieur. */
 .tab {
-  padding: 3px 8px;
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mt-space-1);
+  height: var(--mt-control-h);
+  padding: 0 var(--mt-space-2);
   border-radius: var(--mt-radius-sm);
   color: var(--mt-text-muted);
   font-size: var(--mt-font-size-sm);
   white-space: nowrap;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: color var(--mt-dur-fast) var(--mt-ease);
 }
 
-.tab:hover {
-  background: var(--mt-hover);
-  color: var(--mt-text);
+.tab::after {
+  content: '';
+  position: absolute;
+  left: var(--mt-space-2);
+  right: var(--mt-space-2);
+  bottom: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--mt-accent);
+  opacity: 0;
+  transition: opacity var(--mt-dur-fast) var(--mt-ease);
 }
 
 .tab.is-active {
-  background: var(--mt-card-bg);
-  color: var(--mt-accent);
+  color: var(--mt-text);
 }
 
-/* Icône SVG d'un onglet (Favoris) : alignée sur le texte ; le détourage n'a pas lieu d'être. */
+.tab.is-active::after {
+  opacity: 1;
+}
+
+.tab:focus-visible {
+  outline-offset: calc(-1 * var(--mt-focus-ring-w));
+}
+
+/* Icône SVG d'un onglet (Favoris) : le détourage n'a pas lieu d'être. */
 .tab svg {
-  width: 11px;
-  height: 11px;
-  margin-right: 3px;
-  vertical-align: -1px;
+  width: var(--mt-icon-sm);
+  height: var(--mt-icon-sm);
 }
 
 .tab .icon-halo {
   display: none;
 }
 
+/* Nombre de destinations de l'onglet : texte secondaire, chiffres à chasse fixe. */
+.tab__count {
+  color: var(--mt-text-muted);
+  font-size: var(--mt-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--mt-text);
+  }
+}
+
 /* ---------- Grille ---------- */
 .grid-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 2px 8px 8px;
+  padding: var(--mt-space-1) var(--mt-space-2) var(--mt-space-2);
   scrollbar-width: thin;
   scrollbar-color: var(--mt-card-border) transparent;
 }
@@ -259,6 +367,7 @@ textarea:focus-visible {
   box-shadow: inset 0 0 0 1px var(--mt-accent-soft);
 }
 
+/* L'écart `--mt-gap` est aussi lu par `useGridWindow` : la grille fenêtrée calcule avec lui. */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--mt-card-size), 1fr));
@@ -269,12 +378,12 @@ textarea:focus-visible {
    `content-visibility` fait de `.card` un contexte d'empilement et rogne tout ce qui dépasse :
    aucun effet ne sort du cadre (ni ombre ni contour externes). Empilement, du fond vers le
    dessus :
-     image ou dégradé teinté (auto ; carte à deux étapes : dans le calque découpé `.card__art`,
+     image ou icône de catégorie (auto ; carte à deux étapes : dans le calque découpé `.card__art`,
        avec le dégradé du nom)
      → contour d'un triangle `::before`, voile de survol / appui `::after` du bouton ou de la
        zone (auto, après l'image)
      → pastille Farm, repères 1 / 2, nom sur son dégradé (z 1)
-     → liseré de survol / focus de la carte classique (z 2)
+     → liseré de survol / anneau de focus de la carte classique (z 2)
      → contour et coche de copie (z 3)
      → étoile, crayon (z 4).
    Seuls le bouton de copie (ou les deux zones), l'étoile et le crayon reçoivent les clics ;
@@ -286,7 +395,9 @@ textarea:focus-visible {
   border: 1px solid var(--mt-card-border);
   background: var(--mt-card-bg);
   overflow: hidden;
-  transition: transform var(--mt-transition);
+  transition:
+    transform var(--mt-dur-fast) var(--mt-ease),
+    border-color var(--mt-dur-fast) var(--mt-ease);
   /* Les cartes hors écran ne sont ni mises en page ni peintes : gros catalogues fluides. */
   content-visibility: auto;
   contain-intrinsic-size: var(--mt-card-size);
@@ -313,7 +424,7 @@ textarea:focus-visible {
   border: 2px solid var(--mt-accent);
   border-radius: calc(var(--mt-radius) - 1px);
   pointer-events: none;
-  animation: mt-fade 160ms ease-out;
+  animation: mt-fade var(--mt-dur-enter) var(--mt-ease);
 }
 
 .card.is-warning::after {
@@ -328,7 +439,7 @@ textarea:focus-visible {
   border-radius: calc(var(--mt-radius) - 1px);
 }
 
-/* Le contour de focus serait recouvert par le nom : le liseré `::before` le remplace. */
+/* L'anneau extérieur serait rogné par la carte : l'anneau intérieur `::before` le remplace. */
 .card__main:focus-visible {
   outline: none;
 }
@@ -346,7 +457,7 @@ textarea:focus-visible {
   border-radius: calc(var(--mt-radius) - 1px);
   background-color: var(--mt-highlight);
   opacity: 0;
-  transition: opacity var(--mt-transition);
+  transition: opacity var(--mt-dur-fast) var(--mt-ease);
   pointer-events: none;
 }
 
@@ -359,7 +470,7 @@ textarea:focus-visible {
   border-radius: calc(var(--mt-radius) - 1px);
   box-shadow: inset 0 0 0 1px var(--mt-highlight-edge);
   opacity: 0;
-  transition: opacity var(--mt-transition);
+  transition: opacity var(--mt-dur-fast) var(--mt-ease);
   pointer-events: none;
 }
 
@@ -371,8 +482,9 @@ textarea:focus-visible {
   }
 }
 
+/* Anneau de focus, à l'intérieur de la carte. */
 .card__main:focus-visible::before {
-  box-shadow: inset 0 0 0 2px var(--mt-accent);
+  box-shadow: inset 0 0 0 var(--mt-focus-ring-w) var(--mt-focus-ring);
   opacity: 1;
 }
 
@@ -384,21 +496,20 @@ textarea:focus-visible {
   object-fit: cover;
 }
 
-/* Carte sans image : dégradé teinté d'après le nom (tons dans `tokens.css`) + monogramme. */
+/* Carte sans image (issue n°13, C-1) : surface de carte unie, icône de catégorie en haut à
+   gauche, nom en texte clair. Aucune couleur propre à la carte. */
 .card__placeholder {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding-bottom: 26%;
-  background:
-    radial-gradient(circle at 26% 16%, var(--mt-ph-glow), transparent 62%),
-    linear-gradient(155deg, var(--mt-ph-top), var(--mt-ph-bottom));
-  color: var(--mt-ph-ink);
-  font-size: var(--mt-font-size-monogram);
-  font-weight: var(--mt-font-weight-bold);
-  line-height: 1;
-  letter-spacing: 0.04em;
+  color: var(--mt-text-muted);
+}
+
+.card__placeholder svg {
+  position: absolute;
+  top: var(--mt-space-2);
+  left: var(--mt-space-2);
+  width: var(--mt-icon-lg);
+  height: var(--mt-icon-lg);
 }
 
 /* Dégradé du nom, déclaré une seule fois : peint par `.card__name` sur une carte classique, par
@@ -415,7 +526,7 @@ textarea:focus-visible {
 
 /* Nom en surimpression, texte en bas sur deux lignes au plus, hauteur minimale fixe quel que
    soit le nombre de lignes. Le dégradé sombre n'est posé que sur une image (voir plus bas) :
-   le monogramme teinté est assez sombre en bas pour porter le texte et son ombre. */
+   sur la surface unie, le texte clair suffit. */
 .card__name {
   position: absolute;
   left: 0;
@@ -426,7 +537,7 @@ textarea:focus-visible {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0 5px 4px;
+  padding: 0 var(--mt-space-1) var(--mt-space-1);
 }
 
 /* Le dégradé n'est posé que sur une image. `.card__img` précède toujours `.card__name` (même
@@ -445,32 +556,34 @@ textarea:focus-visible {
   overflow: hidden;
   overflow-wrap: break-word;
   font-size: var(--mt-font-size-sm);
-  font-weight: var(--mt-font-weight-semibold);
+  font-weight: var(--mt-font-weight-medium);
   line-height: 1.2;
   text-align: center;
   color: var(--mt-text);
   text-shadow: 0 1px 2px var(--mt-text-shadow);
 }
 
-/* Pastille Farm : petite capsule nette, en haut à gauche. */
+/* Pastille Farm, sur une image seulement : sans image, l'icône de catégorie dit déjà « Farm ». */
 .card__badge {
   position: absolute;
-  left: 4px;
-  top: 4px;
+  left: var(--mt-space-1);
+  top: var(--mt-space-1);
   z-index: 1;
-  height: 14px;
-  padding: 0 5px;
+  height: 16px;
+  padding: 0 var(--mt-space-1);
   display: flex;
   align-items: center;
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--mt-chip-bg);
   box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
   color: var(--mt-text);
   font-size: var(--mt-font-size-xs);
-  font-weight: var(--mt-font-weight-bold);
+  font-weight: var(--mt-font-weight-medium);
   line-height: 1;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+}
+
+.card__placeholder ~ .card__badge {
+  display: none;
 }
 
 /* Étoile : visible en permanence seulement si la destination est favorite (accent) ;
@@ -479,20 +592,29 @@ textarea:focus-visible {
    `.icon-halo` la détoure en sombre pour rester lisible sur une image claire. */
 .card__star {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: var(--mt-space-half);
+  right: var(--mt-space-half);
   z-index: 4;
-  width: 22px;
-  height: 22px;
+  width: var(--mt-control-h);
+  height: var(--mt-control-h);
   display: grid;
   place-items: center;
   border-radius: 50%;
   color: var(--mt-text);
   opacity: 0;
-  transition: opacity var(--mt-transition), transform var(--mt-transition);
+  transition:
+    opacity var(--mt-dur-fast) var(--mt-ease),
+    color var(--mt-dur-fast) var(--mt-ease);
+}
+
+/* L'étoile est dans la carte, qui rogne : anneau à l'intérieur du bouton. */
+.card__star:focus-visible {
+  outline-offset: calc(-1 * var(--mt-focus-ring-w));
 }
 
 .card__star svg {
+  width: var(--mt-icon-md);
+  height: var(--mt-icon-md);
   overflow: visible;
 }
 
@@ -521,7 +643,6 @@ textarea:focus-visible {
 
   .card__star:hover {
     color: var(--mt-accent);
-    transform: scale(1.15);
   }
 
   .card__star:hover:not(.is-on) {
@@ -539,8 +660,8 @@ textarea:focus-visible {
 /* Crayon du mode gestion : bouton frère des zones de copie, en haut à gauche. */
 .card__edit {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: var(--mt-space-half);
+  left: var(--mt-space-half);
   z-index: 4;
   width: 20px;
   height: 20px;
@@ -550,17 +671,21 @@ textarea:focus-visible {
   background: var(--mt-chip-bg);
   box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
   color: var(--mt-accent);
-  transition: transform var(--mt-transition);
+  transition: background-color var(--mt-dur-fast) var(--mt-ease);
+}
+
+.card__edit:focus-visible {
+  outline-offset: calc(-1 * var(--mt-focus-ring-w));
 }
 
 .card__edit svg {
-  width: 12px;
-  height: 12px;
+  width: var(--mt-icon-sm);
+  height: var(--mt-icon-sm);
 }
 
 @media (hover: hover) {
   .card__edit:hover {
-    transform: scale(1.1);
+    background: var(--mt-card-bg);
   }
 }
 
@@ -573,12 +698,12 @@ textarea:focus-visible {
   place-items: center;
   padding-bottom: 24%;
   background: var(--mt-copied-wash);
-  animation: mt-fade 160ms ease-out;
+  animation: mt-fade var(--mt-dur-enter) var(--mt-ease);
 }
 
 .card__check-mark {
-  width: 24px;
-  height: 24px;
+  width: var(--mt-control-h);
+  height: var(--mt-control-h);
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -586,11 +711,17 @@ textarea:focus-visible {
   color: var(--mt-accent-ink);
   /* Anneau sombre : la pastille reste détachée sur une image claire. Interne à la carte. */
   box-shadow: 0 0 0 2px var(--mt-chip-bg);
-  animation: mt-pop 200ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
+  animation: mt-pop var(--mt-dur-enter) var(--mt-ease);
+}
+
+.card__check-mark svg {
+  width: var(--mt-icon-md);
+  height: var(--mt-icon-md);
 }
 
 /* Calques décoratifs : ils ne doivent jamais intercepter un clic. */
 .card__art,
+.card__placeholder,
 .card__name,
 .card__badge,
 .card__check,
@@ -697,11 +828,11 @@ textarea:focus-visible {
   }
 }
 
-/* `clip-path` rogne le contour de focus : voile et contour accent 2 px le remplacent,
-   nettement distincts du voile clair de survol. */
+/* `clip-path` rogne l'anneau de focus : le contour du triangle prend la couleur et l'épaisseur
+   de l'anneau, avec un voile d'accent, nettement distinct du voile clair de survol. */
 .card__zone:focus-visible {
-  --zone-edge: var(--mt-accent);
-  --zone-edge-w: 2px;
+  --zone-edge: var(--mt-focus-ring);
+  --zone-edge-w: var(--mt-focus-ring-w);
   outline: none;
 }
 
@@ -717,14 +848,9 @@ textarea:focus-visible {
   opacity: 1;
 }
 
-.card--split .card__placeholder {
-  padding-bottom: 0;
-  color: var(--mt-ph-ink-faint);
-}
-
 /* Repères « 1 » et « 2 » : petites pastilles rondes au cœur de chaque triangle. Le « 1 »
-   est assez loin du coin pour ne pas passer sous le crayon du mode gestion (20 px) ; le
-   « 2 » reste au-dessus d'un nom sur deux lignes. */
+   est assez loin du coin pour ne pas passer sous le crayon du mode gestion (20 px) ni sous
+   l'icône de catégorie ; le « 2 » reste au-dessus d'un nom sur deux lignes. */
 .card__step {
   position: absolute;
   z-index: 1;
@@ -737,7 +863,7 @@ textarea:focus-visible {
   box-shadow: inset 0 0 0 1px var(--mt-chip-ring);
   color: var(--mt-text);
   font-size: var(--mt-font-size-xs);
-  font-weight: var(--mt-font-weight-bold);
+  font-weight: var(--mt-font-weight-semibold);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -830,7 +956,7 @@ textarea:focus-visible {
 @keyframes mt-pop {
   from {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.8);
   }
 }
 
@@ -840,34 +966,51 @@ textarea:focus-visible {
   }
 }
 
-/* ---------- États ---------- */
+/* ---------- États vides, chargement, erreur ---------- */
 .empty {
-  margin: 0;
-  padding: 24px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mt-space-2);
+  padding: var(--mt-space-6) var(--mt-space-2);
   text-align: center;
+}
+
+.empty__title {
+  margin: 0;
+  color: var(--mt-text);
+}
+
+.empty__hint {
+  margin: 0;
+  font-size: var(--mt-font-size-sm);
   color: var(--mt-text-muted);
 }
 
-.empty__text {
-  margin: 0 0 8px;
+.empty__detail {
+  font-family: var(--mt-font-mono);
+  overflow-wrap: anywhere;
+  user-select: text;
 }
 
+/* Bulle d'état : apparaît en fondu, ne reçoit aucun clic. */
 .status {
   position: absolute;
   left: 50%;
-  bottom: 8px;
+  bottom: var(--mt-space-2);
   transform: translateX(-50%);
-  padding: 4px 10px;
+  max-width: calc(100% - var(--mt-space-4));
+  padding: var(--mt-space-1) var(--mt-space-3);
   border-radius: var(--mt-radius-sm);
   background: var(--mt-bg-raised);
   border: 1px solid var(--mt-card-border);
+  box-shadow: 0 2px 8px var(--mt-shadow);
   font-size: var(--mt-font-size-sm);
-  pointer-events: none;
-  max-width: calc(100% - 16px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 2px 8px var(--mt-shadow);
+  pointer-events: none;
+  animation: mt-fade var(--mt-dur-enter) var(--mt-ease);
 }
 
 .status.is-warning {
@@ -875,26 +1018,29 @@ textarea:focus-visible {
   color: var(--mt-warning);
 }
 
-/* ---------- Panneau (Farm, formulaire) ---------- */
+/* ---------- Panneau (Farm, formulaire, Paramètres) ----------
+   Passage court depuis la grille : fondu, opacité seulement. */
 .panel {
   position: absolute;
   inset: var(--mt-titlebar-h) 0 0;
-  background: var(--mt-bg);
   display: flex;
   flex-direction: column;
+  background: var(--mt-bg);
+  animation: mt-fade var(--mt-dur-enter) var(--mt-ease);
 }
 
 .panel__header {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: var(--mt-space-1);
+  padding: var(--mt-space-1) var(--mt-space-2);
 }
 
 .panel__title {
   flex: 1;
-  font-weight: var(--mt-font-weight-semibold);
+  min-width: 0;
+  font-weight: var(--mt-font-weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -909,8 +1055,8 @@ textarea:focus-visible {
 }
 
 .farm-panel__issues {
-  margin: 0 8px 4px;
-  padding: 4px 6px;
+  margin: 0 var(--mt-space-2) var(--mt-space-1);
+  padding: var(--mt-space-1) var(--mt-space-2);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-warning);
   color: var(--mt-warning);
@@ -921,24 +1067,31 @@ textarea:focus-visible {
   grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
 }
 
-/* Étape Farm : carte compacte portant seulement les coordonnées. */
+/* Étape Farm : capsule compacte portant les coordonnées, numéro en haut à gauche. */
 .step {
   position: relative;
   height: 40px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mt-space-1);
   border-radius: var(--mt-radius);
   border: 1px solid var(--mt-card-border);
   background: var(--mt-card-bg);
-  font-weight: var(--mt-font-weight-semibold);
+  font-weight: var(--mt-font-weight-medium);
   font-variant-numeric: tabular-nums;
-  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, opacity 120ms ease,
-    transform 120ms ease;
+  transition:
+    border-color var(--mt-dur-fast) var(--mt-ease),
+    background-color var(--mt-dur-fast) var(--mt-ease),
+    color var(--mt-dur-fast) var(--mt-ease),
+    opacity var(--mt-dur-fast) var(--mt-ease),
+    transform var(--mt-dur-fast) var(--mt-ease);
 }
 
-.step:hover {
-  border-color: var(--mt-text-muted);
-  opacity: 1;
+.step svg {
+  flex: none;
+  width: var(--mt-icon-sm);
+  height: var(--mt-icon-sm);
 }
 
 .step:active {
@@ -947,20 +1100,28 @@ textarea:focus-visible {
 
 .step__index {
   position: absolute;
-  top: 2px;
-  left: 5px;
+  top: var(--mt-space-half);
+  left: 6px;
   font-size: var(--mt-font-size-xs);
   font-weight: var(--mt-font-weight-regular);
   color: var(--mt-text-muted);
 }
 
+/* Repère de position (signature) : marque l'étape courante, en haut à droite. */
+.step .step__mark {
+  position: absolute;
+  top: var(--mt-space-1);
+  right: var(--mt-space-1);
+}
+
+/* « Début » : action principale du panneau. */
 .step--start {
   color: var(--mt-accent);
 }
 
-/* Positions déjà dépassées : estompées mais toujours cliquables. */
-.step.is-done:not(:hover) {
-  opacity: 0.45;
+/* Positions déjà dépassées : atténuées (texte encore à 4,5) mais toujours cliquables. */
+.step.is-done {
+  opacity: 0.6;
 }
 
 /* Dernière position cliquée. */
@@ -984,6 +1145,16 @@ textarea:focus-visible {
   color: var(--mt-warning);
 }
 
+@media (hover: hover) {
+  .step:hover {
+    border-color: var(--mt-text-muted);
+  }
+
+  .step.is-done:hover {
+    opacity: 1;
+  }
+}
+
 /* ---------- Formulaire « Nouvelle destination » ----------
    Une colonne dense ; le corps défile, les actions restent fixées en bas (fenêtre 360 × 240). */
 .form {
@@ -997,10 +1168,10 @@ textarea:focus-visible {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 8px 8px;
+  padding: 0 var(--mt-space-2) var(--mt-space-2);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mt-space-3);
   scrollbar-width: thin;
   scrollbar-color: var(--mt-card-border) transparent;
 }
@@ -1008,13 +1179,13 @@ textarea:focus-visible {
 .form__field {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--mt-space-1);
 }
 
 .form__label {
   font-size: var(--mt-font-size-sm);
+  font-weight: var(--mt-font-weight-medium);
   color: var(--mt-text-muted);
-  font-weight: var(--mt-font-weight-semibold);
 }
 
 .form__hint {
@@ -1026,20 +1197,15 @@ textarea:focus-visible {
 
 .form__input {
   width: 100%;
-  min-height: 24px;
-  padding: 3px 8px;
+  min-height: var(--mt-control-h);
+  padding: var(--mt-space-1) var(--mt-space-2);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-field-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text);
   font: inherit;
   user-select: text;
-  outline: none;
-  transition: border-color 120ms ease;
-}
-
-.form__input:focus {
-  border-color: var(--mt-accent);
+  transition: border-color var(--mt-dur-fast) var(--mt-ease);
 }
 
 .form__input[aria-invalid='true'] {
@@ -1048,7 +1214,12 @@ textarea:focus-visible {
 
 .form__input::placeholder {
   color: var(--mt-text-muted);
-  opacity: 0.7;
+}
+
+@media (hover: hover) {
+  .form__input:hover:not(:disabled, :focus) {
+    border-color: var(--mt-text-muted);
+  }
 }
 
 /* Champs de commande : chasse fixe, retours à la ligne visibles, hauteur réglable. */
@@ -1070,47 +1241,23 @@ textarea:focus-visible {
   user-select: text;
 }
 
-/* Catégorie : quatre boutons segmentés, un clic. */
-.segmented {
+/* Interrupteur suivi de son libellé (« Trajet en deux étapes ») ; l'indication passe à la ligne. */
+.form__switch {
   display: flex;
-  border: 1px solid var(--mt-card-border);
-  border-radius: var(--mt-radius-sm);
-  overflow: hidden;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mt-space-1) var(--mt-space-2);
 }
 
-.segmented__item {
-  flex: 1;
-  height: 24px;
-  padding: 0 6px;
-  font-size: var(--mt-font-size-sm);
-  color: var(--mt-text-muted);
-  white-space: nowrap;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-
-.segmented__item + .segmented__item {
-  border-left: 1px solid var(--mt-card-border);
-}
-
-.segmented__item:hover {
-  background: var(--mt-hover);
-  color: var(--mt-text);
-}
-
-.segmented__item.is-active {
-  background: var(--mt-card-bg);
-  color: var(--mt-accent);
-}
-
-.segmented__item:focus-visible {
-  outline-offset: -2px;
+.form__switch label {
+  cursor: pointer;
 }
 
 /* Image : aperçu de la carte à taille réelle + actions. */
 .form__image {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--mt-space-2);
 }
 
 .form__card {
@@ -1123,38 +1270,25 @@ textarea:focus-visible {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: var(--mt-space-1);
   min-width: 0;
 }
 
-.form__check {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.form__check input {
-  margin: 0;
-  accent-color: var(--mt-accent);
-}
-
-/* Aperçu des clics : texte copié tel quel, sélectionnable, défilant s'il est long. */
+/* Aperçu des clics : bloc sur surface, texte copié tel quel, sélectionnable, défilant s'il est long. */
 .form__preview {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 6px 8px;
+  gap: var(--mt-space-2);
+  padding: var(--mt-space-2);
   border-radius: var(--mt-radius-sm);
-  border: 1px dashed var(--mt-card-border);
+  background: var(--mt-bg-raised);
   font-size: var(--mt-font-size-sm);
 }
 
 .form__preview-row {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--mt-space-half);
   min-width: 0;
 }
 
@@ -1185,30 +1319,25 @@ textarea:focus-visible {
   color: var(--mt-text-muted);
 }
 
+/* « Plus d'options » : texte clair et chevron (pas d'accent), souligné au survol. */
 .form__more {
   align-self: flex-start;
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  gap: var(--mt-space-1);
   color: var(--mt-text);
   font-size: var(--mt-font-size-sm);
 }
 
-/* Chevron : signale le dépliage sans l'accent (réservé à la sélection, l'action principale
-   et le focus). Pointe à droite fermé, vers le bas ouvert. */
-.form__more::before {
-  content: '';
-  align-self: center;
-  width: 5px;
-  height: 5px;
-  margin: 0 1px 0 2px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
+.form__more-chevron {
+  flex: none;
+  width: var(--mt-icon-sm);
+  height: var(--mt-icon-sm);
+  transition: transform var(--mt-dur-fast) var(--mt-ease);
 }
 
-.form__more[aria-expanded='true']::before {
-  transform: rotate(45deg);
+.form__more[aria-expanded='true'] .form__more-chevron {
+  transform: rotate(90deg);
 }
 
 @media (hover: hover) {
@@ -1221,7 +1350,7 @@ textarea:focus-visible {
 .form__more-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mt-space-3);
 }
 
 .form__actions {
@@ -1229,9 +1358,9 @@ textarea:focus-visible {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
-  border-top: 1px solid var(--mt-card-border);
+  gap: var(--mt-space-1);
+  padding: var(--mt-space-2);
+  border-top: 1px solid var(--mt-hairline);
   background: var(--mt-bg);
 }
 
@@ -1256,28 +1385,204 @@ textarea:focus-visible {
   user-select: text;
 }
 
+/* ---------- Contrôles dessinés (`controls.tsx`) ---------- */
+
+/* Contrôle segmenté : catégorie du formulaire, mode de mise à jour. Le segment choisi est une
+   marche de surface, texte en accent (sélection). Anneau de focus à l'intérieur du segment. */
+.segmented {
+  display: flex;
+  gap: var(--mt-space-half);
+  padding: var(--mt-space-half);
+  border: 1px solid var(--mt-card-border);
+  border-radius: var(--mt-radius-sm);
+  background: var(--mt-bg-raised);
+}
+
+.segmented__item {
+  flex: 1;
+  height: 18px;
+  padding: 0 var(--mt-space-2);
+  border-radius: var(--mt-radius-xs);
+  color: var(--mt-text-muted);
+  font-size: var(--mt-font-size-sm);
+  white-space: nowrap;
+  transition:
+    background-color var(--mt-dur-fast) var(--mt-ease),
+    color var(--mt-dur-fast) var(--mt-ease);
+}
+
+.segmented__item.is-active {
+  background: var(--mt-card-bg);
+  color: var(--mt-accent);
+  font-weight: var(--mt-font-weight-medium);
+}
+
+.segmented__item:focus-visible {
+  outline-offset: calc(-1 * var(--mt-focus-ring-w));
+}
+
+.segmented__item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .segmented__item:hover:not(.is-active, :disabled) {
+    color: var(--mt-text);
+  }
+}
+
+/* Interrupteur : piste de 28 × 16 au contour des champs, pastille de 10 px. Activé : piste en
+   accent (état actif), pastille sombre à droite. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--mt-field-border);
+  background: var(--mt-bg-raised);
+  transition:
+    background-color var(--mt-dur-fast) var(--mt-ease),
+    border-color var(--mt-dur-fast) var(--mt-ease);
+}
+
+.switch__thumb {
+  position: absolute;
+  top: var(--mt-space-half);
+  left: var(--mt-space-half);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--mt-text-muted);
+  transition:
+    transform var(--mt-dur-fast) var(--mt-ease),
+    background-color var(--mt-dur-fast) var(--mt-ease);
+}
+
+.switch[aria-checked='true'] {
+  border-color: var(--mt-accent);
+  background: var(--mt-accent);
+}
+
+.switch[aria-checked='true'] .switch__thumb {
+  transform: translateX(12px);
+  background: var(--mt-accent-ink);
+}
+
+.switch:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .switch[aria-checked='false']:hover:not(:disabled) {
+    border-color: var(--mt-text-muted);
+  }
+}
 
 /* ---------- Panneau Paramètres ----------
-   Onglets de rubriques (même style que les catégories), contenu défilant (`.form__body`). */
+   Onglets de rubriques (même style que les catégories) sur un filet, contenu défilant
+   (`.form__body`). Chaque rubrique : blocs de lignes de réglage, séparées par un filet. */
 .settings__tabs {
   flex: none;
   min-width: 0;
-  padding: 0 8px 6px;
+  margin: 0 var(--mt-space-2);
+  box-shadow: inset 0 -1px 0 var(--mt-hairline);
 }
 
 .settings__body {
-  padding-top: 2px;
+  padding-top: var(--mt-space-2);
+}
+
+.settings__block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings__heading {
+  margin: 0 0 var(--mt-space-1);
+  font-size: var(--mt-font-size-sm);
+  font-weight: var(--mt-font-weight-medium);
+  color: var(--mt-text-muted);
+}
+
+/* Ligne de réglage : libellé et description à gauche, contrôle à droite ; en fenêtre étroite,
+   le contrôle passe sous le texte, toujours aligné à droite. */
+.setting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mt-space-1) var(--mt-space-3);
+  padding: var(--mt-space-2) 0;
+}
+
+.setting + .setting {
+  border-top: 1px solid var(--mt-hairline);
+}
+
+.setting__text {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mt-space-half);
+}
+
+.setting__label {
+  color: var(--mt-text);
+}
+
+label.setting__label {
+  cursor: pointer;
+}
+
+.setting__description {
+  font-size: var(--mt-font-size-sm);
+  color: var(--mt-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.setting__control {
+  flex: none;
+  max-width: 100%;
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mt-space-1);
+}
+
+/* Ligne dont le message (erreur, aide de capture) passe sous le libellé et le contrôle. */
+.setting--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.setting__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mt-space-1) var(--mt-space-3);
 }
 
 .settings__notice {
   color: var(--mt-warning);
 }
 
+.settings__error {
+  color: var(--mt-danger-text);
+}
+
 .settings__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: var(--mt-space-1);
 }
 
 /* Valeur affichée (version, chemin) : sélectionnable, jamais plus large que le panneau. */
@@ -1287,35 +1592,10 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.settings__mono,
 .settings__path {
   font-family: var(--mt-font-mono);
-}
-
-/* Groupe de boutons radio (mode de mise à jour) : sans le cadre natif du fieldset. */
-.settings__group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.settings__group legend {
-  padding: 0;
-  margin-bottom: 3px;
-}
-
-/* Option : bouton radio + libellé, explication sur la ligne suivante, alignée sur le libellé. */
-.settings__option {
-  align-items: baseline;
-  row-gap: 1px;
-}
-
-.settings__option-hint {
-  flex-basis: 100%;
-  padding-left: 19px;
+  font-variant-numeric: tabular-nums;
 }
 
 .settings__notes {
@@ -1325,10 +1605,14 @@ textarea:focus-visible {
 
 .settings__list {
   margin: 0;
-  padding-left: 16px;
+  padding-left: var(--mt-space-4);
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--mt-space-half);
+}
+
+.settings__block > .form__hint + .form__hint {
+  margin-top: var(--mt-space-2);
 }
 
 .settings__body code {
@@ -1337,21 +1621,21 @@ textarea:focus-visible {
   user-select: text;
 }
 
-/* ---------- Rubrique « Alias » : saisie sur une ligne, puis un alias par bloc ---------- */
+/* ---------- Rubrique « Alias » : saisie sur une ligne, puis une ligne de réglage par alias ---------- */
 .aliases__form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: var(--mt-space-1);
 }
 
 .aliases__term {
-  flex: 0 0 84px;
+  flex: 0 0 88px;
   width: auto;
 }
 
 .aliases__meaning {
-  flex: 1 1 150px;
+  flex: 1 1 152px;
   width: auto;
   min-width: 0;
 }
@@ -1362,38 +1646,23 @@ textarea:focus-visible {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .aliases__list:empty {
   display: none;
 }
 
-.aliases__row {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 5px 8px;
-  border-radius: var(--mt-radius-sm);
-  border: 1px solid var(--mt-card-border);
-  background: var(--mt-bg-raised);
-}
-
 .aliases__head {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--mt-space-2);
   min-width: 0;
-}
-
-.aliases__row.is-off .aliases__head {
-  opacity: 0.5;
 }
 
 .aliases__name {
   flex: none;
   font-family: var(--mt-font-mono);
-  font-weight: 700;
+  font-weight: var(--mt-font-weight-medium);
   color: var(--mt-text);
   user-select: text;
 }
@@ -1405,35 +1674,27 @@ textarea:focus-visible {
   user-select: text;
 }
 
-.aliases__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.aliases__info {
-  flex: 1 1 auto;
-  min-width: 0;
+/* Alias fourni désactivé : texte secondaire (contraste conservé), pas d'opacité. */
+.aliases__row.is-off .aliases__name,
+.aliases__row.is-off .aliases__meanings {
+  color: var(--mt-text-muted);
 }
 
 /* Champ de capture d'un raccourci : un bouton (pas un champ de texte), pour que Échap
    ferme le panneau hors capture. */
 .shortcut-field {
-  width: 100%;
-  min-height: 24px;
-  padding: 3px 8px;
+  min-width: 160px;
+  min-height: var(--mt-control-h);
+  padding: 0 var(--mt-space-2);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-field-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text);
   text-align: left;
   font-family: var(--mt-font-mono);
-  transition: border-color 120ms ease, color 120ms ease;
-}
-
-.shortcut-field:hover:not(:disabled) {
-  border-color: var(--mt-text-muted);
+  transition:
+    border-color var(--mt-dur-fast) var(--mt-ease),
+    color var(--mt-dur-fast) var(--mt-ease);
 }
 
 .shortcut-field.is-capturing {
@@ -1445,6 +1706,12 @@ textarea:focus-visible {
 .shortcut-field:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+@media (hover: hover) {
+  .shortcut-field:hover:not(:disabled, .is-capturing) {
+    border-color: var(--mt-text-muted);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

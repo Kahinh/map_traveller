@@ -180,7 +180,7 @@ describe('parcours Farm dans la palette', () => {
 
   it('« farm tremble 9 9 » : message, « parcours complet » toujours proposé', () => {
     const { entries, notice } = search([tremble], 'farm tremble 9 9');
-    expect(notice).toBe('Position 9,9 absente du parcours.');
+    expect(notice).toBe('Position 9,9 absente du parcours');
     expect(entries.map((e) => e.kind)).toEqual(['farm-start']);
     expect(entries[0]!.choices[0]!.primary).toBe(TREMBLE);
   });

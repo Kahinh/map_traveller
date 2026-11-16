@@ -6,7 +6,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { isTauri } from './env';
 
-export const BROWSER_DATA_DIR_MESSAGE = "Disponible dans l'application installée.";
+export const BROWSER_DATA_DIR_MESSAGE = "Disponible dans l'application installée";
 
 /** Vrai si le dossier de données existe (application installée). */
 export function canAccessDataDir(): boolean {

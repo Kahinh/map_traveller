@@ -1,6 +1,10 @@
 /* Palette de recherche (fenêtre de 560 de large ; sa HAUTEUR suit le contenu, issue n°19 :
    barre seule, puis lignes et pied quand il y a des résultats). Couleurs : tokens.css uniquement.
-   Même direction artistique que la fenêtre principale, sans charger ses styles. */
+   Même direction artistique que la fenêtre principale, sans charger ses styles.
+
+   Hauteurs, à garder dans les bornes de `src-tauri/src/palette.rs` (barre 48, maximum 430) :
+   cadre 2 + barre 46 = 48 ; + liste 8 × 40 + 8 = 328 ; + pied 28 → 404 ; + avertissement
+   d'une ligne (≈ 24) → 428 au plus. */
 @import './tokens.css';
 
 * {
@@ -37,7 +41,7 @@ button {
   /* Dimensions propres à la palette (pas de couleur ici). */
   --pal-row-h: 40px;
   --pal-thumb: 28px;
-  --pal-steps-w: 50px;
+  --pal-steps-w: 52px;
 
   /* Lignes visibles avant défilement. */
   --pal-max-rows: 8;
@@ -55,11 +59,19 @@ button {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mt-space-2);
+  /* 46 + le cadre de 2 = 48, hauteur de la fenêtre réduite à la barre (Rust). */
   height: 46px;
-  padding: 0 12px;
-  color: var(--mt-text);
+  padding: 0 var(--mt-space-3);
+  color: var(--mt-text-muted);
   background: var(--mt-palette-bar);
+}
+
+/* Filet discret sous la barre quand des lignes la suivent : ombre interne, aucune hauteur
+   ajoutée (la fenêtre suit le contenu mesuré). */
+.palette:has(> .palette__list:not(:empty)) .palette__bar,
+.palette:has(> .palette__notice) .palette__bar {
+  box-shadow: inset 0 -1px 0 var(--mt-hairline);
 }
 
 /* Information courte dans la barre (aucun résultat, chargement, échec d'une copie) : elle ne
@@ -84,15 +96,15 @@ button {
 
 .palette__bar svg {
   flex: none;
-  width: 16px;
-  height: 16px;
+  width: var(--mt-icon-lg);
+  height: var(--mt-icon-lg);
 }
 
 .palette__search {
   flex: 1;
   min-width: 0;
-  height: 30px;
-  padding: 0 10px;
+  height: 32px;
+  padding: 0 var(--mt-space-3);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-field-border);
   background: var(--mt-bg-raised);
@@ -103,7 +115,8 @@ button {
   user-select: text;
 }
 
-/* Le champ a toujours le focus : le signaler par l'accent ne dirait rien (issue n°13, D-1). */
+/* Le champ a toujours le focus : le signaler ne dirait rien (issue n°13, D-1). C'est le seul
+   endroit sans anneau de focus. */
 .palette__search:focus,
 .palette__search:focus-visible {
   outline: none;
@@ -117,10 +130,10 @@ button {
 .palette__notice {
   flex: none;
   margin: 0;
-  padding: 5px 12px;
+  padding: var(--mt-space-1) var(--mt-space-3);
   font-size: var(--mt-font-size-sm);
   color: var(--mt-warning);
-  border-bottom: 1px solid var(--mt-card-border);
+  border-bottom: 1px solid var(--mt-hairline);
 }
 
 .palette__notice.is-error {
@@ -141,9 +154,9 @@ button {
 .palette__list {
   flex: none;
   /* Huit lignes au plus, puis défilement ; les marges haute et basse comprises. */
-  max-height: calc(var(--pal-max-rows) * var(--pal-row-h) + 8px);
+  max-height: calc(var(--pal-max-rows) * var(--pal-row-h) + 2 * var(--mt-space-1));
   margin: 0;
-  padding: 4px;
+  padding: var(--mt-space-1);
   list-style: none;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -158,13 +171,14 @@ button {
 .palette__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mt-space-3);
   height: var(--pal-row-h);
-  padding: 0 8px;
+  padding: 0 var(--mt-space-2);
   border-radius: var(--mt-radius-sm);
   cursor: pointer;
 }
 
+/* Ligne sélectionnée : marche de surface et barre d'accent à gauche. */
 .palette__row.is-selected {
   background: var(--mt-card-bg);
   box-shadow: inset 2px 0 0 var(--mt-accent);
@@ -178,7 +192,7 @@ button {
   opacity: 0.5;
 }
 
-/* Vignette : réutilise `CardVisual` (image ou monogramme teinté) à petite taille. */
+/* Vignette : réutilise `CardVisual` (image, ou icône de catégorie sur la surface de carte). */
 .palette__thumb {
   position: relative;
   flex: none;
@@ -202,13 +216,12 @@ button {
   inset: 0;
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(circle at 26% 16%, var(--mt-ph-glow), transparent 62%),
-    linear-gradient(155deg, var(--mt-ph-top), var(--mt-ph-bottom));
-  color: var(--mt-text);
-  font-size: var(--mt-font-size-sm);
-  font-weight: var(--mt-font-weight-bold);
-  line-height: 1;
+  color: var(--mt-text-muted);
+}
+
+.palette__thumb .card__placeholder svg {
+  width: var(--mt-icon-md);
+  height: var(--mt-icon-md);
 }
 
 .palette__text {
@@ -216,16 +229,16 @@ button {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--mt-space-half);
 }
 
 .palette__title {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mt-space-1);
   min-width: 0;
   font-size: var(--mt-font-size-md);
-  font-weight: var(--mt-font-weight-semibold);
+  font-weight: var(--mt-font-weight-medium);
 }
 
 .palette__title-text,
@@ -243,8 +256,8 @@ button {
 }
 
 .palette__fav svg {
-  width: 11px;
-  height: 11px;
+  width: var(--mt-icon-sm);
+  height: var(--mt-icon-sm);
 }
 
 .palette__fav .icon-halo {
@@ -276,7 +289,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: var(--mt-space-1);
   width: var(--pal-steps-w);
 }
 
@@ -287,17 +300,17 @@ button {
 }
 
 .palette__step {
-  width: 22px;
-  height: 22px;
+  width: var(--mt-control-h);
+  height: var(--mt-control-h);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-card-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text-muted);
   font-size: var(--mt-font-size-sm);
-  font-weight: var(--mt-font-weight-bold);
+  font-weight: var(--mt-font-weight-semibold);
   transition:
-    background-color var(--mt-transition),
-    color var(--mt-transition);
+    background-color var(--mt-dur-fast) var(--mt-ease),
+    color var(--mt-dur-fast) var(--mt-ease);
 }
 
 .palette__step.is-active {
@@ -316,10 +329,10 @@ button {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--mt-space-3);
   height: 28px;
-  padding: 0 12px;
-  border-top: 1px solid var(--mt-card-border);
+  padding: 0 var(--mt-space-3);
+  border-top: 1px solid var(--mt-hairline);
   background: var(--mt-bg-raised);
   color: var(--mt-text-muted);
   font-size: var(--mt-font-size-sm);
@@ -327,19 +340,45 @@ button {
   overflow: hidden;
 }
 
+/* Touches : petites capsules discrètes. Les flèches sont des icônes du jeu commun, orientées ici. */
 .palette__hints kbd {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 16px;
-  margin-right: 2px;
-  padding: 0 4px;
+  height: 16px;
+  margin-right: var(--mt-space-half);
+  padding: 0 var(--mt-space-1);
+  vertical-align: -3px;
   border: 1px solid var(--mt-card-border);
-  border-radius: 4px;
+  border-radius: var(--mt-radius-xs);
   background: var(--mt-card-bg);
   color: var(--mt-text);
   font: inherit;
   font-size: var(--mt-font-size-xs);
-  line-height: 15px;
-  text-align: center;
+  line-height: 1;
+}
+
+/* Une flèche remplit sa touche : pas de marge intérieure. */
+.palette__hints kbd:has(.palette__arrow) {
+  padding: 0;
+}
+
+.palette__arrow {
+  width: var(--mt-icon-sm);
+  height: var(--mt-icon-sm);
+}
+
+.palette__arrow--down {
+  transform: rotate(180deg);
+}
+
+.palette__arrow--left {
+  transform: rotate(-90deg);
+}
+
+.palette__arrow--right {
+  transform: rotate(90deg);
 }
 
 .palette__status {

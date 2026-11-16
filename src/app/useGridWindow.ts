@@ -15,7 +15,7 @@ interface Measure {
   gap: number;
 }
 
-const INITIAL: Measure = { width: 0, viewportHeight: 0, offset: 0, minCardSize: 90, gap: 6 };
+const INITIAL: Measure = { width: 0, viewportHeight: 0, offset: 0, minCardSize: 90, gap: 8 };
 
 function px(value: string, fallback: number): number {
   const n = parseFloat(value);

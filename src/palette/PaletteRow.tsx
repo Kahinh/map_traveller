@@ -1,11 +1,14 @@
 import { memo, type MouseEvent } from 'react';
 import { StarIcon } from '../components/icons';
 import { CardVisual } from '../components/Thumb';
+import type { Category } from '../features/catalog/schema';
 import type { ClickButton } from '../features/commands/cardParts';
 import type { PaletteEntry } from '../features/palette/entries';
 
 interface Props {
   entry: PaletteEntry;
+  /** Catégorie de la destination : icône de la vignette sans image (`null` si inconnue). */
+  category: Category | null;
   index: number;
   /** Identifiant DOM, référencé par `aria-activedescendant` du champ. */
   id: string;
@@ -35,6 +38,7 @@ function choiceFromTarget(target: EventTarget): number | null {
  */
 export const PaletteRow = memo(function PaletteRow({
   entry,
+  category,
   index,
   id,
   selected,
@@ -71,7 +75,7 @@ export const PaletteRow = memo(function PaletteRow({
       onContextMenu={onContextMenu}
     >
       <span className="palette__thumb">
-        <CardVisual name={entry.title} image={entry.image} />
+        <CardVisual category={category} image={entry.image} />
       </span>
       <span className="palette__text">
         <span className="palette__title">

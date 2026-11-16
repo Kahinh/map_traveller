@@ -12,7 +12,8 @@ Source : cahier des charges §3, §5.1, §6, §9.
 | Token | Valeur |
 |---|---|
 | `--mt-bg` | `#252739` |
-| `--mt-titlebar-from` / `--mt-titlebar-to` | `#646392` → `#4B4D77` |
+| `--mt-titlebar` | `#4B4D77` : barre de titre en **aplat** (plus de dégradé) |
+| `--mt-hairline` | `rgba(241,241,255,.1)` : filets (sous la barre de titre, entre les lignes de réglage) |
 | `--mt-card-bg` / `--mt-card-border` | `#393B58` / `#505273` |
 | `--mt-text` / `--mt-text-muted` | `#F1F1FF` / `#B8B9D0` |
 | `--mt-accent` | `#E5F052` |
@@ -22,14 +23,29 @@ Source : cahier des charges §3, §5.1, §6, §9.
 | `--mt-radius` | `10px` |
 | `--mt-font` / `--mt-font-mono` | `'Segoe UI Variable Text', 'Segoe UI', …` / `'Cascadia Mono', Consolas, …` |
 | `--mt-font-size-xs` / `-sm` / (base) / `-md` / `-lg` | `10` / `11` / `12` / `13` / `14px` |
-| `--mt-font-size-monogram` | `26px` (initiales d'une carte sans image) |
-| `--mt-font-weight-regular` / `-semibold` / `-bold` | `400` / `600` / `700` |
+| `--mt-font-weight-regular` / `-medium` / `-semibold` | `400` / `500` / `600` (plus de 700) |
+| `--mt-space-half` / `-1` / `-2` / `-3` / `-4` / `-6` | `2` / `4` / `8` / `12` / `16` / `24px` ; `--mt-gap` = `--mt-space-2` (lu par `useGridWindow`) |
+| `--mt-focus-ring` / `-w` / `-offset` | accent à 60 % / `2px` / `2px` : **un seul** anneau de focus partout |
+| `--mt-ease` / `--mt-dur-fast` / `--mt-dur-enter` | `cubic-bezier(0.22,1,0.36,1)` / `120ms` / `180ms` |
+| `--mt-icon-lg` / `-md` / `-sm` | `16` / `14` / `12px` : tailles d'affichage des icônes (grille de 16, trait de 1,5) |
+| `--mt-radius-xs` / `--mt-control-h` | `4px` / `24px` |
 
 Ne jamais écrire une couleur en dur dans un composant. Aucune taille, graisse ni pile de police en dur dans `app.css` ni `palette.css` : tokens seulement, et rien sous 10 px (vérifier que le texte tient dans sa pastille, élargir la boîte s'il le faut).
 
 ## Accent
 
-Le jaune-vert est réservé à trois usages : **sélection ou état actif** (onglet, segment, épingle, étoile favorite, étape courante), **action principale** (`.btn--primary`, « Début » du Farm), **focus**. Tout le reste est en `--mt-text` ou `--mt-text-muted` : pastille « FARM », lien « Plus d'options » (texte clair + chevron, souligné au survol), champ de la palette (il a toujours le focus : pas de cadre d'accent). Icônes de la barre de titre en `--mt-text` (contraste sur le dégradé).
+Le jaune-vert est réservé à trois usages : **sélection ou état actif** (onglet, segment, épingle, étoile favorite, étape courante), **action principale** (`.btn--primary`, « Début » du Farm), **focus**. Tout le reste est en `--mt-text` ou `--mt-text-muted` : pastille « FARM », lien « Plus d'options » (texte clair + chevron, souligné au survol), champ de la palette (il a toujours le focus : pas de cadre d'accent). Icônes de la barre de titre en `--mt-text` (contraste sur l'aplat).
+
+## Fondations (issue n°13, lot 2)
+
+- **Palette violette et accent jaune-vert conservés** : décision de l'auteur. Ne pas passer les surfaces en neutres sombres, même si un skill de design le recommande.
+- Barre de titre en aplat `--mt-titlebar`, filet `--mt-hairline` en bas, 32 px. Pictogramme `MarkIcon` (losange et point, celui de l'icône de l'application) à la place de « MT » : c'est la **signature**, utilisée seulement là et sur l'étape Farm courante.
+- Espacement sur une grille de 4 px (`--mt-space-*`) ; un demi-pas de 2 px seulement dans un petit contrôle. Exceptions géométriques assumées : bordures de 1 px, repères et coche des cartes à deux étapes, barre de palette (46 + 2 = 48).
+- Un seul anneau de focus `--mt-focus-ring`, posé à l'intérieur quand un parent rogne (onglets, segments, cartes, triangles). Les champs n'ont pas de bordure d'accent au focus.
+- Mouvement : `--mt-ease` et deux durées, propriétés nommées, panneaux, bulle et coche en fondu (opacité seule), aucun rebond, rien qui boucle.
+- Recherche : loupe à gauche, rappel `Ctrl F` à droite qui disparaît à la frappe (CSS seul). Onglets en texte seul, l'actif souligné d'accent sur 2 px, nombre de destinations en texte secondaire (hors recherche).
+- Textes : courts, sans point final sur un libellé, un bouton ou un message court, sans exclamation, sans capitales forcées. **Aucun caractère employé comme icône** : tout est en SVG dans `icons.tsx`.
+- Contrôles dessinés (`src/components/controls.tsx`) : `Switch` (`role=switch`, se bascule aussi par le libellé), `Segmented` (`radiogroup` + `radio`, une tabulation, flèches, Début, Fin), `SettingRow` (libellé et description d'une ligne à gauche, contrôle à droite, détail en `title`). **Aucun contrôle natif** (`checkbox`, `radio`, `select`, `fieldset`).
 
 ## Éditeur
 
@@ -41,7 +57,7 @@ Le jaune-vert est réservé à trois usages : **sélection ou état actif** (ong
 ## Palette et Paramètres
 
 - Palette (`palette.html`, `src/styles/palette.css`, tokens seuls) : fenêtre de 560 de large dont la **hauteur suit le contenu** (issue n°19) : barre seule (48 px) à l'ouverture, champ vide ou sans résultat ; sinon lignes (8 visibles au plus, `--pal-max-rows`, puis défilement) et pied d'aide ; 430 px au maximum. `Palette.tsx` mesure `.palette` après chaque rendu et n'appelle `setPaletteHeight` que si la hauteur change ; les dimensions n'existent que dans `palette.css`. Barre en aplat `--mt-palette-bar`, sans dégradé. « Aucun résultat », « Chargement… » et l'échec d'une copie sans résultat s'affichent DANS la barre (`.palette__bar-info`) : rien n'agrandit la fenêtre sans contenu. Aucune animation de hauteur. Champ `role=combobox`, liste `role=listbox`, lignes de 40 px fixes (vignette `CardVisual`, titre + sous-titre, aperçu de ce qu'Entrée copie). Carte à deux étapes : emplacement de largeur fixe (« 2 étapes » au repos, cases 1 / 2 sur la ligne sélectionnée) : aucun saut de mise en page. Sélection souris sur `mousemove`.
-- Paramètres : engrenage dans `WindowHeader` (désactivé pendant l'édition), `SettingsPanel` avec un registre `SETTINGS_SECTIONS` et une rangée d'onglets ; un fichier par rubrique dans `src/components/settings/`. Ajouter une rubrique = une entrée du registre. Rubriques dans l'ordre : Mises à jour, Données, Affichage, Alias, Raccourcis ; chacune reçoit `settings`, `onChange`, `updater`, `aliases` et `destinations`. Rubrique Alias : saisie sur une ligne (`.aliases__form`), un bloc par alias (`.aliases__row` : terme et significations, puis origine, nombre de destinations trouvées et actions), confirmation de suppression dans la ligne. Boutons radio dans `.settings__group` / `.settings__option` (explication en `.settings__option-hint`) ; valeurs sélectionnables en `.settings__value` (chemin en `.settings__path`, tronqué par le milieu, complet en infobulle). Pas de bouton « Enregistrer » : chaque réglage est écrit dès qu'il change.
+- Paramètres : engrenage dans `WindowHeader` (désactivé pendant l'édition), `SettingsPanel` avec un registre `SETTINGS_SECTIONS` et une rangée d'onglets ; un fichier par rubrique dans `src/components/settings/`. Ajouter une rubrique = une entrée du registre. Rubriques dans l'ordre : Mises à jour, Données, Affichage, Alias, Raccourcis ; chacune reçoit `settings`, `onChange`, `updater`, `aliases` et `destinations`. Rubrique Alias : saisie sur une ligne (`.aliases__form`), un bloc par alias (`.aliases__row` : terme et significations, puis origine, nombre de destinations trouvées et actions), confirmation de suppression dans la ligne. Chaque réglage est une `SettingRow` (booléen = `Switch`, choix de 2 ou 3 valeurs = `Segmented`), filets `--mt-hairline` entre les lignes, blocs titrés `.settings__block` / `.settings__heading` ; valeurs sélectionnables en `.settings__value` (chemin en `.settings__path`, tronqué par le milieu, complet en infobulle). Pas de bouton « Enregistrer » : chaque réglage est écrit dès qu'il change.
 
 ## Disposition
 
@@ -49,9 +65,9 @@ Barre de titre custom (drag region) : icône, « Map Traveller », épingle, par
 
 ## Carte
 
-- Image pleine carte (`object-fit: cover`). Nom **en surimpression** : `.card__name` (au moins 50 % de la hauteur) contient `.card__label` (`--mt-font-size-sm` en 600, `line-clamp: 2`, ombre `--mt-text-shadow`). Composant `CardName`. Le dégradé `--mt-scrim-*` n'est posé que sur une image (`.card__img ~ .card__name`) ; sur le monogramme teinté, le texte et son ombre suffisent. Jamais de bandeau opaque.
+- Image pleine carte (`object-fit: cover`). Nom **en surimpression** : `.card__name` (au moins 50 % de la hauteur) contient `.card__label` (`--mt-font-size-sm` en 600, `line-clamp: 2`, ombre `--mt-text-shadow`). Composant `CardName`. Le dégradé `--mt-scrim-*` n'est posé que sur une image (`.card__img ~ .card__name`) ; sur une carte sans image, le texte et son ombre suffisent. Jamais de bandeau opaque.
 - **Un seul contour** par carte : la bordure `--mt-card-border` (éclaircie au survol). Pas de reflet ni de liseré intérieur décoratif.
-- Sans image : `.card__placeholder`, dégradé teinté. Le composant pose seulement `--card-hue` (0–359, `cardHue(name)` dans `src/features/catalog/cardHue.ts`, pure et testée) ; les tons `--mt-ph-*` sont déclarés dans `tokens.css`.
+- Sans image : `CardVisual` montre la surface `--mt-card-bg` unie et l'icône de catégorie (`CategoryIcon`, `--mt-icon-lg`, texte secondaire) en haut à gauche, puis le nom. **Pas de couleur par carte ni par catégorie**, pas d'initiales. La pastille « Farm » ne s'affiche que sur une image.
 - Étoile : SVG `StarIcon` détourée (`--mt-icon-halo`), bouton distinct. Visible en permanence **seulement si favorite** (accent). Sinon opacité 0 au repos, 0.9 au survol de la carte ou quand la carte a le focus clavier, 1 quand l'étoile a le focus ; sous `@media (hover: none)`, 0.75 en permanence. Masquée par l'opacité seule : elle reste dans l'ordre de tabulation.
 - Pastilles (Farm, repères 1 / 2, crayon) : rondes, `--mt-chip-bg` + anneau `--mt-chip-ring`. Le repère « 1 » est à 29 % / 29 %, hors du crayon du mode gestion.
 - Surbrillance au survol : voile `::after` porté par le bouton cliquable (`.card__main`, `.card__zone`), **opacité seule**, aucun JavaScript. `--mt-highlight` pour la carte, `--mt-highlight-zone` (plus marqué) pour un triangle, `--mt-press` à l'appui. Carte classique : liseré `.card__main::before` (`--mt-highlight-edge`, accent 2 px au focus). Règles `:hover` toujours sous `@media (hover: hover)`. Le survol de l'étoile ou du crayon ne surligne pas la carte.

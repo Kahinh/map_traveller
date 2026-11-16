@@ -21,6 +21,10 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
+### 2026-11-16 — `correction-humaine` — Refonte lancée dans une direction déjà refusée
+Une refonte « surfaces neutres sombres », dictée par un skill de design appliqué à la lettre, contredisait la décision de l'auteur (palette violette conservée, écrite dans l'issue n°13). Elle a été arrêtée et jetée.
+**Garde-fou :** section « Fondations » de `ui-da-pnj` ; avant tout travail de design, lire l'issue de design en cours et faire `git fetch` : une autre session livre des PR en parallèle.
+
 ### 2026-11-14 — `outil-trompeur` — Le survol simulé ne déclenche pas `:hover`
 L'outil de navigateur a déplacé le pointeur sans que la page voie un survol : les captures montraient un état normal. La surbrillance de l'issue n°2 a été contrôlée en forçant l'état par une feuille de style de test.
 **Garde-fou :** section « Validation de l'interface » de `CLAUDE.md` (forcer l'état, ou lire `getComputedStyle`). Le survol réel reste à confirmer sur l'application installée.

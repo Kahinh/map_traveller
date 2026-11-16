@@ -43,10 +43,18 @@ La grille doit rester **dense**, sans grandes illustrations ni grandes marges. I
 **Addendum (issue n°13, premier lot).** La palette violette, l'accent jaune-vert et le dégradé de la barre de titre sont conservés. Changements :
 
 - Contraste : icônes de la barre de titre (et loupe de la palette) en texte principal ; `--mt-danger-text` (`#EE7385`) pour tout texte rouge, `--mt-danger` restant pour les fonds ; `--mt-field-border` (`#7A7CA6`) pour le contour des champs de saisie.
-- Typographie en tokens : 10 / 11 / 12 / 13 / 14 px (`--mt-font-size-xs` à `-lg`), 26 px pour les initiales d'une carte sans image, graisses 400 / 600 / 700. Aucune taille écrite en dur, rien sous 10 px. Police `Segoe UI Variable Text`, repli `Segoe UI` ; commandes en `--mt-font-mono` (`Cascadia Mono`, `Consolas`).
+- Typographie en tokens : 10 / 11 / 12 / 13 / 14 px (`--mt-font-size-xs` à `-lg`), graisses 400 / 500 / 600. Aucune taille écrite en dur, rien sous 10 px. Police `Segoe UI Variable Text`, repli `Segoe UI` ; commandes en `--mt-font-mono` (`Cascadia Mono`, `Consolas`).
 - L'accent est réservé à la sélection ou l'état actif, à l'action principale et au focus (pastille « FARM » et lien « Plus d'options » en texte clair).
 - Carte : un seul contour ; dégradé sous le nom seulement sur une image ; étoile visible en permanence seulement si la destination est favorite, sinon au survol de la carte ou au focus clavier (toujours visible sans survol, sur écran tactile).
 - Onglet Favoris avec l'icône SVG de l'étoile ; engrenage redessiné ; champ de la palette sans cadre d'accent permanent.
+
+**Addendum (issue n°13, deuxième lot).** Décisions de l'auteur : la palette violette et l'accent jaune-vert restent ; barre de titre en aplat violet avec un filet, sans dégradé ; carte sans image = surface unie, icône de catégorie et nom, sans couleur par carte ni par catégorie ; pas de fenêtre arrondie, d'effet Mica ni de police embarquée. Changements :
+
+- Pictogramme repère (losange et point, celui de l'icône de l'application) à la place de « MT », repris pour marquer la position courante d'un parcours Farm.
+- Échelle d'espacement de 4 px, anneau de focus unique, mouvement court en opacité, une seule courbe.
+- Recherche avec loupe et rappel Ctrl F ; onglets soulignés avec leur nombre de destinations.
+- Paramètres et formulaire en contrôles dessinés (interrupteurs, contrôles segmentés), sans contrôle natif.
+- Textes courts, sans point final ni exclamation ; aucun caractère employé comme icône.
 
 ### 3.2 Disposition
 

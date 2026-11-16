@@ -110,7 +110,7 @@ Les tests ne voient ni un chevauchement, ni un texte illisible, ni un débordeme
 - **Garder la trace des frictions** : en fin de tâche, noter dans `docs/agent-notes.md` chaque correction demandée par l'utilisateur et chaque erreur trouvée en revue. Une erreur vue deux fois devient un test, un script ou une règle.
 - Les règles ci-dessus disent pourquoi elles existent. Si une règle ne semble pas s'appliquer au cas présent et que la raison n'est pas claire : s'arrêter et demander, plutôt que de l'appliquer à l'aveugle ou de la contourner.
 - Recherche de code : **CodeGraph d'abord** (`codegraph query <nom>` ou `sqlite3 .codegraph/codegraph.db ...`), puis lecture ciblée.
-- Skills projet : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request`, `review-loop`.
+- Skills projet : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request`, `review-loop`, `unslop` (design ; voir sa note d'usage dans `SOURCE.md`).
 - Agents : `architecte` (cadrage) → `implementation` → `reviewer` (tâche moyenne/complexe). Spécialistes : `tauri-rust`, `ui-da`.
 - Ne jamais committer ni pousser sans demande explicite.
 - **Toute livraison poussée sur `main` se termine par une version et un tag** (`npm run version:set -- X.Y.Z`, commit `Version X.Y.Z`, `git tag vX.Y.Z`, push) : sans tag, GitHub ne publie pas de `.exe`. Détail et cas particuliers : skill `ci-release-windows`.

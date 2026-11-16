@@ -103,3 +103,9 @@ Tout le Rust (`main_window.rs`, `tray.rs`, `palette.rs`, `lib.rs`, fonctionnalit
 9. Mise à jour (mode automatique) : la relance après installation fonctionne toujours (sortie avec code, non bloquée).
 10. Appuis très rapides (réduire puis `Ctrl+Alt+T` immédiatement) : pas d'erreur, pas de deux fenêtres.
 **Garde-fou :** cette liste, à reporter dans le commentaire de clôture de l'issue n°14 ; à retirer d'ici quand l'utilisateur l'aura déroulée.
+
+### 2026-11-16 — `non-vérifié` — Palette à hauteur dynamique (issue n°19)
+La hauteur du contenu est vérifiée dans le navigateur (48 px pour la barre seule, 124 px pour une ligne, 404 px pour une liste pleine, un seul changement par variation réelle). Le redimensionnement de la FENÊTRE (`set_palette_height`, `set_size` sur une fenêtre `resizable: false`) n'a jamais été exécuté : pas de `cargo` utilisable en local, la CI prouve seulement qu'il compile et que le bornage est testé.
+**À contrôler sur l'application installée :** la fenêtre s'ouvre réduite à la barre ; elle grandit et se rétracte à la frappe sans clignotement ; la barre ne bouge pas ; un clic juste sous la barre atteint bien la fenêtre du dessous ; mise à l'échelle 150 % ; second écran.
+**Garde-fou :** `clamp_height` testé en Rust ; si `set_size` est refusé, l'erreur est journalisée et la fenêtre garde sa taille.
+

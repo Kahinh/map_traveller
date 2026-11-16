@@ -93,6 +93,7 @@ pub fn run() {
             storage::open_data_dir,
             images::import_image,
             palette::hide_palette,
+            palette::set_palette_height,
             main_window::minimize_main,
             main_window::set_main_busy,
             shortcuts::get_shortcuts,

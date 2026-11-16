@@ -9,6 +9,8 @@
   --mt-card-border: #505273;
   --mt-text: #f1f1ff;
   --mt-text-muted: #b8b9d0;
+  /* Barre de la palette de recherche : aplat sombre (issue n°19). Se règle ici, à un seul endroit. */
+  --mt-palette-bar: var(--mt-bg);
   --mt-accent: #e5f052;
   --mt-accent-ink: #252739;
   --mt-warning: #f0a052;

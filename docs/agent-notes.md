@@ -41,6 +41,10 @@ Les captures ne montraient que le coin supérieur gauche de la page.
 Arrêter la tâche qui a lancé Vite laisse le processus Node ouvert sous Windows ; le lancement suivant échoue sur le port 1420.
 **Garde-fou :** `npm run dev:stop`.
 
+### 2026-11-16 — `outil-trompeur` — `dev:stop` ne voyait pas le serveur
+`npm run dev:stop` répondait « Aucun serveur sur le port 1420 » alors que Vite tournait : il interrogeait `netstat -p TCP`, qui ne liste que l'IPv4, et Vite écoute en IPv6 (`[::1]:1420`). Découvert parce qu'un dossier restait verrouillé par ce serveur oublié.
+**Garde-fou :** `listeningPids` lit IPv4 et IPv6, et reconnaît l'écoute à l'adresse distante nulle plutôt qu'au mot « LISTENING » ; testé dans `tests/devStop.test.ts`, et vérifié sur un vrai serveur.
+
 ### 2026-11-15 — `correction-humaine` — Recherche par catégorie trop large
 Les mots de catégorie avaient été ajoutés au texte indexé : « on » ramenait tous les donjons, dans la palette et dans la fenêtre principale.
 **Garde-fou :** `matchesCategory` (début de mot-clé, 2 lettres au moins) et tests dans `tests/searchRank.test.ts`.

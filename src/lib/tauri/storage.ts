@@ -8,15 +8,17 @@
 import { invoke } from '@tauri-apps/api/core';
 import { aliasesFileProblem, mergeUserAliases, type UserAliases } from '../../features/aliases/aliases';
 import { parseOfficialState, type OfficialState, type OfficialStateResult } from '../../features/catalog/official';
-import { validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
+import { formatValidationErrors, validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
 import { mergeSettings, parseSettings, type Settings } from '../../features/settings/settings';
-import { isRecord } from '../../features/shared/json';
+import { parseJsonText } from '../../features/shared/json';
+import { errorText } from '../errors';
 import { IS_TAURI } from './env';
 import {
   LS_PREFIX,
   parseAliasesText,
   parseCatalogText,
   parseFavoritesText,
+  parseSettingsRoot,
   readStoreText as readRaw,
   STORE_CHANGED_EVENT,
   type LoadedAliases,
@@ -46,12 +48,6 @@ async function writeRaw(name: StoreName, json: string): Promise<void> {
   announceChange(name);
 }
 
-/** Contenu JSON d'un stockage ; `undefined` s'il n'existe pas encore. Lève si le JSON est invalide. */
-async function readJson(name: StoreName): Promise<unknown> {
-  const raw = await readRaw(name);
-  return raw == null ? undefined : JSON.parse(raw);
-}
-
 const writeJson = (name: StoreName, data: unknown) => writeRaw(name, JSON.stringify(data, null, 2));
 
 /**
@@ -66,9 +62,10 @@ export async function loadCatalog(seed: () => Promise<unknown>): Promise<Validat
 /** Entrées du catalogue livré déjà proposées (`official.json`). Ne lève jamais. */
 export async function loadOfficialState(): Promise<OfficialStateResult> {
   try {
-    return parseOfficialState(await readJson('official'));
-  } catch {
-    return { ok: false, message: 'official.json illisible (JSON invalide).' };
+    const json = parseJsonText(await readRaw('official'));
+    return json.ok ? parseOfficialState(json.data) : { ok: false, message: 'official.json illisible (JSON invalide)' };
+  } catch (e) {
+    return { ok: false, message: `official.json illisible : ${errorText(e)}` };
   }
 }
 
@@ -77,7 +74,7 @@ export const saveOfficialState = (state: OfficialState): Promise<void> => writeJ
 /** Valide puis enregistre. Refuse d'écrire un catalogue invalide. */
 export async function saveCatalog(catalog: Catalog): Promise<void> {
   const check = validateCatalog(catalog);
-  if (!check.ok) throw new Error(check.errors.map((e) => `${e.path}: ${e.message}`).join('\n'));
+  if (!check.ok) throw new Error(formatValidationErrors(check.errors, '\n'));
   await writeJson('catalog', check.catalog);
 }
 
@@ -101,32 +98,19 @@ export async function loadAliases(): Promise<LoadedAliases> {
  * d'une version plus récente ou d'une forme inattendue.
  */
 export async function saveAliases(user: UserAliases): Promise<void> {
-  let raw: unknown;
-  try {
-    raw = await readJson('aliases');
-  } catch (e) {
-    if (!(e instanceof SyntaxError)) throw e;
-    throw new Error('aliases.json est illisible : corrigez ou supprimez ce fichier avant de modifier les alias.', {
-      cause: e,
-    });
+  const json = parseJsonText(await readRaw('aliases'));
+  if (!json.ok) {
+    throw new Error('aliases.json est illisible : corrigez ou supprimez ce fichier avant de modifier les alias');
   }
-  const problem = aliasesFileProblem(raw);
-  if (problem !== null) throw new Error(`${problem} Rien n'a été écrit.`);
-  await writeJson('aliases', mergeUserAliases(raw, user));
+  const problem = aliasesFileProblem(json.data);
+  if (problem !== null) throw new Error(`${problem} Rien n'a été écrit`);
+  await writeJson('aliases', mergeUserAliases(json.data, user));
 }
 
 /** Réglages lus du texte de `settings.json` (`null` : fichier absent). Ne lève jamais. */
 export function parseSettingsText(raw: string | null): StoreRead<Settings> {
-  if (raw == null) return { value: parseSettings(undefined), error: null };
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return { value: parseSettings(undefined), error: 'settings.json illisible (JSON invalide)' };
-  }
-  // Racine d'une autre forme : `mergeSettings` la remplacerait, et Rust y perdrait `shortcuts`.
-  if (!isRecord(data)) return { value: parseSettings(undefined), error: 'settings.json illisible (forme inattendue)' };
-  return { value: parseSettings(data), error: null };
+  const { value, error } = parseSettingsRoot(raw);
+  return { value: parseSettings(value), error };
 }
 
 /** Réglages de la fenêtre principale. Rejette si la lecture elle-même échoue. */
@@ -144,9 +128,8 @@ export async function readSettings(): Promise<StoreRead<Settings>> {
  * Lève, sans rien écrire, si le fichier est devenu illisible.
  */
 export async function saveSettings(settings: Settings): Promise<void> {
-  const raw = await readRaw('settings');
   // Devenu illisible depuis le chargement (modifié à la main) : ne pas l'écraser.
-  const { error } = parseSettingsText(raw);
+  const { value, error } = parseSettingsRoot(await readRaw('settings'));
   if (error !== null) throw new Error(error);
-  await writeJson('settings', mergeSettings(raw == null ? undefined : JSON.parse(raw), settings));
+  await writeJson('settings', mergeSettings(value, settings));
 }

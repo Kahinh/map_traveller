@@ -79,7 +79,6 @@ interface Row {
   p99: number;
 }
 
-
 describe('benchmark de la palette', () => {
   it('mesures', () => {
     const rows: Row[] = [];

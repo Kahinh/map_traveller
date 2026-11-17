@@ -1,5 +1,5 @@
 /**
- * Éditeur de destinations (cahier des charges §6) : brouillon du formulaire, validation,
+ * Éditeur de destinations (invariant 10) : brouillon du formulaire, validation,
  * aperçu des clics et opérations sur le catalogue. Fonctions pures, sans React ni Tauri.
  *
  * Règles :

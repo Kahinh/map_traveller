@@ -5,10 +5,11 @@ import type { FeedbackKind } from '../app/useCopyFeedback';
 import type { Destination } from '../features/catalog/schema';
 import type { ViewFilter } from '../features/catalog/search';
 import type { ClickButton, PartIndex } from '../features/commands/cardParts';
+import { VIEWS } from './CategoryTabs';
 import { CompactCard } from './CompactCard';
 
 /** Retour visuel en cours sur une carte (copie ou avertissement). */
-export interface CardFeedback {
+interface CardFeedback {
   key: string;
   kind: FeedbackKind;
   part?: PartIndex;
@@ -24,6 +25,9 @@ interface Props {
   view: ViewFilter;
   /** Recherche appliquée à `visible` (valeur différée). */
   query: string;
+  /** Résultats de la même recherche dans « Tout », quand la vue courante n'en a aucun. */
+  allMatches: number;
+  onShowAll: () => void;
   favorites: ReadonlySet<string>;
   feedback: CardFeedback | null;
   manageMode: boolean;
@@ -38,12 +42,17 @@ interface Props {
 }
 
 /** État vide d'une vue : un titre, et une indication quand il y a quelque chose à faire. */
-function emptyMessage(view: ViewFilter, query: string): { title: string; hint?: string } {
+function emptyMessage(view: ViewFilter, query: string, allMatches: number): { title: string; hint?: string } {
+  if (query.trim() && allMatches > 0) return { title: `Aucun résultat dans ${viewLabel(view)}` };
   if (query.trim())
     return { title: `Aucun résultat pour « ${query.trim()} »`, hint: 'Échap pour effacer la recherche' };
   if (view === 'favorites') return { title: 'Aucun favori', hint: "Cliquez sur l'étoile d'une carte pour l'ajouter" };
   return { title: 'Aucune destination dans cette catégorie' };
 }
+
+const viewLabel = (view: ViewFilter) => VIEWS.find((v) => v.id === view)?.label ?? view;
+
+const showAllLabel = (n: number) => (n === 1 ? 'Voir le résultat dans Tout' : `Voir les ${n} résultats dans Tout`);
 
 function Empty({ title, hint, children }: { title: string; hint?: string; children?: ReactNode }) {
   return (
@@ -67,6 +76,8 @@ export function CatalogGrid({
   visible,
   view,
   query,
+  allMatches,
+  onShowAll,
   favorites,
   feedback,
   manageMode,
@@ -91,7 +102,7 @@ export function CatalogGrid({
   }, [visible, revealRequest, reveal]);
 
   const ready = load.status === 'ready';
-  const emptyView = ready && hasDestinations && visible.length === 0 ? emptyMessage(view, query) : null;
+  const emptyView = ready && hasDestinations && visible.length === 0 ? emptyMessage(view, query, allMatches) : null;
 
   return (
     <main id={id} ref={scrollRef} className={`grid-scroll${manageMode ? ' is-managing' : ''}`} inert={inert}>
@@ -112,7 +123,15 @@ export function CatalogGrid({
           </button>
         </Empty>
       )}
-      {emptyView && <Empty title={emptyView.title} hint={emptyView.hint} />}
+      {emptyView && (
+        <Empty title={emptyView.title} hint={emptyView.hint}>
+          {query.trim() && allMatches > 0 && (
+            <button type="button" className="btn" onClick={onShowAll}>
+              {showAllLabel(allMatches)}
+            </button>
+          )}
+        </Empty>
+      )}
       <div ref={gridRef} className="grid" style={style}>
         {visible.slice(start, end).map((d) => (
           <CompactCard

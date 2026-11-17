@@ -8,21 +8,21 @@
  */
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import { isTauri } from './env';
+import { IS_TAURI } from './env';
 import { STORE_CHANGED_EVENT, type StoreName } from './storeRead';
 
 /** Commande Rust qui masque (sans la détruire) la fenêtre palette. */
-export const HIDE_PALETTE_COMMAND = 'hide_palette';
+const HIDE_PALETTE_COMMAND = 'hide_palette';
 /** Commande Rust qui ajuste la hauteur de la fenêtre palette à son contenu. */
-export const SET_PALETTE_HEIGHT_COMMAND = 'set_palette_height';
-/** Événement émis par Rust vers la fenêtre palette juste après son affichage. */
+const SET_PALETTE_HEIGHT_COMMAND = 'set_palette_height';
+/** Événement émis par Rust vers la fenêtre palette juste après son affichage (`palette::SHOWN_EVENT`). */
 export const PALETTE_SHOWN_EVENT = 'palette:shown';
 /** Événement émis par Rust vers la fenêtre palette après chaque masquage (`palette::HIDDEN_EVENT`). */
 export const PALETTE_HIDDEN_EVENT = 'palette:hidden';
 
 /** Masque la palette. Lève si la commande Rust échoue. Navigateur : émet seulement `palette:hidden`. */
 export async function hidePalette(): Promise<void> {
-  if (isTauri()) await invoke(HIDE_PALETTE_COMMAND);
+  if (IS_TAURI) await invoke(HIDE_PALETTE_COMMAND);
   else window.dispatchEvent(new Event(PALETTE_HIDDEN_EVENT));
 }
 
@@ -32,7 +32,7 @@ export async function hidePalette(): Promise<void> {
  * l'abonnement Tauri n'est pas encore établi.
  */
 function subscribe<T = unknown>(event: string, callback: (payload: T) => void): () => void {
-  if (!isTauri()) {
+  if (!IS_TAURI) {
     const onEvent = (e: Event) => callback((e as CustomEvent<T>).detail);
     window.addEventListener(event, onEvent);
     return () => window.removeEventListener(event, onEvent);
@@ -60,7 +60,7 @@ function subscribe<T = unknown>(event: string, callback: (payload: T) => void): 
  * taille précédente et est seulement journalisé.
  */
 export function setPaletteHeight(height: number): void {
-  if (!isTauri()) return;
+  if (!IS_TAURI) return;
   invoke(SET_PALETTE_HEIGHT_COMMAND, { height }).catch((e: unknown) =>
     console.error('Redimensionnement de la palette impossible', e),
   );
@@ -104,7 +104,7 @@ export function onPaletteHidden(callback: () => void): () => void {
  */
 export function onStoreChanged(callback: (name: StoreName) => void): () => void {
   const unsubscribe = subscribe<StoreName>(STORE_CHANGED_EVENT, callback);
-  if (isTauri() || typeof BroadcastChannel === 'undefined') return unsubscribe;
+  if (IS_TAURI || typeof BroadcastChannel === 'undefined') return unsubscribe;
   const channel = new BroadcastChannel(STORE_CHANGED_EVENT);
   channel.onmessage = (e: MessageEvent<StoreName>) => callback(e.data);
   return () => {

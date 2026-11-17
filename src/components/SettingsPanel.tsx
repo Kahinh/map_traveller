@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, type ComponentType } from 'react';
+import { useCallback, useEffect, useId, useRef, type ComponentType } from 'react';
 import type { AliasesBinding } from '../app/useAliases';
 import type { Destination } from '../features/catalog/schema';
 import type { Settings, SettingsPatch } from '../features/settings/settings';
 import type { UpdaterBinding } from '../features/updates/types';
+import { overflowFade } from './overflowFade';
 import { Panel } from './Panel';
 import { AliasesSection } from './settings/AliasesSection';
 import { DataSection } from './settings/DataSection';
@@ -75,6 +76,15 @@ export function SettingsPanel({
   // Type élargi : une rubrique peut ignorer tout ou partie des props communes.
   const Section: ComponentType<SettingsSectionProps> = current.render;
   const tabsRef = useRef<HTMLDivElement>(null);
+  const tabsRefWithFade = useCallback((el: HTMLDivElement | null) => {
+    tabsRef.current = el;
+    const stop = overflowFade(el);
+    // Avec un nettoyage, React n'appelle plus la référence avec `null` : on le fait ici.
+    return () => {
+      stop?.();
+      tabsRef.current = null;
+    };
+  }, []);
   const tabProps = useRovingFocus(
     SETTINGS_SECTIONS.length,
     index,
@@ -94,7 +104,7 @@ export function SettingsPanel({
 
   return (
     <Panel label="Paramètres" title="Paramètres" backTitle="Fermer (Échap)" onBack={onClose}>
-      <div ref={tabsRef} className="tabs settings__tabs" role="tablist" aria-label="Rubriques des paramètres">
+      <div ref={tabsRefWithFade} className="tabs settings__tabs" role="tablist" aria-label="Rubriques des paramètres">
         {SETTINGS_SECTIONS.map((s, i) => (
           <button
             key={s.id}

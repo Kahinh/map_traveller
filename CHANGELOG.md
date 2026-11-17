@@ -18,6 +18,15 @@ Revue complète avant la 1.0, en six lots (A à F). Aucun changement de format d
 - Import d'images : les chemins réseau (UNC) sont refusés. Les images du catalogue livré ne reçoivent plus de vignette inutile.
 - Palette instantanée (#24) : ordre de pertinence explicite (alias exact, nom exact, début du nom ou d'un alias, mots, initiales, sous-chaîne, faute de frappe) ; les initiales d'un nom ou d'un alias sont cherchables (`rdv`, `rv`) ; `Entrée` copie toujours le résultat de ce qui est tapé, même en rafale (`rdv` + `Entrée` avant l'affichage), une seule fois, et rien si le champ est vide ; un alias de fiche déjà porté par une autre destination est refusé dans le formulaire ; la palette se met à jour dès l'enregistrement, même fermée.
 
+**Revue finale**
+
+- Fenêtre étroite (jusqu'à 360 px de large) : tous les onglets restent visibles, Favoris réduit à son étoile ; une rangée d'onglets qui défile encore a son bord estompé.
+- Recherche : quand l'onglet courant n'a aucun résultat mais que d'autres en ont, la grille le dit et propose « Voir les N résultats dans Tout ».
+- Clavier : dans la recherche, la flèche bas mène à la première carte, `Entrée` copie la première carte comme un clic gauche.
+- Copie plus claire : l'infobulle d'une carte dit exactement ce que font ses clics, la bulle dit « Copié sans Zaap » ou « Copié avec Zaap » et montre la commande en police à chasse fixe ; un échec affiche « Copie impossible, réessayez ».
+- Palette : avec `proche X,Y`, la distance vient en tête de chaque ligne (« À 8 cartes · Zaap … »).
+- Textes : « Remplacer » un alias fourni (et `Échap` vide la saisie), « Reprendre » dans la confirmation d'abandon du formulaire, exemple de commande précédé de « ex. ».
+
 **Sous le capot**
 
 - Rust (lot A) : écriture atomique durable et unique, lecture stricte avant fusion, commandes autorisées par fenêtre (`build.rs`, capabilities explicites sans `core:default`), CSP renforcée, palette au repos (`palette:hidden`, WebView2 invisible), clippy sans avertissement, `cargo fmt`.

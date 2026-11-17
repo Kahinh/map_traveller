@@ -62,7 +62,7 @@ export interface PaletteEntry {
 }
 
 /** Lignes déjà fabriquées pour une destination, avec ce dont elles dépendent hors catalogue. */
-export interface CachedEntries {
+interface CachedEntries {
   favorite: boolean;
   /** Variante préférée à la fabrication (cartes) ; `null` pour une ligne Farm, qui n'en dépend pas. */
   variant: VariantKind | null;

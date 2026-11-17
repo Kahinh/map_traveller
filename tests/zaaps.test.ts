@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import raw from '../resources/zaaps.json';
 import { buildPaletteIndex, searchPalette, PALETTE_LIMIT } from '../src/features/palette/entries';
-import type { Destination } from '../src/features/catalog/schema';
 import { DEFAULT_ZAAPS } from '../src/features/zaaps/defaultZaaps';
 import {
   formatDistance,
@@ -14,6 +13,7 @@ import {
   type ZaapCatalog,
   type ZaapWorld,
 } from '../src/features/zaaps/zaaps';
+import { makeDestination } from './helpers/destination';
 
 // Référentiel de test : coordonnées FICTIVES (le référentiel livré est contrôlé à part).
 const WORLDS: ZaapWorld[] = [
@@ -95,9 +95,9 @@ describe('distance (Manhattan, en cartes)', () => {
   });
 
   it('libellés', () => {
-    expect(formatDistance(0)).toBe('sur place');
-    expect(formatDistance(1)).toBe('à 1 carte');
-    expect(formatDistance(12)).toBe('à 12 cartes');
+    expect(formatDistance(0)).toBe('Sur place');
+    expect(formatDistance(1)).toBe('À 1 carte');
+    expect(formatDistance(12)).toBe('À 12 cartes');
   });
 });
 
@@ -190,20 +190,7 @@ describe('commandes copiées', () => {
 });
 
 describe('palette : « proche X,Y »', () => {
-  const dest: Destination = {
-    id: 'p',
-    name: 'Proche du lac',
-    category: 'place',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/travel 0 0',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-  };
+  const dest = makeDestination({ id: 'p', name: 'Proche du lac' });
   const index = buildPaletteIndex([dest], undefined, CATALOG);
   const run = (q: string) => searchPalette(index, q, { limit: PALETTE_LIMIT });
 
@@ -213,7 +200,7 @@ describe('palette : « proche X,Y »', () => {
     expect(entries.map((e) => e.title)).toEqual(['Bravo', 'Alpha', 'Charlie']);
     expect(entries[0]).toMatchObject({
       kind: 'zaap',
-      subtitle: 'Zaap 10,0 · Zone · à 3 cartes',
+      subtitle: 'À 3 cartes · Zaap 10,0 · Zone',
       variants: [
         { kind: 'trip', text: '/zaap 10 0;/travel 8 1' },
         { kind: 'zaapOnly', text: '/zaap 10 0' },

@@ -1,6 +1,7 @@
 import { CATEGORIES, CATEGORY_LABELS } from '../features/catalog/schema';
 import type { ViewFilter } from '../features/catalog/search';
 import { StarIcon } from './icons';
+import { overflowFade } from './overflowFade';
 import { useRovingFocus } from './useRovingFocus';
 
 export const VIEWS: { id: ViewFilter; label: string }[] = [
@@ -37,7 +38,7 @@ export function CategoryTabs({ value, onChange, counts, controls }: Props) {
     'horizontal',
   );
   return (
-    <div className="tabs" role="tablist" aria-label="Catégories">
+    <div ref={overflowFade} className="tabs" role="tablist" aria-label="Catégories">
       {VIEWS.map((v, i) => (
         <button
           key={v.id}
@@ -47,10 +48,13 @@ export function CategoryTabs({ value, onChange, counts, controls }: Props) {
           aria-selected={i === current}
           aria-controls={controls}
           className={`tab${i === current ? ' is-active' : ''}`}
+          // Fenêtre étroite : le libellé « Favoris » est masqué visuellement, l'icône reste.
+          aria-label={v.id === 'favorites' ? v.label : undefined}
+          title={v.id === 'favorites' ? v.label : undefined}
           onClick={() => onChange(v.id)}
         >
           {v.id === 'favorites' && <StarIcon filled={false} />}
-          {v.label}
+          <span className="tab__label">{v.label}</span>
           {counts && <span className="tab__count">{counts[v.id]}</span>}
         </button>
       ))}

@@ -62,6 +62,13 @@ Arborescence commentée : [CLAUDE.md, « Architecture »](../CLAUDE.md#architect
 
 Le référentiel des zaaps (`resources/zaaps.json`) n'est pas généré : une entrée ne s'y ajoute qu'avec sa source.
 
+## Régénérer l'icône de l'application
+
+`src-tauri/app-icon.png` (1024 × 1024) est dessinée par `scripts/make-icon.mjs`, sans dépendance ; les fichiers de `src-tauri/icons/` en sont tirés par Tauri. Pour changer l'icône, changer le script, puis :
+
+1. `node scripts/make-icon.mjs` : réécrit `src-tauri/app-icon.png`.
+2. `npx tauri icon src-tauri/app-icon.png` : régénère `src-tauri/icons/` (`.ico` compris).
+
 ## Outillage Claude Code
 
 Le dossier `.claude/` paramètre Claude Code pour ce dépôt ; [AGENTS.md](../AGENTS.md) est le point d'entrée de tout agent.

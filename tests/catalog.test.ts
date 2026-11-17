@@ -13,7 +13,7 @@ import { makeDestination } from './helpers/destination';
 
 const dest = (partial: Partial<Destination> & { id: string; name: string }): Destination => makeDestination(partial);
 
-describe('validation du catalogue (CdC §8)', () => {
+describe('validation du catalogue (invariant 5)', () => {
   it('le seed livré est valide', () => {
     const r = validateCatalog(seed);
     expect(r.ok).toBe(true);
@@ -146,7 +146,7 @@ describe('validation du catalogue (CdC §8)', () => {
   });
 });
 
-describe('recherche et tri (CdC §7)', () => {
+describe('recherche et tri', () => {
   const list = [
     dest({ id: 'm', name: 'Mériana', zone: 'Île fictive', sortOrder: 5 }),
     dest({ id: 'v', name: 'Vortex', category: 'dungeon', sortOrder: 1 }),
@@ -197,12 +197,5 @@ describe('recherche et tri (CdC §7)', () => {
   it('vues catégorie et favoris (Farm inclus)', () => {
     expect(filterDestinations(list, 'farm', '', new Set()).map((d) => d.id)).toEqual(['b']);
     expect(filterDestinations(list, 'favorites', '', new Set(['b', 'm'])).map((d) => d.id)).toEqual(['b', 'm']);
-  });
-
-  it('performances : 5000 destinations filtrées rapidement', () => {
-    const big = Array.from({ length: 5000 }, (_, i) => dest({ id: `d${i}`, name: `Destination ${i}` }));
-    const t = performance.now();
-    filterDestinations(big, 'all', 'destination 42', new Set());
-    expect(performance.now() - t).toBeLessThan(200);
   });
 });

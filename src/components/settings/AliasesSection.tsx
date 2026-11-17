@@ -133,7 +133,17 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
         </p>
       )}
 
-      <form className="aliases__form" onSubmit={(e) => void onSubmit(e)}>
+      {/* Échap dans un des deux champs vide la saisie (les champs ne sont jamais détournés par
+          le clavier global : invariant 11). */}
+      <form
+        className="aliases__form"
+        onSubmit={(e) => void onSubmit(e)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape' || busy || !(editing || draft.term !== '' || draft.meaning !== '')) return;
+          e.preventDefault();
+          reset();
+        }}
+      >
         <input
           ref={termRef}
           className="form__input aliases__term"

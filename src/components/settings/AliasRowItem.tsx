@@ -68,10 +68,10 @@ export function AliasRowItem({
             className="btn"
             disabled={blocked}
             aria-disabled={busyAttr}
-            aria-label={`Personnaliser l'alias ${row.term}`}
+            aria-label={`Remplacer l'alias ${row.term}`}
             onClick={() => !busy && onEdit()}
           >
-            Personnaliser
+            Remplacer
           </button>
         )}
         <Switch

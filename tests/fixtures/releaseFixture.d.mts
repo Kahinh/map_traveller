@@ -28,7 +28,6 @@ export declare function makeRelease(options?: {
   signedFile?: string;
 }): FakeRelease;
 export declare function readText(path: string): string;
-export declare function readBytes(path: string): Uint8Array;
 export declare function listDir(path: string): string[];
 export declare function writeText(path: string, text: string): void;
 export declare function removeDir(path: string): void;

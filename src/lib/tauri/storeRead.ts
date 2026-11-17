@@ -18,7 +18,7 @@ import {
 } from '../../features/aliases/aliases';
 import { SCHEMA_VERSION, validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
 import { parsePaletteSettings, type PaletteSettings } from '../../features/settings/paletteSettings';
-import { isRecord } from '../../features/shared/json';
+import { isRecord, parseJsonText } from '../../features/shared/json';
 import { IS_TAURI } from './env';
 
 export type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases' | 'official';
@@ -55,13 +55,9 @@ const EMPTY_CATALOG: Catalog = { schemaVersion: SCHEMA_VERSION, destinations: []
  * La palette garde le catalogue vide par défaut, pour ne pas embarquer le catalogue livré.
  */
 export function parseCatalogText(raw: string | null, fallback: unknown = EMPTY_CATALOG): ValidationResult {
-  let data: unknown;
-  try {
-    data = raw == null ? undefined : JSON.parse(raw);
-  } catch {
-    return { ok: false, errors: [{ path: '', message: 'catalog.json illisible (JSON invalide).' }] };
-  }
-  return validateCatalog(data ?? fallback);
+  const json = parseJsonText(raw);
+  if (!json.ok) return { ok: false, errors: [{ path: '', message: 'catalog.json illisible (JSON invalide)' }] };
+  return validateCatalog(json.data ?? fallback);
 }
 
 /**
@@ -76,16 +72,12 @@ export interface StoreRead<T> {
 /** Favoris lus du texte de `favorites.json` (`null` : fichier absent). Ne lève jamais. */
 export function parseFavoritesText(raw: string | null): StoreRead<ReadonlySet<string>> {
   if (raw == null) return { value: new Set(), error: null };
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return { value: new Set(), error: 'favorites.json illisible (JSON invalide)' };
-  }
-  if (!isRecord(data) || !Array.isArray(data.ids)) {
+  const json = parseJsonText(raw);
+  if (!json.ok) return { value: new Set(), error: 'favorites.json illisible (JSON invalide)' };
+  if (!isRecord(json.data) || !Array.isArray(json.data.ids)) {
     return { value: new Set(), error: 'favorites.json illisible (forme inattendue)' };
   }
-  return { value: new Set(data.ids.filter((x): x is string => typeof x === 'string')), error: null };
+  return { value: new Set(json.data.ids.filter((x): x is string => typeof x === 'string')), error: null };
 }
 
 /** Favoris pour la palette, qui n'écrit jamais : tout problème donne un ensemble vide. */
@@ -106,15 +98,26 @@ export interface LoadedAliases {
 /** Personnalisations lues du texte de `aliases.json` (`null` : fichier absent). Ne lève jamais. */
 export function parseAliasesText(raw: string | null): LoadedAliases {
   if (raw == null) return { user: EMPTY_USER_ALIASES, error: null };
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return { user: EMPTY_USER_ALIASES, error: 'aliases.json illisible (JSON invalide) : les alias fournis sont utilisés.' };
+  const json = parseJsonText(raw);
+  if (!json.ok) {
+    return { user: EMPTY_USER_ALIASES, error: 'aliases.json illisible (JSON invalide) : les alias fournis sont utilisés' };
   }
   // Version plus récente ou forme inattendue : lu au mieux pour la recherche, jamais réécrit.
-  const problem = aliasesFileProblem(data);
-  return { user: parseUserAliases(data), error: problem === null ? null : `${problem} Il n'est pas modifiable ici.` };
+  const problem = aliasesFileProblem(json.data);
+  return { user: parseUserAliases(json.data), error: problem === null ? null : `${problem} Il n'est pas modifiable ici` };
+}
+
+/**
+ * Racine de `settings.json` (`null` : fichier absent → `undefined`). Ne lève jamais. Seul point
+ * de lecture du fichier : la fenêtre principale en tire le modèle complet (`parseSettingsText`,
+ * `storage.ts`), la palette sa seule rubrique `palette`, sans embarquer le modèle complet.
+ */
+export function parseSettingsRoot(raw: string | null): StoreRead<Record<string, unknown> | undefined> {
+  const json = parseJsonText(raw);
+  if (!json.ok) return { value: undefined, error: 'settings.json illisible (JSON invalide)' };
+  if (json.data === undefined || isRecord(json.data)) return { value: json.data, error: null };
+  // Racine d'une autre forme : `mergeSettings` la remplacerait, et Rust y perdrait `shortcuts`.
+  return { value: undefined, error: 'settings.json illisible (forme inattendue)' };
 }
 
 /**
@@ -123,11 +126,5 @@ export function parseAliasesText(raw: string | null): LoadedAliases {
  */
 export async function loadPaletteSettings(): Promise<PaletteSettings> {
   const raw = await readStoreText('settings').catch(() => null);
-  let data: unknown;
-  try {
-    data = raw == null ? undefined : JSON.parse(raw);
-  } catch {
-    data = undefined;
-  }
-  return parsePaletteSettings(data);
+  return parsePaletteSettings(parseSettingsRoot(raw).value);
 }

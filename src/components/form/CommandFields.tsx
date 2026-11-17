@@ -51,7 +51,7 @@ export function CommandFields({ uid, draft, set, field, twoStepAvailable, twoSte
           {...COMMAND_ATTRS}
           value={draft.command}
           onChange={(e) => set('command', e.target.value)}
-          placeholder={draft.category === 'farm' ? '/travel 1 1;/travel 2 2;…' : '/zaap 1 1;/travel 2 2'}
+          placeholder={draft.category === 'farm' ? 'ex. /travel 1 1;/travel 2 2;…' : 'ex. /zaap 1 1;/travel 2 2'}
         />
       </FormField>
 

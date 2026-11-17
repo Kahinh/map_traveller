@@ -97,7 +97,6 @@ export function makeRelease({
 }
 
 export const readText = (path) => readFileSync(path, 'utf8');
-export const readBytes = (path) => new Uint8Array(readFileSync(path));
 export const listDir = (path) => readdirSync(path).sort();
 export const writeText = (path, text) => {
   mkdirSync(join(path, '..'), { recursive: true });

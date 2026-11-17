@@ -22,6 +22,14 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
+### 2026-11-17 — `outil-trompeur` — Requête média ignorée avec `#root` fixé (revue finale)
+Les onglets à 360 px restaient coupés au contrôle : `#root` était fixé à 360 dans une page de 900 de large, et `@media (max-width: 439px)` suit la largeur de la page, pas celle de `#root`. Dans l'application, fenêtre et page ont la même largeur.
+**Garde-fou :** pour une règle `@media` de largeur, régler aussi la largeur de la page du navigateur de contrôle (hauteur libre), en plus de `#root`.
+
+### 2026-11-17 — `outil-trompeur` — Vitest vide les feuilles de style, `?raw` compris
+Le test de contrat (`tests/tauriContract.test.ts`) lisait `palette.css?raw` et recevait une chaîne vide : Vitest remplace toute feuille de style par un module vide. Les fichiers Rust, eux, se lisent bien par `?raw`.
+**Garde-fou :** le test lit la feuille sur le disque (`node:fs` par import dynamique) ; commentaire en tête du test.
+
 ### 2026-11-17 — `non-vérifié` — Palette instantanée (issue n°24)
 Ordre, acronymes, décision d'Entrée et collisions d'alias sont couverts par des tests ; la rafale `rdv` + `Entrée` et la réindexation par `store:changed` ont été contrôlées dans le navigateur (Chrome, fallback `BroadcastChannel`). Ni l'émission réelle de `store:changed` par Rust vers une WebView2 masquée (`SetIsVisible(false)`), ni les temps sous Windows n'ont été observés ; les chiffres de `docs/perf-palette.md` sont des mesures Node.
 **Garde-fou :** section « Palette instantanée » de [recette-v1.md](recette-v1.md) ; `npm run bench:palette` ; `tests/palettePerf.test.ts`.

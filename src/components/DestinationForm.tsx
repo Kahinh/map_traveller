@@ -32,7 +32,7 @@ interface Props {
 }
 
 /**
- * Formulaire de création / modification d'une destination (CdC §6.1). Rendu et interactions
+ * Formulaire de création / modification d'une destination (invariant 10). Rendu et interactions
  * uniquement : validation, aperçu et construction du catalogue sont dans `features/catalog/editor.ts`.
  */
 export function DestinationForm({ initial, destinations, onSave, onDelete, onDuplicate, onClose }: Props) {

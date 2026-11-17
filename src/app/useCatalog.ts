@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { removeDestination, upsertDestination, type DestinationDraft } from '../features/catalog/editor';
 import { mergeOfficial } from '../features/catalog/official';
-import { SCHEMA_VERSION, validateCatalog, type Catalog, type Destination } from '../features/catalog/schema';
+import {
+  formatValidationErrors,
+  SCHEMA_VERSION,
+  validateCatalog,
+  type Catalog,
+  type Destination,
+} from '../features/catalog/schema';
 import { errorText } from '../lib/errors';
 import { initImages } from '../lib/tauri/images';
 import { loadCatalog, loadOfficialState, saveCatalog, saveOfficialState } from '../lib/tauri/storage';
@@ -57,7 +63,7 @@ export function useCatalog() {
     void (async () => {
       const [cat] = await Promise.all([loadCatalog(loadSeed), initImages()]);
       if (!cat.ok) {
-        setLoad({ status: 'error', message: cat.errors.map((e) => `${e.path} ${e.message}`.trim()).join(' · ') });
+        setLoad({ status: 'error', message: formatValidationErrors(cat.errors, ' · ') });
         return;
       }
       const catalog = await withOfficialEntries(cat.catalog);

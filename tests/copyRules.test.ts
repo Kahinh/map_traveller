@@ -4,8 +4,8 @@ import { isZaapSegment, leftClickCommand, rightClickCommand, splitLeadingZaap } 
 
 const EXAMPLE = '/zaap 5 -18;/travel 1 1;/travel 2 2;/travel 3 3';
 
-describe('clic gauche / clic droit (CdC §4)', () => {
-  it('exemple du cahier des charges', () => {
+describe('clic gauche / clic droit (invariant 2)', () => {
+  it('exemple de référence', () => {
     expect(leftClickCommand(EXAMPLE)).toBe('/travel 1 1;/travel 2 2;/travel 3 3');
     expect(rightClickCommand(EXAMPLE)).toBe(EXAMPLE);
   });

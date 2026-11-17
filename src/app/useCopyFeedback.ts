@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PartIndex } from '../features/commands/cardParts';
+import { errorText } from '../lib/errors';
 import { copyText } from '../lib/tauri/clipboard';
 
 export type FeedbackKind = 'copied' | 'warning';
 
-export interface CopyFeedback {
+interface CopyFeedback {
   /** Identifie l'élément cliqué (id de destination, `farm:start`, `farm:<indice>`). */
   key: string;
   kind: FeedbackKind;
@@ -48,7 +49,7 @@ export function useCopyFeedback() {
         await copyText(text);
         flash({ key, part, kind: 'copied', text: `Copié : ${text}` });
       } catch (e) {
-        flash({ key, part, kind: 'warning', text: `Copie impossible : ${String(e)}` });
+        flash({ key, part, kind: 'warning', text: `Copie impossible : ${errorText(e)}` });
       }
     },
     [flash],

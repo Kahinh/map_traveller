@@ -4,20 +4,13 @@
  * Dans le navigateur (`npm run dev`), il n'existe pas : chemin `null`, ouverture refusée.
  */
 import { invoke } from '@tauri-apps/api/core';
-import { isTauri } from './env';
-
-export const BROWSER_DATA_DIR_MESSAGE = "Disponible dans l'application installée";
-
-/** Vrai si le dossier de données existe (application installée). */
-export function canAccessDataDir(): boolean {
-  return isTauri();
-}
+import { INSTALLED_ONLY, IS_TAURI } from './env';
 
 let cached: Promise<string> | null = null;
 
 /** Chemin absolu du dossier de données, mis en cache après le premier appel ; `null` dans le navigateur. */
 export async function getDataDir(): Promise<string | null> {
-  if (!isTauri()) return null;
+  if (!IS_TAURI) return null;
   if (cached === null) {
     cached = invoke<string>('data_dir');
     // Un échec n'est pas mis en cache : le prochain appel réessaie.
@@ -34,6 +27,6 @@ export async function getDataDir(): Promise<string | null> {
  * Rejette avec le message de Rust (en français) si l'Explorateur n'a pas pu être lancé.
  */
 export async function openDataDir(): Promise<void> {
-  if (!isTauri()) throw new Error(BROWSER_DATA_DIR_MESSAGE);
+  if (!IS_TAURI) throw new Error(INSTALLED_ONLY);
   await invoke('open_data_dir');
 }

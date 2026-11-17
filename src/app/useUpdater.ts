@@ -12,19 +12,12 @@ import {
   type UpdateEvent,
 } from '../features/updates/updates';
 import { getAppVersion } from '../lib/tauri/app';
-import {
-  canUseUpdater,
-  checkForUpdate,
-  downloadAndInstall,
-  relaunchApp,
-  releaseUpdate,
-  UPDATER_BROWSER_MESSAGE,
-  type AvailableUpdate,
-} from '../lib/tauri/updater';
+import { INSTALLED_ONLY, IS_TAURI } from '../lib/tauri/env';
+import { checkForUpdate, downloadAndInstall, relaunchApp, releaseUpdate, type AvailableUpdate } from '../lib/tauri/updater';
 import type { FeedbackKind } from './useCopyFeedback';
 
 /** Délai entre le lancement et la vérification automatique : la fenêtre s'ouvre d'abord. */
-export const STARTUP_CHECK_DELAY_MS = 5_000;
+const STARTUP_CHECK_DELAY_MS = 5_000;
 /** Durée d'affichage de « Mise à jour X.Y.Z installée ». */
 const INSTALLED_NOTICE_MS = 4_000;
 
@@ -61,7 +54,7 @@ interface Options {
  * - Après une mise à jour, « Mise à jour X.Y.Z installée » est affiché une seule fois.
  */
 export function useUpdater({ settings, settingsLoaded, updateSettings, installBlocked, notify }: Options) {
-  const available = canUseUpdater();
+  const available = IS_TAURI;
   const [state, setState] = useState<UpdateState>(IDLE);
   /** État courant, lu de façon synchrone par les garde-fous (l'état React arrive plus tard). */
   const stateRef = useRef<UpdateState>(IDLE);
@@ -181,8 +174,15 @@ export function useUpdater({ settings, settingsLoaded, updateSettings, installBl
 
   // Mode automatique : une vérification par lancement, après un court délai. Le drapeau est posé
   // dans le minuteur (et non à la planification) : le double montage de `StrictMode` ne l'annule pas.
+  // Mode manuel au lancement : aucun minuteur, et passer en automatique ensuite ne vérifie
+  // qu'au prochain lancement (comportement inchangé).
+  const autoMode = settings.updates.mode === 'auto';
   useEffect(() => {
     if (!available || !settingsLoaded || startupDoneRef.current) return;
+    if (!autoMode) {
+      startupDoneRef.current = true;
+      return;
+    }
     const timer = setTimeout(() => {
       if (startupDoneRef.current) return;
       startupDoneRef.current = true;
@@ -192,7 +192,7 @@ export function useUpdater({ settings, settingsLoaded, updateSettings, installBl
       }
     }, STARTUP_CHECK_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [available, settingsLoaded, runCheck]);
+  }, [available, settingsLoaded, autoMode, runCheck]);
 
   // Après une mise à jour : annonce unique, puis mémorisation de la version lancée.
   useEffect(() => {
@@ -219,7 +219,7 @@ export function useUpdater({ settings, settingsLoaded, updateSettings, installBl
   }, [runInstall]);
 
   const binding = useMemo<UpdaterBinding>(
-    () => (available ? { available: true, state, check, install } : { available: false, reason: UPDATER_BROWSER_MESSAGE }),
+    () => (available ? { available: true, state, check, install } : { available: false, reason: INSTALLED_ONLY }),
     [available, state, check, install],
   );
 

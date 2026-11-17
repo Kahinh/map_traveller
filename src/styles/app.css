@@ -60,7 +60,7 @@ button {
   box-shadow: inset 0 -1px 0 var(--mt-hairline);
 }
 
-/* Repère de position (signature) : ne reçoit aucun clic, la barre reste déplaçable. */
+/* Repère de position (signature) : zone de déplacement, et ses tracés ne captent aucun clic. */
 .titlebar__mark {
   flex: none;
   width: var(--mt-icon-lg);
@@ -158,6 +158,11 @@ button {
   cursor: default;
 }
 
+/* Écriture en cours : le contrôle garde le focus (`aria-disabled`), sans changer d'aspect. */
+[aria-disabled='true'] {
+  cursor: progress;
+}
+
 /* Action principale : seul bouton en accent. */
 .btn--primary {
   background: var(--mt-accent);
@@ -244,6 +249,11 @@ button {
 
 .search__input::placeholder {
   color: var(--mt-text-muted);
+}
+
+/* Pas de croix native : Échap efface, et le rappel « Ctrl F » occupe la place. */
+.search__input::-webkit-search-cancel-button {
+  appearance: none;
 }
 
 /* Touche affichée : discrète, masquée dès que le champ contient du texte (CSS seul). */
@@ -1574,6 +1584,11 @@ label.setting__label {
   color: var(--mt-warning);
 }
 
+/* Fonction absente du mode navigateur : une seule mention, discrète (`InstalledOnly`). */
+.installed-only {
+  color: var(--mt-text-muted);
+}
+
 .settings__error {
   color: var(--mt-danger-text);
 }
@@ -1675,6 +1690,10 @@ label.setting__label {
 }
 
 /* Alias fourni désactivé : texte secondaire (contraste conservé), pas d'opacité. */
+.aliases__confirm {
+  font-size: var(--mt-font-size-sm);
+}
+
 .aliases__row.is-off .aliases__name,
 .aliases__row.is-off .aliases__meanings {
   color: var(--mt-text-muted);

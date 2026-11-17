@@ -26,7 +26,7 @@ const MODE_OPTIONS: readonly SegmentedOption<UpdateMode>[] = [
 /**
  * Rubrique « Mises à jour » : version installée, choix du mode (enregistré dès qu'il change)
  * et recherche manuelle. AUCUNE logique de mise à jour ici : l'état et les actions viennent
- * de `updater` (moteur de l'issue n°5), indisponible tant qu'il n'est pas livré.
+ * de `updater` (moteur de l'issue n°5), indisponible hors de l'application installée.
  */
 export function UpdatesSection({ settings, onChange, updater }: SettingsSectionProps) {
   const uid = useId();
@@ -82,7 +82,10 @@ export function UpdatesSection({ settings, onChange, updater }: SettingsSectionP
         label="Recherche"
         description={
           // Toujours présent pour que l'état soit annoncé par les lecteurs d'écran.
-          <span className={isError ? 'settings__error' : undefined} role={isError ? 'alert' : 'status'}>
+          <span
+            className={isError ? 'settings__error' : updater.available ? undefined : 'installed-only'}
+            role={isError ? 'alert' : 'status'}
+          >
             {!updater.available ? updater.reason : (statusText ?? '')}
           </span>
         }

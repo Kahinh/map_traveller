@@ -7,9 +7,10 @@ import {
   type ShortcutAction,
   type ShortcutsState,
 } from '../../features/settings/accelerator';
-import { canConfigureShortcuts, getShortcuts, resetShortcuts, setShortcut } from '../../lib/tauri/shortcuts';
-
-const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+import { errorText } from '../../lib/errors';
+import { IS_TAURI } from '../../lib/tauri/env';
+import { getShortcuts, resetShortcuts, setShortcut } from '../../lib/tauri/shortcuts';
+import { InstalledOnly } from '../controls';
 
 const NOT_REGISTERED =
   "Ce raccourci n'est pas actif : il est sans doute déjà utilisé par une autre application. Choisissez-en un autre.";
@@ -26,7 +27,7 @@ type Errors = Partial<Record<ShortcutAction, string>>;
  */
 export function ShortcutsSection() {
   const uid = useId();
-  const available = canConfigureShortcuts();
+  const available = IS_TAURI;
   const [state, setState] = useState<ShortcutsState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [capturing, setCapturing] = useState<ShortcutAction | null>(null);
@@ -70,6 +71,7 @@ export function ShortcutsSection() {
   };
 
   const onReset = async () => {
+    if (busy) return;
     stopCapture();
     setBusy(true);
     try {
@@ -84,6 +86,7 @@ export function ShortcutsSection() {
   };
 
   const onFieldClick = (action: ShortcutAction) => {
+    if (busy) return;
     if (capturing === action) {
       stopCapture();
       return;
@@ -122,7 +125,7 @@ export function ShortcutsSection() {
         Raccourcis actifs dans tout Windows, même quand une autre fenêtre a le focus. Cliquez sur un champ puis appuyez
         sur la combinaison voulue (Ctrl ou Alt, plus une lettre, un chiffre, F1 à F12 ou Espace).
       </p>
-      {!available && <p className="form__hint settings__notice">Réglage disponible dans l'application installée</p>}
+      {!available && <InstalledOnly block />}
       {loadError && (
         <p className="form__error" role="alert">
           {loadError}
@@ -152,7 +155,9 @@ export function ShortcutsSection() {
                   aria-describedby={message ? messageId : undefined}
                   aria-pressed={isCapturing}
                   title={isCapturing ? 'Échap pour annuler' : 'Cliquer pour changer'}
-                  disabled={!available || busy || !status}
+                  disabled={!available || !status}
+                  // Pendant l'enregistrement, le champ garde le focus : le résultat s'annonce sous lui.
+                  aria-disabled={busy || undefined}
                   onClick={() => onFieldClick(action)}
                   onKeyDown={(e) => onFieldKeyDown(action, e)}
                   onBlur={() => {
@@ -177,7 +182,13 @@ export function ShortcutsSection() {
       </div>
 
       <div className="settings__actions">
-        <button type="button" className="btn" disabled={!available || busy || !state} onClick={() => void onReset()}>
+        <button
+          type="button"
+          className="btn"
+          disabled={!available || !state}
+          aria-disabled={busy || undefined}
+          onClick={() => void onReset()}
+        >
           Rétablir par défaut
         </button>
       </div>

@@ -1,0 +1,2 @@
+# Le code tient déjà sur 120 colonnes (messages en français, souvent longs).
+max_width = 120

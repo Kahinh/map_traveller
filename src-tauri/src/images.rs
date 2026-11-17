@@ -18,7 +18,7 @@
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{ErrorKind, Read, Write};
-use std::path::Path;
+use std::path::{Component, Path, Prefix};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -26,7 +26,7 @@ use tauri::ipc::{InvokeBody, Request, Response};
 use tauri::{AppHandle, Window};
 
 use crate::main_window::ensure_main;
-use crate::storage::app_data_dir;
+use crate::storage::{app_data_dir, replace_file};
 
 /// Taille maximale d'une image importée : 10 Mo.
 pub const MAX_IMAGE_BYTES: u64 = 10 * 1024 * 1024;
@@ -92,10 +92,24 @@ fn too_large(len: u64) -> String {
     )
 }
 
+/// Chemin absolu sur un disque local. Sous Windows, seuls `C:\…` et `\\?\C:\…` sont acceptés :
+/// ouvrir un chemin réseau (`\\serveur\partage\…`, `\\?\UNC\…`) ferait contacter une autre
+/// machine et lui enverrait les identifiants de session (NTLM).
+fn is_local_absolute(path: &Path) -> bool {
+    if !path.is_absolute() {
+        return false;
+    }
+    match path.components().next() {
+        Some(Component::Prefix(prefix)) => matches!(prefix.kind(), Prefix::Disk(_) | Prefix::VerbatimDisk(_)),
+        // Hors Windows, un chemin absolu commence par la racine ; sous Windows, il a un préfixe.
+        _ => !cfg!(windows),
+    }
+}
+
 /// Copie `source` dans `images_dir` après contrôle de taille et de format.
 /// Renvoie le chemin relatif `images/<nom>.<ext>` à enregistrer dans le catalogue.
 pub fn import_into(source: &Path, images_dir: &Path) -> Result<String, String> {
-    if !source.is_absolute() {
+    if !is_local_absolute(source) {
         return Err("Chemin d'image invalide : un fichier local est attendu.".to_string());
     }
     let meta = fs::metadata(source).map_err(|e| format!("Image illisible : {e}"))?;
@@ -116,12 +130,10 @@ pub fn import_into(source: &Path, images_dir: &Path) -> Result<String, String> {
     if data.len() as u64 > MAX_IMAGE_BYTES {
         return Err(too_large(data.len() as u64));
     }
-    let format = detect_format(&data).ok_or_else(|| {
-        "Format non reconnu : seules les images PNG, JPEG et WebP sont acceptées.".to_string()
-    })?;
+    let format = detect_format(&data)
+        .ok_or_else(|| "Format non reconnu : seules les images PNG, JPEG et WebP sont acceptées.".to_string())?;
 
-    fs::create_dir_all(images_dir)
-        .map_err(|e| format!("Création de {} impossible : {e}", images_dir.display()))?;
+    fs::create_dir_all(images_dir).map_err(|e| format!("Création de {} impossible : {e}", images_dir.display()))?;
 
     for _ in 0..MAX_NAME_ATTEMPTS {
         let name = format!("{}.{}", unique_stem(), format.extension());
@@ -162,7 +174,9 @@ fn imported_name(relative: &str) -> Option<(&str, &str)> {
     let (stem, ext) = name.rsplit_once('.')?;
     let stem_ok = !stem.is_empty()
         && stem.len() <= 128
-        && stem.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+        && stem
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
     (stem_ok && matches!(ext, "png" | "jpg" | "webp")).then_some((name, stem))
 }
 
@@ -181,8 +195,8 @@ pub fn read_imported(relative: &str, images_dir: &Path) -> Result<Vec<u8>, Strin
     Ok(data)
 }
 
-/// Enregistre la vignette WebP d'une image importée. Écriture dans un fichier temporaire puis
-/// renommage : une vignette n'est jamais lue à moitié écrite. Renvoie son chemin relatif.
+/// Enregistre la vignette WebP d'une image importée (`replace_file`) : une vignette n'est jamais
+/// lue à moitié écrite. Renvoie son chemin relatif.
 pub fn write_thumbnail(relative: &str, data: &[u8], images_dir: &Path) -> Result<String, String> {
     let (name, stem) = imported_name(relative).ok_or_else(|| "Chemin d'image refusé.".to_string())?;
     if data.len() > MAX_THUMB_BYTES {
@@ -195,14 +209,7 @@ pub fn write_thumbnail(relative: &str, data: &[u8], images_dir: &Path) -> Result
         return Err("Image d'origine introuvable.".to_string());
     }
     let target = images_dir.join(format!("{stem}{THUMB_SUFFIX}"));
-    let temp = images_dir.join(format!("{stem}{THUMB_SUFFIX}.tmp"));
-    let written = File::create(&temp)
-        .and_then(|mut out| out.write_all(data).and_then(|()| out.sync_all()))
-        .and_then(|()| fs::rename(&temp, &target));
-    if let Err(e) = written {
-        let _ = fs::remove_file(&temp);
-        return Err(format!("Enregistrement de la vignette impossible : {e}"));
-    }
+    replace_file(&target, data).map_err(|e| format!("Enregistrement de la vignette impossible : {e}"))?;
     Ok(format!("{IMAGES_DIR}/{stem}{THUMB_SUFFIX}"))
 }
 
@@ -245,7 +252,9 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    const PNG: &[u8] = &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, b'I', b'H', b'D', b'R'];
+    const PNG: &[u8] = &[
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, b'I', b'H', b'D', b'R',
+    ];
     const JPEG: &[u8] = &[0xFF, 0xD8, 0xFF, 0xE0, 0, 16, b'J', b'F', b'I', b'F', 0];
     const WEBP: &[u8] = b"RIFF\x24\x00\x00\x00WEBPVP8 ";
 
@@ -311,10 +320,30 @@ mod tests {
     #[test]
     fn relative_or_missing_paths_are_refused() {
         let dir = test_dir("chemins");
+        assert!(!is_local_absolute(Path::new("images/relative.png")));
+        assert!(!is_local_absolute(Path::new("../relative.png")));
         assert!(import_into(Path::new("images/relative.png"), &dir.join("images")).is_err());
+        assert!(import_into(Path::new("relative.png"), &dir.join("images")).is_err());
         assert!(import_into(&dir.join("absente.png"), &dir.join("images")).is_err());
         assert!(import_into(&dir, &dir.join("images")).is_err());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn network_paths_are_refused() {
+        assert!(is_local_absolute(Path::new(r"C:\Images\carte.png")));
+        assert!(is_local_absolute(Path::new(r"\\?\C:\Images\carte.png")));
+        for unc in [
+            r"\\serveur\partage\carte.png",
+            r"\\?\UNC\serveur\partage\carte.png",
+            r"\\.\C:\carte.png",
+            r"\Images\carte.png",
+        ] {
+            assert!(!is_local_absolute(Path::new(unc)), "{unc}");
+            let err = import_into(Path::new(unc), Path::new(r"C:\inexistant\images")).unwrap_err();
+            assert!(err.contains("fichier local"), "{unc} : {err}");
+        }
     }
 
     #[test]
@@ -346,7 +375,10 @@ mod tests {
             thumbnail_path("images/img-1a-2b-0.png").as_deref(),
             Some("images/img-1a-2b-0.thumb.webp")
         );
-        assert_eq!(thumbnail_path("images/img-1.jpg").as_deref(), Some("images/img-1.thumb.webp"));
+        assert_eq!(
+            thumbnail_path("images/img-1.jpg").as_deref(),
+            Some("images/img-1.thumb.webp")
+        );
         for bad in [
             "images/img-1.thumb.webp",
             "images/../catalog.json",

@@ -1,5 +1,6 @@
-# Mises à jour proposées chaque semaine, une PR groupée par écosystème. Rien n'est fusionné
-# automatiquement : chaque PR passe par le build Windows (.github/workflows/windows.yml).
+# Mises à jour proposées chaque semaine : une PR groupée par écosystème pour les versions mineures
+# et correctives ; chaque version majeure arrive dans sa propre PR, à examiner à part. Rien n'est
+# fusionné automatiquement : chaque PR passe par le build Windows (.github/workflows/windows.yml).
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -9,6 +10,7 @@ updates:
     groups:
       actions:
         patterns: ['*']
+        update-types: [minor, patch]
 
   - package-ecosystem: cargo
     directory: /src-tauri
@@ -17,6 +19,7 @@ updates:
     groups:
       cargo:
         patterns: ['*']
+        update-types: [minor, patch]
 
   - package-ecosystem: npm
     directory: /
@@ -25,3 +28,9 @@ updates:
     groups:
       npm:
         patterns: ['*']
+        update-types: [minor, patch]
+    ignore:
+      # typescript-eslint 8.x exige typescript < 6.1 : la majeure suivante casse le lint (PR #26
+      # en échec). À lever quand typescript-eslint la prendra en charge.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']

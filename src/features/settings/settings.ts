@@ -18,6 +18,7 @@
  */
 import { VARIANT_KINDS, type VariantKind } from '../commands/cardParts';
 import { DEFAULT_SHORTCUTS, normalizeAccelerator, type ShortcutAction } from './accelerator';
+import { isRecord } from '../shared/json';
 
 /** Manuel : rien n'est contacté sans action de l'utilisateur. Automatique : vérification au lancement. */
 export type UpdateMode = 'manual' | 'auto';
@@ -73,10 +74,6 @@ export const DEFAULT_SETTINGS: Settings = {
   palette: { defaultVariant: 'withoutZaap' },
   shortcuts: { ...DEFAULT_SHORTCUTS },
 };
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 export function isUpdateMode(v: unknown): v is UpdateMode {
   return UPDATE_MODES.includes(v as UpdateMode);

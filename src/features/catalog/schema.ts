@@ -5,9 +5,15 @@
  *
  * Schéma 3 : ajout de `twoStep` et `command2` (trajet en deux étapes). Un catalogue v2
  * est accepté tel quel : les champs absents prennent leur valeur par défaut.
+ *
+ * Corrections SILENCIEUSES de `validateCatalog` (champs secondaires, jamais une commande) :
+ * `zone` absente ou non textuelle → `''` ; `sortOrder` absent ou non fini → `0` ; `enabled`
+ * vaut `true` sauf s'il est exactement `false` ; `aliases` / `tags` absents → `[]` ; `image`
+ * vide → `null` ; `id` et `name` débarrassés de leurs blancs. Tout le reste est signalé.
  */
 
 import { normalizeText } from './searchText';
+import { isRecord, newerSchemaVersion } from '../shared/json';
 
 export const SCHEMA_VERSION = 3;
 
@@ -86,10 +92,6 @@ export type ValidationResult =
   | { ok: true; catalog: Catalog }
   | { ok: false; errors: ValidationError[] };
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
 function stringArray(v: unknown): string[] | null {
   if (v === undefined) return [];
   if (!Array.isArray(v) || !v.every((s) => typeof s === 'string')) return null;
@@ -112,7 +114,7 @@ export function validateCatalog(input: unknown): ValidationResult {
   const version = input.schemaVersion;
   if (typeof version !== 'number' || !Number.isInteger(version)) {
     errors.push({ path: 'schemaVersion', message: 'schemaVersion manquant ou invalide.' });
-  } else if (version > SCHEMA_VERSION) {
+  } else if (newerSchemaVersion(input, SCHEMA_VERSION) !== null) {
     errors.push({ path: 'schemaVersion', message: `Version ${version} plus récente que l'application (${SCHEMA_VERSION}).` });
   }
 

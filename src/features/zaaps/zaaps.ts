@@ -15,6 +15,8 @@
  * Ex aequo : départagés de façon stable par nom (ordre français), puis par identifiant.
  */
 import { normalizeText } from '../catalog/searchText';
+import { isRecord } from '../shared/json';
+import { isCoordinate } from '../shared/coordinates';
 
 export interface ZaapWorld {
   id: string;
@@ -48,14 +50,9 @@ export const DEFAULT_WORLD = 'douze';
 /** Nombre de zaaps proposés : le plus proche, puis deux alternatives. */
 export const NEAREST_LIMIT = 3;
 
-/** Bornes de coordonnées acceptées dans la requête (le monde connu tient dans ±150). */
-export const MAX_COORDINATE = 999;
-
 export const EMPTY_ZAAPS: ZaapCatalog = { source: '', worlds: [], zaaps: [] };
 
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isText = (v: unknown): v is string => typeof v === 'string' && v.trim() !== '';
-const isCoord = (v: unknown): v is number => Number.isInteger(v) && Math.abs(v as number) <= MAX_COORDINATE;
 
 export type ZaapCatalogResult = { ok: true; catalog: ZaapCatalog } | { ok: false; errors: string[] };
 
@@ -93,7 +90,7 @@ export function parseZaapCatalog(raw: unknown): ZaapCatalogResult {
         errors.push(`${where} : id, name, zone, world et command attendus`);
         return;
       }
-      if (!isCoord(z.x) || !isCoord(z.y)) {
+      if (!isCoordinate(z.x) || !isCoordinate(z.y)) {
         errors.push(`${where} (${z.name}) : coordonnées entières attendues`);
         return;
       }
@@ -195,7 +192,7 @@ export function parseNearQuery(query: string, worlds: readonly ZaapWorld[]): Nea
   if (m) {
     const x = Number(m[1]);
     const y = Number(m[2]);
-    if (Math.abs(x) > MAX_COORDINATE || Math.abs(y) > MAX_COORDINATE) {
+    if (!isCoordinate(x) || !isCoordinate(y)) {
       return { kind: 'invalid', message: `Coordonnées hors de la carte : ${x},${y}` };
     }
     return { kind: 'ok', position: { x, y }, world };

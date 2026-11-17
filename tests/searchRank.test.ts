@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Destination } from '../src/features/catalog/schema';
 import { filterDestinations } from '../src/features/catalog/search';
-import { buildSearchIndex, COST, searchIndexRank } from '../src/features/catalog/searchIndex';
+import { buildSearchIndex, FIELD_COST, searchIndexRank, TIER } from '../src/features/catalog/searchIndex';
 import { makeDestination } from './helpers/destination';
 
 // Coordonnées fictives uniquement.
@@ -12,14 +12,15 @@ const rankDestinations = (list: Destination[], query: string, favorites: Readonl
   searchIndexRank(buildSearchIndex(list), query, favorites);
 
 describe('classement de la recherche (palette §5.2)', () => {
-  it('préfixe > début de mot > contenu > alias / tag / zone', () => {
+  it('début du nom > début d\'un mot du nom > mot d\'un tag > contenu dans un mot (issue n°24)', () => {
     const list = [
       dest({ id: 'tag', name: 'Autre', tags: ['arbre'] }),
       dest({ id: 'contenu', name: 'Marbre' }),
       dest({ id: 'mot', name: 'Grand arbre' }),
       dest({ id: 'prefixe', name: 'Arbre creux' }),
     ];
-    expect(ids(rankDestinations(list, 'arbre', new Set()))).toEqual(['prefixe', 'mot', 'contenu', 'tag']);
+    // Un mot entier trouvé dans un tag (palier 4) passe devant une sous-chaîne du nom (palier 6).
+    expect(ids(rankDestinations(list, 'arbre', new Set()))).toEqual(['prefixe', 'mot', 'tag', 'contenu']);
   });
 
   it('coûts explicites par champ ; un mot manquant écarte la destination', () => {
@@ -33,10 +34,11 @@ describe('classement de la recherche (palette §5.2)', () => {
     expect(ids(rankDestinations(list, 'plaine', new Set()))).toEqual(['debut', 'mot', 'zone']);
     expect(ids(rankDestinations(list, 'plan', new Set()))).toEqual(['dedans']);
     expect(rankDestinations(list, 'plaine absent', new Set())).toEqual([]);
-    expect(COST.nameStart).toBeLessThan(COST.nameWord);
-    expect(COST.nameWord).toBeLessThan(COST.nameInside);
-    expect(COST.nameInside).toBeLessThan(COST.other);
-    expect(COST.other).toBeLessThan(COST.typo);
+    expect(FIELD_COST.nameFirst).toBeLessThan(FIELD_COST.nameOther);
+    expect(FIELD_COST.nameOther).toBeLessThan(FIELD_COST.alias);
+    expect(FIELD_COST.alias).toBeLessThan(FIELD_COST.other);
+    const tiers = [TIER.aliasExact, TIER.nameExact, TIER.prefix, TIER.words, TIER.acronym, TIER.inside, TIER.typo];
+    expect(tiers).toEqual([...tiers].sort((a, b) => a - b));
   });
 
   it('un mot après un tiret compte comme début de mot', () => {

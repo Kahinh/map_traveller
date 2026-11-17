@@ -55,6 +55,17 @@ Préparer : un Windows 11 propre (ou un compte neuf), le jeu en mode fenêtré, 
 - [ ] Alias personnalisé ajouté, palette rouverte : il est pris en compte.
 - [ ] 150 % et second écran : taille et position correctes.
 
+### Palette instantanée (#24)
+
+Mesures : dans les outils de développement de la palette (WebView2), `localStorage.setItem('map-traveller:perf', '1')`, relancer l'application, faire les essais, puis `__paletteStats()` dans la console (p50 / p95 / p99 par étape). Rien n'est envoyé : les mesures restent dans la page. Retirer le drapeau ensuite.
+
+- [ ] Raccourci → champ visible et focus : « affichage → focus » p95 < 100 ms (noter aussi le ressenti, car la mesure part de l'événement `palette:shown`, pas de l'appui sur la touche).
+- [ ] `rdv` puis `Entrée` tapés en rafale dans le jeu, dix fois : chaque fois la commande de « Trône de la Cour Sombre » (alias « Reine des Voleurs ») est collée, une seule fois ; jamais celle d'un résultat de `r` ou `rd`.
+- [ ] `Entrée` maintenue : une seule copie ; `Entrée` sur un champ vide : rien.
+- [ ] « frappe → rendu » p95 < 50 ms et « Entrée → presse-papiers » mesurés sur une machine modeste (noter le modèle).
+- [ ] Alias de fiche ajouté dans le formulaire, palette ouverte ENSUITE sans redémarrer : `alias` + `Entrée` copie cette fiche (la palette a réindexé pendant qu'elle était masquée). Même essai après suppression d'une fiche et renommage.
+- [ ] Alias déjà porté par une autre fiche : le formulaire le refuse en nommant cette fiche.
+
 ## Raccourcis globaux
 
 - [ ] `Ctrl+Alt+T` et `Ctrl+Alt+Espace` depuis le jeu.

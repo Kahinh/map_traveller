@@ -5,6 +5,7 @@ const MENU = [
     ['npm run check', 'pendant le travail : typecheck + lint + tests (rapide)'],
     ['npm run check:full', "avant de rendre la main : check + build des deux pages + budget JS de chaque page"],
     ['npm test -- tests/<fichier>.test.ts', "un seul fichier de test"],
+    ['npm run bench:palette', "benchmark de la recherche de la palette (100, 1 000, 10 000 destinations ; résultats : docs/perf-palette.md)"],
     ['npm run ci:watch', "attendre le build GitHub du commit courant et résumer ses erreurs (Rust compilé sous Windows)"],
   ]],
   ['Développer', [

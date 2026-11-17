@@ -16,6 +16,7 @@ Revue complète avant la 1.0, en six lots (A à F). Aucun changement de format d
 - Finition visuelle : anneau de focus plus net, surfaces et contours affinés, rayons et typographie harmonisés, touches affichées comme des touches, bouton principal et « Début » du Farm en accent plein, champ de la palette fondu dans sa barre. La palette violette et la barre de titre sont conservées.
 - Zone de notification : un double-clic sur l'icône ne fait plus apparaître puis disparaître la fenêtre. Un échec au démarrage est affiché dans un dialogue.
 - Import d'images : les chemins réseau (UNC) sont refusés. Les images du catalogue livré ne reçoivent plus de vignette inutile.
+- Palette instantanée (#24) : ordre de pertinence explicite (alias exact, nom exact, début du nom ou d'un alias, mots, initiales, sous-chaîne, faute de frappe) ; les initiales d'un nom ou d'un alias sont cherchables (`rdv`, `rv`) ; `Entrée` copie toujours le résultat de ce qui est tapé, même en rafale (`rdv` + `Entrée` avant l'affichage), une seule fois, et rien si le champ est vide ; un alias de fiche déjà porté par une autre destination est refusé dans le formulaire ; la palette se met à jour dès l'enregistrement, même fermée.
 
 **Sous le capot**
 
@@ -23,6 +24,7 @@ Revue complète avant la 1.0, en six lots (A à F). Aucun changement de format d
 - CI et outillage (lot A) : actions épinglées par SHA, permissions minimales, Dependabot, Node 22, Rust 1.97.0 épinglé, `Cargo.lock` suivi et builds en `--locked`, `cargo fmt --check` et `clippy -D warnings`, budget JS des pages (`scripts/bundle-budget.mjs`), chunk `react` nommé, scripts lintés.
 - Logique pure (lot B) : index de recherche plus rapide à construire, cache LRU, façade de recherche allégée, règle « deux étapes » à un seul endroit, identifiants générés sans caractères perdus (« Cœur » → `coeur`), lecture JSON et bornes de coordonnées partagées.
 - Palette (lot C) : lignes construites dans l'ordre jusqu'au plafond et réutilisées d'une frappe à l'autre, empreinte des fichiers relus au lieu de leur texte, paquet allégé.
+- Palette (#24) : paliers de pertinence nommés (`TIER`, `searchIndex.ts`), acronymes indexés, décision de la touche Entrée en fonction pure (`enterChoice`), garde anti double copie, événement `store:changed` émis par Rust après chaque écriture, mesures locales (`performance.mark`, `window.__paletteStats()`, drapeau `map-traveller:perf`), `npm run bench:palette` et `docs/perf-palette.md`.
 - Fenêtre principale (lot D) : `App.tsx` et `DestinationForm.tsx` découpés, garde d'écriture commune (`writeGate`), catalogue livré chargé à la demande, un seul abonnement clavier.
 - Design (lot E) : nouveaux tokens (pastilles, pilule, opacités, bouton de barre de titre, survol de l'accent et des cartes), classe `.kbd` commune.
 - Documentation (lot F) : README réécrit pour l'utilisateur, `docs/CONTRIBUTING.md`, `docs/RELEASING.md`, `docs/recette-v1.md`, ce journal ; cahier des charges archivé ; invariants renumérotés ; hooks Claude Code réparés (ils ne se chargeaient pas).

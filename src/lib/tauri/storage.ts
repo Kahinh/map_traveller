@@ -18,6 +18,7 @@ import {
   parseCatalogText,
   parseFavoritesText,
   readStoreText as readRaw,
+  STORE_CHANGED_EVENT,
   type LoadedAliases,
   type StoreName,
   type StoreRead,
@@ -25,13 +26,24 @@ import {
 
 export { DEFAULT_ALIASES, parseFavoritesText, type StoreRead } from './storeRead';
 
+/** Mode navigateur : prévient la palette ouverte dans un autre onglet, comme le fait Rust dans l'application. */
+function announceChange(name: StoreName): void {
+  if (typeof BroadcastChannel === 'undefined') return;
+  const channel = new BroadcastChannel(STORE_CHANGED_EVENT);
+  channel.postMessage(name);
+  channel.close();
+}
+
 async function writeRaw(name: StoreName, json: string): Promise<void> {
+  // Dans l'application, Rust prévient la palette (`store:changed`) après l'écriture.
   if (IS_TAURI) return invoke('save_store', { name, json });
   try {
     localStorage.setItem(LS_PREFIX + name, json);
   } catch {
     /* stockage navigateur indisponible : mode démo non persistant */
+    return;
   }
+  announceChange(name);
 }
 
 /** Contenu JSON d'un stockage ; `undefined` s'il n'existe pas encore. Lève si le JSON est invalide. */

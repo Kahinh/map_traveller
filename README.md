@@ -48,13 +48,15 @@ La position cliquée reste surlignée et les précédentes estompées, le temps 
 | Touche | Effet |
 |---|---|
 | `↑` `↓` | changer de ligne |
-| `Entrée` ou clic | copier la variante sélectionnée |
+| `Entrée` ou clic | copier la variante sélectionnée ; `Entrée` agit toujours sur ce qui est tapé, même saisi plus vite que l'affichage, et ne copie rien si le champ est vide |
 | `Ctrl+Entrée` ou clic droit | copier l'autre variante |
 | `←` `→` | sur une ligne à deux cases, passer de « sans Zaap » à « avec Zaap » |
 | `Échap` | fermer sans copier |
 
 - **Recherche tolérante** (aussi dans la fenêtre principale) : par nom, alias, tag, zone ou catégorie (`donjon …`, `farm …`). Elle ignore les accents, les majuscules, la ponctuation, les mots de liaison (« de », « du », « l' »…) et l'ordre des mots. Si rien ne correspond exactement, elle tolère une faute de frappe (deux à partir de 8 lettres) sur les mots de 4 lettres et plus.
-- **Alias** : un mot du dictionnaire remplace sa signification (`hdv` pour « hôtel des ventes ») ; un mot de plus affine (`hdv bonta`). Voir [Paramètres](#paramètres).
+- **Ordre des résultats**, du meilleur au moins bon : alias exact, nom exact, début du nom ou d'un alias, tous les mots trouvés, initiales (`rdv` ou `rv` pour « Reine des Voleurs »), mot trouvé à l'intérieur d'un autre, faute de frappe ; à égalité, les favoris puis l'ordre du catalogue.
+- **Alias** : deux sortes. Le **dictionnaire** (Paramètres › Alias) vaut pour toutes les destinations : un mot y remplace sa signification (`hdv` pour « hôtel des ventes »), un mot de plus affine (`hdv bonta`). Les **alias d'une fiche** (formulaire, Plus d'options) ne désignent qu'elle : un alias déjà porté par une autre destination est refusé. Voir [Paramètres](#paramètres).
+- Les modifications du catalogue et des alias sont prises en compte dès l'enregistrement, sans redémarrer ni rouvrir la palette.
 - **Une ligne par étape** : une carte à deux étapes donne « — Étape 1 » et « — Étape 2 », l'une sous l'autre.
 - **Avec ou sans Zaap** : sur une ligne qui commence par `/zaap`, deux cases à droite, *sans Zaap* et *avec Zaap* ; la case en surbrillance est celle qu'`Entrée` copie, un clic sur une case copie la sienne. La case par défaut se règle dans Paramètres › Palette.
 - **Farm** : le nom du parcours donne « parcours complet » puis une ligne par position ; le nom suivi d'une position reprend la suite (avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`).
@@ -65,7 +67,7 @@ La position cliquée reste surlignée et les précédentes estompées, le temps 
 - **`+`** (à droite des onglets) : « Nouvelle destination ». La catégorie de l'onglet actif est présélectionnée.
 - **Crayon** (« Gérer les destinations ») : un crayon apparaît sur chaque carte et ouvre son formulaire. Les clics gauche et droit des cartes copient toujours. `Échap` quitte ce mode.
 - Formulaire : **Nom**, **Catégorie** (PNJ, Donjon, Lieu-dit, Farm), **Image** (facultative, « Choisir… » : PNG, JPEG ou WebP, 10 Mo au plus, copiée dans vos données), **Trajet en deux étapes** (PNJ et Donjons, affiche « Commande 1 » et « Commande 2 »), **Commande** (enregistrée exactement telle que saisie), **Plus d'options** (zone, alias, tags, ordre d'affichage). L'aperçu montre ce que copiera chaque clic, ou les positions reconnues d'un parcours Farm.
-- **Enregistrer** (`Ctrl+Entrée`) écrit aussitôt sur le disque. **Dupliquer** crée une copie ; **Supprimer** demande une confirmation et retire aussi la carte des favoris. **Annuler** ou `Échap` ferme le formulaire (confirmation s'il reste des modifications).
+- **Enregistrer** (`Ctrl+Entrée`) écrit aussitôt sur le disque. **Dupliquer** crée une copie (sans les alias, propres à chaque fiche) ; **Supprimer** demande une confirmation et retire aussi la carte des favoris. **Annuler** ou `Échap` ferme le formulaire (confirmation s'il reste des modifications).
 - « Retirer » enlève l'image d'une carte sans supprimer le fichier : aucun fichier image n'est jamais supprimé automatiquement.
 
 ## Paramètres

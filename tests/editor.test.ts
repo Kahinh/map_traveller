@@ -203,6 +203,34 @@ describe('validation du brouillon', () => {
   });
 });
 
+describe('alias de fiche en double (issue n°24)', () => {
+  const a = dest({ id: 'a', name: 'Antre fictive', aliases: ['RDV', 'Reine des Voleurs'] });
+  const off = dest({ id: 'off', name: 'Éteinte', aliases: ['eteint'], enabled: false });
+
+  it('alias déjà porté par une autre destination active : refusé, avec son nom', () => {
+    const c = catalog(a, off);
+    expect(validateDraft(draft({ aliases: 'rdv' }), c.destinations).aliases).toBe('Alias déjà utilisé par « Antre fictive »');
+    // Comparaison normalisée : casse, accents, ponctuation et ordre des mots.
+    expect(validateDraft(draft({ aliases: 'autre, voleurs  REINE des' }), c.destinations).aliases).toBeDefined();
+    expect(() => upsertDestination(c, draft({ aliases: ' Rdv ' }))).toThrow(/Antre fictive/);
+  });
+
+  it('même destination, destination désactivée, alias distinct : accepté', () => {
+    const c = catalog(a, off);
+    expect(validateDraft({ ...draftFromDestination(a), name: 'Antre renommée' }, c.destinations)).toEqual({});
+    expect(validateDraft(draft({ aliases: 'eteint' }), c.destinations)).toEqual({});
+    expect(validateDraft(draft({ aliases: 'rdv2, reine' }), c.destinations)).toEqual({});
+  });
+
+  it('un catalogue qui contient déjà des doublons reste valide', () => {
+    const twin = dest({ id: 'b', name: 'Bis', aliases: ['rdv'] });
+    expect(validateCatalog(catalog(a, twin)).ok).toBe(true);
+    // Modifier une autre destination n'est pas bloqué par le doublon existant.
+    const other = dest({ id: 'c', name: 'Tierce' });
+    expect(() => upsertDestination(catalog(a, twin, other), { ...draftFromDestination(other), zone: 'Z' })).not.toThrow();
+  });
+});
+
 describe('trajet en deux étapes', () => {
   it('case cochée (PNJ ou Donjon) : les deux commandes sont obligatoires', () => {
     expect(validateDraft(draft({ category: 'npc', twoStep: true, command2: '' })).command2).toBeDefined();
@@ -305,8 +333,10 @@ describe('duplication', () => {
       twoStep: true,
       command2: '/travel 3 3',
       category: 'dungeon',
+      aliases: ['Alias A'],
     });
     const copy = duplicateDraft(d);
+    expect(copy.aliases).toBe('');
     expect(copy.id).toBeNull();
     expect(copy.name).toBe('A (copie)');
     expect(copy.image).toBe(d.image);

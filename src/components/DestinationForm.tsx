@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { CATEGORY_FORM_LABELS, type DestinationDraft } from '../features/catalog/editor';
-import { CATEGORIES, type Category } from '../features/catalog/schema';
+import { CATEGORIES, type Category, type Destination } from '../features/catalog/schema';
 import { errorText } from '../lib/errors';
 import { pickAndImportImage } from '../lib/tauri/imageImport';
 import { Segmented, type SegmentedOption } from './controls';
@@ -22,6 +22,8 @@ const CATEGORY_OPTIONS: readonly SegmentedOption<Category>[] = CATEGORIES.map((c
 interface Props {
   /** Brouillon d'ouverture : sert aussi de référence pour détecter les modifications. */
   initial: DestinationDraft;
+  /** Catalogue actuel : un alias déjà porté par une autre destination est refusé. */
+  destinations: readonly Destination[];
   /** Enregistre ; doit rejeter (message lisible) si l'écriture échoue. */
   onSave: (draft: DestinationDraft) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -33,9 +35,9 @@ interface Props {
  * Formulaire de création / modification d'une destination (CdC §6.1). Rendu et interactions
  * uniquement : validation, aperçu et construction du catalogue sont dans `features/catalog/editor.ts`.
  */
-export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClose }: Props) {
+export function DestinationForm({ initial, destinations, onSave, onDelete, onDuplicate, onClose }: Props) {
   const { uid, draft, set, field, validate, dirty, preview, twoStepAvailable, twoStep, moreOpen, setMoreOpen } =
-    useDestinationDraft(initial);
+    useDestinationDraft(initial, destinations);
   const [busy, setBusy] = useState<Busy>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [actionError, setActionError] = useState<string | null>(null);

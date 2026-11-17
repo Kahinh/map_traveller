@@ -140,12 +140,14 @@ export function captureAccelerator(e: KeyLike): CaptureResult {
 
 const DISPLAY_NAMES: Record<string, string> = { Shift: 'Maj', Space: 'Espace' };
 
-/** Affichage en français : `Ctrl+Shift+Space` → `Ctrl + Maj + Espace`. */
+/** Touches affichées en français, une par capsule : `Ctrl+Shift+Space` → `Ctrl`, `Maj`, `Espace`. */
+export function acceleratorKeys(accelerator: string): string[] {
+  return accelerator.split('+').map((part) => DISPLAY_NAMES[part] ?? part);
+}
+
+/** Affichage en texte : `Ctrl+Shift+Space` → `Ctrl + Maj + Espace`. */
 export function formatAccelerator(accelerator: string): string {
-  return accelerator
-    .split('+')
-    .map((part) => DISPLAY_NAMES[part] ?? part)
-    .join(' + ');
+  return acceleratorKeys(accelerator).join(' + ');
 }
 
 /** Valide la réponse de Rust (`get_shortcuts`, `set_shortcut`, `reset_shortcuts`) ; `null` si inattendue. */

@@ -2,16 +2,19 @@
    Inspiration ergonomique PNJ ; aucune ressource propriétaire reprise. */
 :root {
   --mt-bg: #252739;
-  --mt-bg-raised: #2e3047;
+  --mt-bg-raised: #2d2f4a;
   /* Barre de titre : aplat violet, sans dégradé (issue n°13, B1). */
   --mt-titlebar: #4b4d77;
-  --mt-card-bg: #393b58;
-  --mt-card-border: #505273;
+  --mt-card-bg: #363859;
+  /* Contours en voile clair : ils prennent la teinte de la surface qu'ils bordent. */
+  --mt-card-border: rgba(241, 241, 255, 0.12);
+  --mt-card-border-hover: rgba(241, 241, 255, 0.32); /* carte survolée */
   --mt-text: #f1f1ff;
   --mt-text-muted: #b8b9d0;
-  /* Barre de la palette de recherche : aplat sombre (issue n°19). Se règle ici, à un seul endroit. */
-  --mt-palette-bar: var(--mt-bg);
+  /* Barre de la palette de recherche : marche de surface, le champ s'y fond (issue n°19). */
+  --mt-palette-bar: var(--mt-bg-raised);
   --mt-accent: #e5f052;
+  --mt-accent-hover: #eef57d; /* action principale survolée : fond et bordure */
   --mt-accent-ink: #252739;
   --mt-warning: #f0a052;
   --mt-danger: #c9485b; /* fonds seulement (bouton de suppression, fermeture) */
@@ -22,19 +25,22 @@
   --mt-hairline: rgba(241, 241, 255, 0.1);
   --mt-shadow: rgba(0, 0, 0, 0.35);
   --mt-hover: rgba(241, 241, 255, 0.08);
-  /* Rappel du mode gestion (liseré de la grille). */
-  --mt-accent-soft: rgba(229, 240, 82, 0.28);
 
-  /* Anneau de focus unique (issue n°13, A6) : 2 px d'accent à 60 %, décalé de 2 px. Dans un
-     conteneur qui rogne (onglets défilants, carte), le même anneau est posé à l'intérieur. */
-  --mt-focus-ring: rgba(229, 240, 82, 0.6);
+  /* Anneau de focus unique (issue n°13, A6) : 2 px d'accent plein, décalé de 1 px (un accent
+     translucide vire à l'olive sur le violet). Dans un conteneur qui rogne (onglets défilants,
+     carte), le même anneau est posé à l'intérieur. */
+  --mt-focus-ring: var(--mt-accent);
   --mt-focus-ring-w: 2px;
-  --mt-focus-ring-offset: 2px;
+  --mt-focus-ring-offset: 1px;
+
+  /* Contrôle indisponible ; étape Farm dépassée, plus lisible car encore cliquable. */
+  --mt-disabled: 0.45;
+  --mt-done: 0.6;
 
   /* Surbrillance des cartes (issue n°2) : voile porté par le bouton cliquable. */
-  --mt-highlight: rgba(241, 241, 255, 0.16); /* voile clair au survol */
-  --mt-highlight-zone: rgba(241, 241, 255, 0.28); /* voile d'un triangle : plus marqué, la surface est plus petite */
-  --mt-highlight-edge: rgba(241, 241, 255, 0.55); /* liseré interne */
+  --mt-highlight: rgba(241, 241, 255, 0.08); /* voile clair au survol : l'image ne se délave pas */
+  --mt-highlight-zone: rgba(241, 241, 255, 0.14); /* voile d'un triangle : plus marqué, la surface est plus petite */
+  --mt-highlight-edge: rgba(241, 241, 255, 0.45); /* liseré interne */
   --mt-focus: rgba(229, 240, 82, 0.3); /* voile accent au focus clavier d'un triangle */
   --mt-press: rgba(20, 21, 34, 0.25); /* voile sombre à l'appui */
 
@@ -68,11 +74,17 @@
   /* Écart de la grille : lu par `useGridWindow` (grille fenêtrée), ne pas renommer. */
   --mt-gap: var(--mt-space-2);
   --mt-split-gap: 4px; /* interstice des cartes à deux étapes, mesuré perpendiculairement à la diagonale */
-  --mt-radius: 10px;
-  --mt-radius-sm: 6px;
+  /* Rayons : à l'intérieur d'une bordure de 1 px, `calc(var(--mt-radius) - 1px)`. */
+  --mt-radius: 12px;
+  --mt-radius-sm: 8px;
   --mt-radius-xs: 4px; /* touches, petits contrôles intérieurs */
+  --mt-radius-pill: 999px; /* pastille Farm, interrupteur */
   --mt-titlebar-h: 32px;
-  --mt-control-h: 24px; /* boutons, champs d'une ligne, onglets, contrôles segmentés */
+  --mt-titlebar-btn: 28px; /* boutons de la barre de titre */
+  --mt-control-h: 24px; /* boutons, champs d'une ligne, onglets, contrôles segmentés, coche d'une carte */
+  /* Pastilles posées sur une carte : deux tailles seulement. */
+  --mt-chip-sm: 16px; /* repères 1 / 2, pastille Farm, touche affichée */
+  --mt-chip-md: 20px; /* crayon du mode gestion, coche d'une carte à deux étapes */
 
   /* Icônes : un seul jeu (`icons.tsx`, grille 16, trait 1,5), trois tailles d'affichage. */
   --mt-icon-lg: 16px; /* boutons, recherche, icône de catégorie */
@@ -82,11 +94,14 @@
   /* Typographie (issue n°13) : aucune taille ni pile de police écrite ailleurs, rien sous 10 px. */
   --mt-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mt-font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
-  --mt-font-size-xs: 10px; /* pastilles, repères, numéros d'étape, touches, nombres des onglets */
-  --mt-font-size-sm: 11px; /* noms de carte, onglets, boutons, libellés */
-  --mt-font-size: 12px; /* corps, titre de la fenêtre */
-  --mt-font-size-md: 13px; /* titre d'une ligne de palette */
-  --mt-font-size-lg: 14px; /* champ de recherche de la palette */
+  /* Échelle : 10 (compteurs, repères, touches) ; 11 en 500 (onglets, boutons, noms de carte) ;
+     12 en 400 (corps) ; 13 en 600 (titres de panneau, titres de ligne de palette) ; 16 (champ de
+     la palette). Deux graisses dans le courant, 600 réservé aux titres. */
+  --mt-font-size-xs: 10px;
+  --mt-font-size-sm: 11px;
+  --mt-font-size: 12px;
+  --mt-font-size-md: 13px;
+  --mt-font-size-lg: 16px;
   --mt-font-weight-regular: 400;
   --mt-font-weight-medium: 500;
   --mt-font-weight-semibold: 600;

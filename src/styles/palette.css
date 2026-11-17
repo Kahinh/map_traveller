@@ -6,6 +6,7 @@
    cadre 2 + barre 46 = 48 ; + liste 8 × 40 + 8 = 328 ; + pied 28 → 404 ; + avertissement
    d'une ligne (≈ 24) → 428 au plus. */
 @import './tokens.css';
+@import './kbd.css';
 
 * {
   box-sizing: border-box;
@@ -100,14 +101,14 @@ button {
   height: var(--mt-icon-lg);
 }
 
+/* Champ sans cadre : la barre entière est le champ. */
 .palette__search {
   flex: 1;
   min-width: 0;
   height: 32px;
-  padding: 0 var(--mt-space-3);
-  border-radius: var(--mt-radius-sm);
-  border: 1px solid var(--mt-field-border);
-  background: var(--mt-bg-raised);
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--mt-text);
   font: inherit;
   font-size: var(--mt-font-size-lg);
@@ -169,6 +170,7 @@ button {
 
 /* Hauteur fixe : l'apparition des cases 1 / 2 ne déplace rien. */
 .palette__row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--mt-space-3);
@@ -178,10 +180,21 @@ button {
   cursor: pointer;
 }
 
-/* Ligne sélectionnée : marche de surface et barre d'accent à gauche. */
+/* Ligne sélectionnée : marche de surface et barre d'accent droite à gauche (une ombre interne
+   suivrait l'arrondi de la ligne). */
 .palette__row.is-selected {
   background: var(--mt-card-bg);
-  box-shadow: inset 2px 0 0 var(--mt-accent);
+}
+
+.palette__row.is-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--mt-space-2);
+  bottom: var(--mt-space-2);
+  width: 2px;
+  border-radius: 1px;
+  background: var(--mt-accent);
 }
 
 .palette__row.is-empty {
@@ -189,7 +202,7 @@ button {
 }
 
 .palette__row.is-empty > :not(.palette__variants) {
-  opacity: 0.5;
+  opacity: var(--mt-disabled);
 }
 
 /* Vignette : réutilise `CardVisual` (image, ou icône de catégorie sur la surface de carte). */
@@ -200,7 +213,17 @@ button {
   height: var(--pal-thumb);
   border-radius: var(--mt-radius-sm);
   overflow: hidden;
-  background: var(--mt-card-bg);
+  /* Marche plus sombre et filet : la vignette reste détachée sur la ligne sélectionnée. */
+  background: var(--mt-bg-raised);
+}
+
+/* Filet au-dessus de l'image : il borde aussi une vignette claire. */
+.palette__thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--mt-card-border);
 }
 
 .palette__thumb .card__img {
@@ -238,7 +261,7 @@ button {
   gap: var(--mt-space-1);
   min-width: 0;
   font-size: var(--mt-font-size-md);
-  font-weight: var(--mt-font-weight-medium);
+  font-weight: var(--mt-font-weight-semibold);
 }
 
 .palette__title-text,
@@ -323,7 +346,7 @@ button {
 .palette__variant.is-idle {
   border-color: transparent;
   background: none;
-  opacity: 0.45;
+  opacity: var(--mt-disabled);
   cursor: inherit;
 }
 
@@ -346,7 +369,9 @@ button {
   flex: none;
   display: flex;
   align-items: center;
-  gap: var(--mt-space-3);
+  /* 8 entre deux aides contre 4 entre touche et libellé : le pied le plus long (« proche ») tient
+     dans les 560 px. */
+  gap: var(--mt-space-2);
   height: 28px;
   padding: 0 var(--mt-space-3);
   border-top: 1px solid var(--mt-hairline);
@@ -357,45 +382,11 @@ button {
   overflow: hidden;
 }
 
-/* Touches : petites capsules discrètes. Les flèches sont des icônes du jeu commun, orientées ici. */
-.palette__hints kbd {
+/* Une aide : touches (`.kbd`) et libellé, alignés sur l'axe de la ligne. */
+.palette__hint {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  margin-right: var(--mt-space-half);
-  padding: 0 var(--mt-space-1);
-  vertical-align: -3px;
-  border: 1px solid var(--mt-card-border);
-  border-radius: var(--mt-radius-xs);
-  background: var(--mt-card-bg);
-  color: var(--mt-text);
-  font: inherit;
-  font-size: var(--mt-font-size-xs);
-  line-height: 1;
-}
-
-/* Une flèche remplit sa touche : pas de marge intérieure. */
-.palette__hints kbd:has(.palette__arrow) {
-  padding: 0;
-}
-
-.palette__arrow {
-  width: var(--mt-icon-sm);
-  height: var(--mt-icon-sm);
-}
-
-.palette__arrow--down {
-  transform: rotate(180deg);
-}
-
-.palette__arrow--left {
-  transform: rotate(-90deg);
-}
-
-.palette__arrow--right {
-  transform: rotate(90deg);
+  gap: var(--mt-space-1);
 }
 
 .palette__status {

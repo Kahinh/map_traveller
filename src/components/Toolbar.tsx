@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import type { ViewFilter } from '../features/catalog/search';
 import { CategoryTabs } from './CategoryTabs';
+import { Keys } from './Keys';
 import { PencilIcon, PlusIcon, SearchIcon } from './icons';
 
 interface Props {
@@ -54,9 +55,9 @@ export function Toolbar({
           spellCheck={false}
           autoComplete="off"
         />
-        <kbd className="search__key" aria-hidden>
-          Ctrl F
-        </kbd>
+        <span className="search__key" aria-hidden>
+          <Keys keys={['Ctrl', 'F']} combo />
+        </span>
       </label>
       <div className="toolbar__row">
         <CategoryTabs value={view} onChange={onViewChange} counts={counts} controls={gridId} />

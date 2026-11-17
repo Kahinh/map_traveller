@@ -8,7 +8,8 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from 'react';
-import { ArrowIcon, SearchIcon } from '../components/icons';
+import { SearchIcon } from '../components/icons';
+import { Keys } from '../components/Keys';
 import { buildDictionary, EMPTY_DICTIONARY, type AliasDictionary } from '../features/aliases/aliases';
 import type { Destination } from '../features/catalog/schema';
 import type { VariantKind } from '../features/commands/cardParts';
@@ -461,36 +462,24 @@ export function Palette() {
             <span className={`palette__status is-${status.kind}`}>{status.text}</span>
           ) : (
             <>
-              <span>
-                <kbd title="Flèche haut">
-                  <ArrowIcon className="palette__arrow" />
-                </kbd>
-                <kbd title="Flèche bas">
-                  <ArrowIcon className="palette__arrow palette__arrow--down" />
-                </kbd>{' '}
-                naviguer
+              <span className="palette__hint">
+                <Keys keys={['ArrowUp', 'ArrowDown']} /> naviguer
               </span>
               {twoVariants && (
-                <span>
-                  <kbd title="Flèche gauche">
-                    <ArrowIcon className="palette__arrow palette__arrow--left" />
-                  </kbd>
-                  <kbd title="Flèche droite">
-                    <ArrowIcon className="palette__arrow palette__arrow--right" />
-                  </kbd>{' '}
-                  variante
+                <span className="palette__hint">
+                  <Keys keys={['ArrowLeft', 'ArrowRight']} /> variante
                 </span>
               )}
-              <span>
-                <kbd>Entrée</kbd> {enterLabel}
+              <span className="palette__hint">
+                <Keys keys={['Entrée']} /> {enterLabel}
               </span>
               {twoVariants && (
-                <span>
-                  <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> {otherLabel}
+                <span className="palette__hint">
+                  <Keys keys={['Ctrl', 'Entrée']} combo /> {otherLabel}
                 </span>
               )}
-              <span>
-                <kbd>Échap</kbd> fermer
+              <span className="palette__hint">
+                <Keys keys={['Échap']} /> fermer
               </span>
             </>
           )}

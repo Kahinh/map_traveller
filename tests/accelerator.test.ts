@@ -3,6 +3,7 @@ import {
   captureAccelerator,
   defaultShortcutsState,
   DEFAULT_SHORTCUTS,
+  acceleratorKeys,
   formatAccelerator,
   normalizeAccelerator,
   parseShortcutsState,
@@ -110,6 +111,13 @@ describe('captureAccelerator', () => {
         if (result.kind === 'ok') expect(normalizeAccelerator(result.accelerator)).toBe(result.accelerator);
       }
     }
+  });
+});
+
+describe('acceleratorKeys', () => {
+  it('donne une touche par élément, noms français', () => {
+    expect(acceleratorKeys('Ctrl+Shift+Space')).toEqual(['Ctrl', 'Maj', 'Espace']);
+    expect(acceleratorKeys('Alt+T')).toEqual(['Alt', 'T']);
   });
 });
 

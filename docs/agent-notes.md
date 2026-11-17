@@ -146,3 +146,6 @@ Contrôle dans le navigateur : « Atelier des alchimistes · Bonta » tronqué s
 Rust non compilé en local : `copy_missing_images` et la ressource `resources/images/` (`tauri.conf.json`) ne sont prouvés que par la CI. Le navigateur de développement lit les images dans `resources/` : il ne prouve ni la copie, ni le protocole `asset:`.
 **À contrôler sur l'application installée :** installation neuve → 355 cartes avec images ; mise à jour depuis 0.8.0 → les entrées livrées s'ajoutent aux cartes existantes, sans toucher aux cartes de l'utilisateur ; supprimer une carte livrée puis relancer → elle ne revient pas ; dossier `images/` complété sans remplacer un fichier présent.
 Commandes non testées en jeu : le zaap le plus proche « à vol d'oiseau » peut être de l'autre côté de la mer (ex. Château Ensablé, zaap de Pandala).
+
+### 2026-11-17 — `revue` — Champ « Alias » de 210 px au lieu de 88 (lot E de la revue V1.0)
+Contrôle dans le navigateur : `.aliases__term` avait `flex: 0 0 88px` mais mesurait 210 px, ce qui tronquait l'indication du champ voisin (« …séparées par des vi »). Cause : un `input` élément flexible garde sa largeur intrinsèque comme minimum (`min-width: auto`). **Garde-fou :** tout champ de saisie à base flexible reçoit `min-width: 0` ; mesurer la largeur réelle (`getBoundingClientRect`), pas seulement le style déclaré.

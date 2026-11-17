@@ -26,6 +26,7 @@ import { textFingerprint } from '../features/palette/fingerprint';
 import { navReducer, type NavAction, type NavState } from '../features/palette/navigation';
 import { heightToSend, PALETTE_BAR_HEIGHT } from '../features/palette/windowHeight';
 import { DEFAULT_ZAAPS } from '../features/zaaps/defaultZaaps';
+import { errorText } from '../lib/errors';
 import { copyText } from '../lib/tauri/clipboard';
 import { forgetMissingThumbs, initImages } from '../lib/tauri/images';
 import { hidePalette, onPaletteHidden, onPaletteShown, setPaletteHeight } from '../lib/tauri/palette';
@@ -191,7 +192,7 @@ export function Palette() {
       setDefaultVariant(settings.defaultVariant);
       setReadError(null);
     } catch (e) {
-      if (seq === loadSeq.current) setReadError(`Chargement impossible : ${String(e)}`);
+      if (seq === loadSeq.current) setReadError(`Chargement impossible : ${errorText(e)}`);
     } finally {
       if (seq === loadSeq.current) setLoaded(true);
     }
@@ -277,7 +278,7 @@ export function Palette() {
       await copyText(text);
     } catch (e) {
       copying.current = false;
-      setStatus({ kind: 'warning', text: `Copie impossible : ${String(e)}` });
+      setStatus({ kind: 'warning', text: `Copie impossible : ${errorText(e)}` });
       return; // la palette reste ouverte : rien n'a été copié
     }
     // Visible seulement si le masquage tarde ou échoue (et dans le navigateur) : la page est
@@ -286,7 +287,7 @@ export function Palette() {
     try {
       await hidePalette();
     } catch (e) {
-      setStatus({ kind: 'warning', text: `Copié, mais fermeture impossible : ${String(e)}` });
+      setStatus({ kind: 'warning', text: `Copié, mais fermeture impossible : ${errorText(e)}` });
     } finally {
       copying.current = false;
     }

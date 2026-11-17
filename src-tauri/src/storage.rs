@@ -105,21 +105,26 @@ fn store_file(name: &str) -> Result<&'static str, String> {
     }
 }
 
-/// Dossier de données, créé (avec `images/`) au premier appel réussi, puis gardé en mémoire.
+/// Chemin du dossier de données, résolu une fois puis gardé en mémoire.
 static DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
-/// `%APPDATA%\MapTraveller` (créé si besoin, avec `images/`, une seule fois par session).
+/// `%APPDATA%\MapTraveller`, avec `images/`. Le chemin est mis en cache, mais le dossier est
+/// recréé à chaque appel (coût négligeable) : s'il a été supprimé pendant que l'application
+/// tourne, les écritures suivantes réussissent sans redémarrage.
 pub fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    if let Some(dir) = DATA_DIR.get() {
-        return Ok(dir.clone());
-    }
-    let dir = app
-        .path()
-        .data_dir()
-        .map_err(|e| format!("Dossier %APPDATA% introuvable : {e}"))?
-        .join(APP_DIR);
+    let dir = match DATA_DIR.get() {
+        Some(dir) => dir.clone(),
+        None => {
+            let dir = app
+                .path()
+                .data_dir()
+                .map_err(|e| format!("Dossier %APPDATA% introuvable : {e}"))?
+                .join(APP_DIR);
+            DATA_DIR.get_or_init(|| dir).clone()
+        }
+    };
     fs::create_dir_all(dir.join("images")).map_err(|e| format!("Création de {} impossible : {e}", dir.display()))?;
-    Ok(DATA_DIR.get_or_init(|| dir).clone())
+    Ok(dir)
 }
 
 /// Tentatives de renommage : sous Windows, un antivirus ou l'indexeur qui vient d'ouvrir le

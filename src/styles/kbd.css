@@ -48,3 +48,9 @@
 .kbd__arrow--right {
   transform: rotate(90deg);
 }
+
+/* « + » entre deux touches : boîte serrée sur le glyphe pour qu'il soit centré sur les capsules. */
+.kbd-plus {
+  color: var(--mt-text-muted);
+  line-height: 1;
+}

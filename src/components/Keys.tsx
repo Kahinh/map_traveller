@@ -29,7 +29,7 @@ export function Keys({ keys, combo = false }: Props) {
     <span className="kbd-group">
       {keys.map((key, i) => (
         <Fragment key={`${i}-${key}`}>
-          {combo && i > 0 && <span aria-hidden>+</span>}
+          {combo && i > 0 && <span className="kbd-plus" aria-hidden>+</span>}
           {isArrow(key) ? (
             <kbd className="kbd" title={ARROWS[key].title}>
               <ArrowIcon className={ARROWS[key].className} />

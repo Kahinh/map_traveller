@@ -4,11 +4,12 @@
  * Dans le navigateur (`npm run dev`, page `palette.html`) : l'affichage est simulé une fois au
  * chargement, et les deux événements sont des événements DOM de `window`, que l'on peut émettre
  * à la main pour contrôler la page (`dispatchEvent(new Event('palette:hidden'))`) ; masquer
- * émet `palette:hidden`, comme le ferait Rust.
+ * émet `palette:hidden`, comme le ferait Rust. Même principe pour `store:changed` (`onStoreChanged`).
  */
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { isTauri } from './env';
+import { STORE_CHANGED_EVENT, type StoreName } from './storeRead';
 
 /** Commande Rust qui masque (sans la détruire) la fenêtre palette. */
 export const HIDE_PALETTE_COMMAND = 'hide_palette';
@@ -30,15 +31,16 @@ export async function hidePalette(): Promise<void> {
  * DOM de `window` dans le navigateur. Renvoie la fonction de désabonnement, sûre même si
  * l'abonnement Tauri n'est pas encore établi.
  */
-function subscribe(event: string, callback: () => void): () => void {
+function subscribe<T = unknown>(event: string, callback: (payload: T) => void): () => void {
   if (!isTauri()) {
-    window.addEventListener(event, callback);
-    return () => window.removeEventListener(event, callback);
+    const onEvent = (e: Event) => callback((e as CustomEvent<T>).detail);
+    window.addEventListener(event, onEvent);
+    return () => window.removeEventListener(event, onEvent);
   }
   let disposed = false;
   let unlisten: UnlistenFn | null = null;
-  listen(event, () => {
-    if (!disposed) callback();
+  listen<T>(event, (e) => {
+    if (!disposed) callback(e.payload);
   })
     .then((fn) => {
       if (disposed) fn();
@@ -78,7 +80,7 @@ export function onPaletteShown(callback: () => void): () => void {
   queueMicrotask(() => {
     if (!disposed) callback();
   });
-  const unsubscribe = subscribe(PALETTE_SHOWN_EVENT, callback);
+  const unsubscribe = subscribe(PALETTE_SHOWN_EVENT, () => callback());
   return () => {
     disposed = true;
     unsubscribe();
@@ -90,5 +92,23 @@ export function onPaletteShown(callback: () => void): () => void {
  * quelle qu'en soit la cause). Renvoie la fonction de désabonnement.
  */
 export function onPaletteHidden(callback: () => void): () => void {
-  return subscribe(PALETTE_HIDDEN_EVENT, callback);
+  return subscribe(PALETTE_HIDDEN_EVENT, () => callback());
+}
+
+/**
+ * Appelle `callback` avec le nom du stockage chaque fois qu'un fichier de données est écrit
+ * (`store:changed`, émis par Rust après `save_store`), y compris palette masquée : elle relit le
+ * fichier et reconstruit son index avant la prochaine ouverture. Dans le navigateur : messages du
+ * `BroadcastChannel` envoyés par `storage.ts` depuis l'onglet de la fenêtre principale, ou
+ * événement DOM émis à la main (`dispatchEvent(new CustomEvent('store:changed', { detail: 'catalog' }))`).
+ */
+export function onStoreChanged(callback: (name: StoreName) => void): () => void {
+  const unsubscribe = subscribe<StoreName>(STORE_CHANGED_EVENT, callback);
+  if (isTauri() || typeof BroadcastChannel === 'undefined') return unsubscribe;
+  const channel = new BroadcastChannel(STORE_CHANGED_EVENT);
+  channel.onmessage = (e: MessageEvent<StoreName>) => callback(e.data);
+  return () => {
+    unsubscribe();
+    channel.close();
+  };
 }

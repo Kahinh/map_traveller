@@ -17,6 +17,7 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "check:full": "npm run check && npm run build && node scripts/bundle-budget.mjs",
     "ci:watch": "node scripts/ci-watch.mjs",
+    "bench:palette": "vitest run -c bench/vitest.config.ts --silent=false",
     "context": "node scripts/context.mjs",
     "tauri": "tauri",
     "version:set": "node scripts/version.mjs"

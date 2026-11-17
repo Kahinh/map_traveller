@@ -22,6 +22,7 @@ import {
   type PaletteEntry,
   type PaletteSearchResult,
 } from '../features/palette/entries';
+import { createCopyGate, enterChoice, variantText, type CopyChoice } from '../features/palette/enter';
 import { textFingerprint } from '../features/palette/fingerprint';
 import { navReducer, type NavAction, type NavState } from '../features/palette/navigation';
 import { heightToSend, PALETTE_BAR_HEIGHT } from '../features/palette/windowHeight';
@@ -29,7 +30,7 @@ import { DEFAULT_ZAAPS } from '../features/zaaps/defaultZaaps';
 import { errorText } from '../lib/errors';
 import { copyText } from '../lib/tauri/clipboard';
 import { forgetMissingThumbs, initImages } from '../lib/tauri/images';
-import { hidePalette, onPaletteHidden, onPaletteShown, setPaletteHeight } from '../lib/tauri/palette';
+import { hidePalette, onPaletteHidden, onPaletteShown, onStoreChanged, setPaletteHeight } from '../lib/tauri/palette';
 import {
   DEFAULT_ALIASES,
   loadFavorites,
@@ -37,7 +38,9 @@ import {
   parseAliasesText,
   parseCatalogText,
   readStoreText,
+  type StoreName,
 } from '../lib/tauri/storeRead';
+import { perf } from './perf';
 import { PaletteRow } from './PaletteRow';
 
 const LIST_ID = 'palette-list';
@@ -74,6 +77,11 @@ function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
   return true;
 }
 
+/** Fichiers relus par la palette. */
+type PaletteStore = Extract<StoreName, 'catalog' | 'aliases' | 'favorites' | 'settings'>;
+const PALETTE_STORES: readonly PaletteStore[] = ['catalog', 'aliases', 'favorites', 'settings'];
+const isPaletteStore = (name: string): name is PaletteStore => (PALETTE_STORES as readonly string[]).includes(name);
+
 /** Une case par variante ; une ligne sans variante compte une case (rien à copier). */
 const choiceCountsOf = (entries: readonly PaletteEntry[]) => entries.map((e) => Math.max(1, e.variants.length));
 
@@ -84,10 +92,17 @@ const choiceCountsOf = (entries: readonly PaletteEntry[]) => entries.map((e) => 
  * d'abord, masque ensuite, et seulement si la copie a réussi. Aucun minuteur : au repos, rien
  * ne tourne.
  *
- * Cycle : au MASQUAGE (`palette:hidden`), la page se remet à zéro (champ, état, défilement,
+ * Cycle : au MONTAGE (palette préchargée et masquée au lancement), elle lit les fichiers et
+ * construit son index (`onPaletteShown` appelle aussi son rappel une fois à l'abonnement) ; à
+ * chaque ÉCRITURE d'un fichier (`store:changed`), elle relit ce fichier et réindexe, même
+ * masquée ; au MASQUAGE (`palette:hidden`), la page se remet à zéro (champ, état, défilement,
  * barre seule) pendant que la fenêtre est invisible ; à l'AFFICHAGE (`palette:shown`), elle
- * prend le focus et recharge les données, sans toucher au champ : la première image montre
- * déjà la barre vide, et une frappe faite avant l'événement n'est pas perdue.
+ * prend le focus et relit les fichiers, sans toucher au champ : la première image montre déjà
+ * la barre vide, et une frappe faite avant l'événement n'est pas perdue. Cette relecture n'est
+ * qu'un filet (fichier modifié à la main) : empreinte inchangée, rien n'est réindexé.
+ *
+ * Entrée agit sur la valeur du champ au moment de la touche, jamais sur des résultats en retard
+ * (`enterChoice`) : « rdv » + Entrée tapés plus vite que le rendu copient bien « rdv ».
  *
  * Compacte (issue n°19) : champ vide ou aucun résultat, seule la barre est rendue ; sinon les
  * lignes et le pied d'aide s'ajoutent dessous. La FENÊTRE prend la hauteur de ce contenu
@@ -113,7 +128,9 @@ export function Palette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const loadSeq = useRef(0);
-  const copying = useRef(false);
+  /** Dernière lecture lancée par fichier : seule la plus récente s'applique. */
+  const storeSeq = useRef<Record<PaletteStore, number>>({ catalog: 0, aliases: 0, favorites: 0, settings: 0 });
+  const [copyGate] = useState(createCopyGate);
   const rootRef = useRef<HTMLDivElement>(null);
   /** Hauteur actuelle de la fenêtre ; `null` : inconnue, à renvoyer au prochain rendu. */
   const windowHeight = useRef<number | null>(PALETTE_BAR_HEIGHT);
@@ -128,10 +145,17 @@ export function Palette() {
   // mot tapé est recherché, et les lignes déjà fabriquées sont reprises de l'index.
   const index = useMemo(() => buildPaletteIndex(destinations, dictionary, DEFAULT_ZAAPS), [destinations, dictionary]);
   const hasQuery = query.trim() !== '';
-  const { entries, notice } = useMemo(
-    () => (hasQuery ? searchPalette(index, query, { limit: PALETTE_LIMIT, favorites, defaultVariant }) : NO_RESULT),
-    [index, query, favorites, defaultVariant, hasQuery],
+  /** Recherche synchrone avec les options de l'affichage : rendu, et Entrée en avance sur le rendu. */
+  const search = useCallback(
+    (q: string) => searchPalette(index, q, { limit: PALETTE_LIMIT, favorites, defaultVariant }),
+    [index, favorites, defaultVariant],
   );
+  const { entries, notice } = useMemo(() => {
+    if (!hasQuery) return NO_RESULT;
+    const result = search(query);
+    perf?.mark('search_done');
+    return result;
+  }, [search, query, hasQuery]);
   const choiceCounts = useMemo(() => choiceCountsOf(entries), [entries]);
   /** Catégorie par destination, pour l'icône des vignettes sans image : une fois par catalogue. */
   const categoryOf = useMemo(() => new Map(destinations.map((d) => [d.id, d.category])), [destinations]);
@@ -156,47 +180,63 @@ export function Palette() {
   }, []);
 
   /**
-   * Relit catalogue, alias, favoris et réglage à chaque affichage ; seul le dernier chargement
-   * compte. Un fichier dont l'empreinte n'a pas changé n'est ni revalidé ni réindexé : l'état,
-   * donc l'index de recherche et les parcours analysés, est réutilisé tel quel.
+   * Relit un fichier ; seule la dernière lecture lancée pour ce fichier s'applique. Un catalogue
+   * ou des alias dont l'empreinte n'a pas changé ne sont ni revalidés ni réindexés : l'état, donc
+   * l'index de recherche et les parcours analysés, est réutilisé tel quel. Lève si la lecture
+   * du catalogue ou des alias échoue.
    */
-  const reload = useCallback(async () => {
-    const seq = ++loadSeq.current;
-    try {
-      const [catalogText, aliasesText, favs, settings] = await Promise.all([
-        readStoreText('catalog'),
-        readStoreText('aliases'),
-        loadFavorites(),
-        loadPaletteSettings(),
-        initImages(),
-      ]);
-      if (seq !== loadSeq.current) return;
-      const catalogNow = textFingerprint(catalogText);
-      if (catalogNow !== catalogPrint.current) {
-        catalogPrint.current = catalogNow;
-        const catalog = parseCatalogText(catalogText);
+  const loadStore = useCallback(async (name: PaletteStore) => {
+    const seq = ++storeSeq.current[name];
+    const stale = () => seq !== storeSeq.current[name];
+    switch (name) {
+      case 'catalog': {
+        const text = await readStoreText('catalog');
+        const print = textFingerprint(text);
+        if (stale() || print === catalogPrint.current) return;
+        catalogPrint.current = print;
+        const catalog = parseCatalogText(text);
         if (catalog.ok) {
           setDestinations(catalog.catalog.destinations);
           setCatalogError(null);
         } else {
           setCatalogError(`Catalogue invalide : ${catalog.errors[0]?.message ?? 'erreur inconnue'}`);
         }
+        return;
       }
-      const aliasesNow = textFingerprint(aliasesText);
-      if (aliasesNow !== aliasesPrint.current) {
-        aliasesPrint.current = aliasesNow;
+      case 'aliases': {
+        const text = await readStoreText('aliases');
+        const print = textFingerprint(text);
+        if (stale() || print === aliasesPrint.current) return;
+        aliasesPrint.current = print;
         // Fichier illisible : les alias fournis restent utilisés (la rubrique Alias signale l'erreur).
-        setDictionary(buildDictionary(DEFAULT_ALIASES, parseAliasesText(aliasesText).user));
+        setDictionary(buildDictionary(DEFAULT_ALIASES, parseAliasesText(text).user));
+        return;
       }
-      setFavorites((prev) => (sameSet(prev, favs) ? prev : favs));
-      setDefaultVariant(settings.defaultVariant);
-      setReadError(null);
+      case 'favorites': {
+        const favs = await loadFavorites();
+        if (!stale()) setFavorites((prev) => (sameSet(prev, favs) ? prev : favs));
+        return;
+      }
+      case 'settings': {
+        const settings = await loadPaletteSettings();
+        if (!stale()) setDefaultVariant(settings.defaultVariant);
+        return;
+      }
+    }
+  }, []);
+
+  /** Relit les quatre fichiers (montage, chaque affichage) ; seul le dernier chargement signale son état. */
+  const reload = useCallback(async () => {
+    const seq = ++loadSeq.current;
+    try {
+      await Promise.all([...PALETTE_STORES.map(loadStore), initImages()]);
+      if (seq === loadSeq.current) setReadError(null);
     } catch (e) {
       if (seq === loadSeq.current) setReadError(`Chargement impossible : ${errorText(e)}`);
     } finally {
       if (seq === loadSeq.current) setLoaded(true);
     }
-  }, []);
+  }, [loadStore]);
 
   /**
    * Donne à la fenêtre la hauteur réelle du contenu. La feuille de style reste la seule source
@@ -211,6 +251,22 @@ export function Palette() {
 
   // Après chaque rendu, avant l'affichage : la fenêtre suit le contenu sans image intermédiaire.
   useLayoutEffect(syncHeight);
+
+  // Résultats de la frappe en place dans le DOM (instrumentation, désactivée en production).
+  useLayoutEffect(() => {
+    perf?.mark('results_rendered');
+  }, [query, entries]);
+
+  // Fichier écrit par la fenêtre principale : relu et réindexé tout de suite, palette masquée
+  // comprise, pour que la prochaine ouverture n'ait rien à reconstruire.
+  useEffect(
+    () =>
+      onStoreChanged((name) => {
+        if (!isPaletteStore(name)) return;
+        loadStore(name).catch((e: unknown) => setReadError(`Chargement impossible : ${errorText(e)}`));
+      }),
+    [loadStore],
+  );
 
   /** Masquée : tout revient à la barre vide, hors de la vue de l'utilisateur. */
   const onHidden = useCallback(() => {
@@ -227,16 +283,18 @@ export function Palette() {
 
   /** Affichée : la page est déjà remise à zéro ; focus et données fraîches. */
   const onShown = useCallback(() => {
+    perf?.mark('palette_shown');
     // Rust vient de rouvrir la fenêtre réduite à la barre. Un contenu plus haut (message de
     // chargement en échec, par exemple) est renvoyé ; sinon, rien.
     windowHeight.current = PALETTE_BAR_HEIGHT;
     syncHeight();
-    copying.current = false;
+    copyGate.release();
     // Vignettes fabriquées entre-temps par la fenêtre principale : retentées une fois.
     forgetMissingThumbs();
     inputRef.current?.focus();
+    perf?.mark('palette_focused');
     void reload();
-  }, [reload, syncHeight]);
+  }, [reload, syncHeight, copyGate]);
 
   useEffect(() => onPaletteShown(onShown), [onShown]);
   useEffect(() => onPaletteHidden(onHidden), [onHidden]);
@@ -255,16 +313,10 @@ export function Palette() {
   }, [nav.index, entries]);
 
   /**
-   * Copie la variante `choice` de la ligne `i` (l'autre variante si `alternate` : Ctrl+Entrée,
-   * clic droit sur la ligne), puis masque la palette.
+   * Copie le texte choisi, puis masque la palette. Une seule copie à la fois (`copyGate`) : une
+   * seconde Entrée ou un double clic pendant la copie ne copie rien de plus.
    */
-  const activate = useCallback(async (i: number, choice: number, alternate: boolean) => {
-    const entry = latest.current.entries[i];
-    if (!entry) return;
-    const { variants } = entry;
-    let idx = Math.min(Math.max(0, choice), Math.max(0, variants.length - 1));
-    if (alternate && variants.length === 2) idx = 1 - idx;
-    const text = variants[idx]?.text ?? null;
+  const copyChoice = useCallback(async ({ entry, text }: CopyChoice) => {
     if (text === null) {
       setStatus({
         kind: 'warning',
@@ -272,12 +324,12 @@ export function Palette() {
       });
       return;
     }
-    if (copying.current) return;
-    copying.current = true;
+    if (!copyGate.acquire()) return;
     try {
       await copyText(text);
+      perf?.mark('clipboard_done');
     } catch (e) {
-      copying.current = false;
+      copyGate.release();
       setStatus({ kind: 'warning', text: `Copie impossible : ${errorText(e)}` });
       return; // la palette reste ouverte : rien n'a été copié
     }
@@ -289,9 +341,18 @@ export function Palette() {
     } catch (e) {
       setStatus({ kind: 'warning', text: `Copié, mais fermeture impossible : ${errorText(e)}` });
     } finally {
-      copying.current = false;
+      copyGate.release();
     }
-  }, []);
+  }, [copyGate]);
+
+  /** Clic sur une ligne : variante `choice` de la ligne `i` (l'autre si `alternate` : clic droit). */
+  const activate = useCallback(
+    (i: number, choice: number, alternate: boolean) => {
+      const entry = latest.current.entries[i];
+      if (entry) void copyChoice({ entry, text: variantText(entry, choice, alternate) });
+    },
+    [copyChoice],
+  );
 
   const onHover = useCallback(
     (i: number, choice: number | null, screenX: number, screenY: number) => {
@@ -305,14 +366,8 @@ export function Palette() {
     [dispatch],
   );
 
-  const onActivate = useCallback(
-    (i: number, choice: number, alternate: boolean) => {
-      void activate(i, choice, alternate);
-    },
-    [activate],
-  );
-
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+    perf?.mark('input_received');
     setQuery(e.target.value);
     setStatus(null);
   };
@@ -344,11 +399,19 @@ export function Palette() {
         e.preventDefault();
         dispatch({ type: e.key === 'ArrowRight' ? 'choice-next' : 'choice-prev' });
         return;
-      case 'Enter':
+      case 'Enter': {
         e.preventDefault();
-        if (nav.index < 0) return;
-        void activate(nav.index, nav.choice, e.ctrlKey || e.metaKey);
+        // Touche maintenue : une seule copie.
+        if (e.repeat) return;
+        perf?.mark('enter_received');
+        // Valeur du champ à cet instant, et résultats affichés avec leur requête : si le rendu est
+        // en retard sur la frappe, la recherche est refaite ici, sur ce qui est tapé.
+        const chosen = enterChoice(e.currentTarget.value, { query, entries }, nav, e.ctrlKey || e.metaKey, (q) =>
+          search(q).entries,
+        );
+        if (chosen) void copyChoice(chosen);
         return;
+      }
       case 'Escape':
         e.preventDefault();
         void hidePalette().catch((err: unknown) =>
@@ -445,7 +508,7 @@ export function Palette() {
             selected={i === nav.index}
             activeChoice={i === nav.index ? nav.choice : null}
             onHover={onHover}
-            onActivate={onActivate}
+            onActivate={activate}
           />
         ))}
         {rest > 0 && (

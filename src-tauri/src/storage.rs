@@ -15,6 +15,8 @@
 //! - `settings.json` a deux auteurs : l'interface (`save_store`) et Rust (`shortcuts::set_shortcut`).
 //!   Les deux écritures passent par le même verrou, et la clé `shortcuts` n'appartient qu'à Rust :
 //!   `save_store` la reprend toujours du fichier sur disque, jamais du contenu envoyé par l'interface.
+//! - Après chaque `save_store` réussi, `store:changed` est émis vers la seule palette : elle relit
+//!   le fichier et reconstruit son index pendant qu'elle est masquée (issue n°24).
 
 use std::fs::{self, File};
 use std::io::{self, ErrorKind, Write};
@@ -24,7 +26,9 @@ use std::time::Duration;
 
 use serde_json::{Map, Value};
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
+
+use crate::palette::PALETTE_LABEL;
 
 const APP_DIR: &str = "MapTraveller";
 const SEED_RESOURCE: &str = "resources/catalog.seed.json";
@@ -34,6 +38,9 @@ const IMAGES_RESOURCE: &str = "resources/images";
 pub const SETTINGS_FILE: &str = "settings.json";
 /// Clé de `settings.json` réservée à Rust (raccourcis globaux).
 pub const SHORTCUTS_KEY: &str = "shortcuts";
+/// Événement émis vers la palette après chaque `save_store` réussi, avec le nom du stockage
+/// écrit (`catalog`, `aliases`…) ; écouté par `onStoreChanged` (`src/lib/tauri/palette.ts`).
+pub const STORE_CHANGED_EVENT: &str = "store:changed";
 
 /// Sérialise les lectures-modifications-écritures de `settings.json`.
 static SETTINGS_LOCK: Mutex<()> = Mutex::new(());
@@ -276,9 +283,21 @@ pub fn save_store(app: AppHandle, name: String, json: String) -> Result<(), Stri
     if file == SETTINGS_FILE {
         let _guard = lock_settings();
         let merged = settings_from_ui(value, read_json_object_for_write(&path)?)?;
-        return write_atomic(&path, &merged);
+        write_atomic(&path, &merged)?;
+    } else {
+        write_atomic(&path, &json)?;
     }
-    write_atomic(&path, &json)
+    notify_store_changed(&app, &name);
+    Ok(())
+}
+
+/// Prévient la palette qu'un fichier vient d'être écrit (verrou des réglages déjà relâché). Un
+/// échec n'annule pas l'écriture, déjà faite : la palette relira de toute façon les fichiers à
+/// son prochain affichage.
+fn notify_store_changed(app: &AppHandle, name: &str) {
+    if let Err(e) = app.emit_to(PALETTE_LABEL, STORE_CHANGED_EVENT, name) {
+        eprintln!("Événement {STORE_CHANGED_EVENT} non émis : {e}");
+    }
 }
 
 /// Chemin absolu du dossier de données (utilisé pour afficher les images via `asset:`).

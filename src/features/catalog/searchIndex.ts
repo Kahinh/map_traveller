@@ -120,9 +120,16 @@ export function textKey(text: string): string {
 /** Première lettre de chaque mot (point de code entier : un nom dans un autre alphabet reste juste). */
 function initials(words: readonly string[]): string {
   let result = '';
-  for (const w of words) result += String.fromCodePoint(w.codePointAt(0) ?? 0);
+  for (const w of words) {
+    const c = w.charCodeAt(0);
+    // Hors des paires de substitution, le premier code suffit : pas d'appel à `codePointAt`.
+    result += c >= 0xd800 && c <= 0xdbff ? String.fromCodePoint(w.codePointAt(0) as number) : w.charAt(0);
+  }
   return result;
 }
+
+/** Mots joints par une espace ; un seul mot est repris tel quel (aucune chaîne de plus en mémoire). */
+const joinWords = (words: readonly string[]) => (words.length === 1 ? (words[0] as string) : words.join(' '));
 
 /**
  * Acronymes d'un texte de plusieurs mots : initiales de tous les mots, puis sans les mots de
@@ -244,7 +251,7 @@ export function buildSearchIndex(
     const nameWords = tokenize(d.name);
     nameWords.forEach((word, i) => add(word, doc, i === 0 ? Field.NameFirst : Field.NameOther));
     addKey(nameKeys, wholeKey(nameWords), doc);
-    nameTexts.push(nameWords.join(' '));
+    nameTexts.push(joinWords(nameWords));
     for (const acronym of acronymsOf(nameWords)) addKey(acronyms, acronym, doc);
 
     let texts: string[] | null = null;
@@ -253,7 +260,7 @@ export function buildSearchIndex(
       if (words.length === 0) continue;
       for (const word of words) add(word, doc, Field.Alias);
       addKey(aliasKeys, wholeKey(words), doc);
-      (texts ??= []).push(words.join(' '));
+      (texts ??= []).push(joinWords(words));
       for (const acronym of acronymsOf(words)) addKey(acronyms, acronym, doc);
     }
     aliasTexts.push(texts ?? NO_TEXTS);

@@ -11,6 +11,15 @@ import { describe, it } from 'vitest';
 import { buildDictionary, type AliasEntry } from '../src/features/aliases/aliases';
 import type { Destination } from '../src/features/catalog/schema';
 import { buildPaletteIndex, PALETTE_LIMIT, searchPalette } from '../src/features/palette/entries';
+import { percentile, summarize } from '../src/features/palette/percentiles';
+
+// Node, sans dépendre de @types/node (le projet n'en a pas besoin ailleurs).
+declare const process: {
+  version: string;
+  platform: string;
+  arch: string;
+  memoryUsage(): { heapUsed: number };
+};
 
 const SIZES = [100, 1_000, 10_000] as const;
 const RUNS = 200;
@@ -55,9 +64,6 @@ const DICTIONARY_ENTRIES: AliasEntry[] = [
   ...Array.from({ length: 38 }, (_, i) => ({ term: `t${i}x`, expansions: [`${ADJECTIVES[i % ADJECTIVES.length]} ${KINDS[i % KINDS.length]}`] })),
 ];
 
-const percentile = (sorted: readonly number[], p: number) =>
-  sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)] ?? 0;
-
 const ms = (n: number) => n.toFixed(n < 1 ? 3 : 2);
 
 function heapUsed(): number {
@@ -72,6 +78,7 @@ interface Row {
   p95: number;
   p99: number;
 }
+
 
 describe('benchmark de la palette', () => {
   it('mesures', () => {
@@ -114,8 +121,7 @@ describe('benchmark de la palette', () => {
           searchPalette(index, q, { limit: PALETTE_LIMIT });
           times.push(performance.now() - t);
         }
-        times.sort((a, b) => a - b);
-        rows.push({ size, label, p50: percentile(times, 50), p95: percentile(times, 95), p99: percentile(times, 99) });
+        rows.push({ size, label, ...summarize(times) });
       }
     }
 

@@ -127,3 +127,28 @@ describe('performance de la palette', () => {
     expect(run('vilel123').length).toBeGreaterThan(0);
   });
 });
+
+describe('alias exact sur un gros catalogue (issue n°24)', () => {
+  it('10 000 destinations, deux alias chacune : l\'alias exact est au rang 1, sur toutes les requêtes essayées', () => {
+    // Chaque fiche a un alias court propre (« k2s ») qui commence aussi les alias d'autres
+    // fiches (« k2s » est le début de « k2s0 »…), et un alias de deux mots partagé en partie.
+    const list = Array.from({ length: 10_000 }, (_, i) =>
+      dest(i, { name: `Lieu ${i % 7} de Ville${i}`, aliases: [`k${i.toString(36)}`, `porte ville${i}`] }),
+    );
+    list.push(dest(10_000, { id: 'reine', name: 'Reine des Voleurs', aliases: ['RDV'] }));
+    const dictionary = buildDictionary([{ term: 'rdv', expansions: ['reine des voleurs'] }], {
+      custom: [],
+      disabledDefaults: [],
+    });
+    const index = buildPaletteIndex(list, dictionary);
+    const first = (q: string) => searchPalette(index, q, { limit: PALETTE_LIMIT }).entries[0]?.destinationId;
+    expect(first('rdv')).toBe('reine');
+    expect(first('RDV')).toBe('reine');
+    for (const i of [0, 1, 35, 36, 1295, 1296, 9999]) {
+      const { value, elapsed } = timed(() => first(`k${i.toString(36)}`));
+      expect(value, `alias k${i.toString(36)}`).toBe(`d${i}`);
+      expect(elapsed).toBeLessThan(SAFETY_NET_MS);
+    }
+    expect(first('porte ville42')).toBe('d42');
+  });
+});

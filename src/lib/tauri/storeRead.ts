@@ -27,6 +27,14 @@ export type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases' | 'offi
 export const LS_PREFIX = 'map-traveller:';
 
 /**
+ * Événement « un fichier de données vient d'être écrit », charge utile = nom du stockage
+ * (`catalog`, `aliases`…). Dans Tauri, émis par Rust après chaque `save_store` réussi, vers la
+ * seule palette (`storage::STORE_CHANGED_EVENT`) ; dans le navigateur, message du canal
+ * `BroadcastChannel` du même nom, envoyé par `storage.ts` d'un onglet à l'autre.
+ */
+export const STORE_CHANGED_EVENT = 'store:changed';
+
+/**
  * Texte brut d'un stockage, ou `null` s'il n'existe pas encore. La palette s'en sert aussi pour
  * ne rien recharger quand le fichier n'a pas changé depuis son dernier affichage.
  */

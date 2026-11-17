@@ -48,7 +48,7 @@ export interface ZaapCatalog {
 export const DEFAULT_WORLD = 'douze';
 
 /** Nombre de zaaps proposés : le plus proche, puis deux alternatives. */
-export const NEAREST_LIMIT = 3;
+const NEAREST_LIMIT = 3;
 
 export const EMPTY_ZAAPS: ZaapCatalog = { source: '', worlds: [], zaaps: [] };
 
@@ -152,7 +152,7 @@ export type NearQuery =
   | { kind: 'ok'; position: MapPosition; world: ZaapWorld | null };
 
 /** Mot-clé qui déclenche la recherche, en tête de requête. */
-export const NEAR_KEYWORD = 'proche';
+const NEAR_KEYWORD = 'proche';
 
 export const NEAR_EXAMPLE = `${NEAR_KEYWORD} -20,-20`;
 

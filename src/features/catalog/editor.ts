@@ -160,7 +160,7 @@ export function validateDraft(draft: DestinationDraft): DraftErrors {
   return errors;
 }
 
-export function hasErrors(errors: DraftErrors): boolean {
+function hasErrors(errors: DraftErrors): boolean {
   return Object.keys(errors).length > 0;
 }
 

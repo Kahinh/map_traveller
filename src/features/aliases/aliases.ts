@@ -19,11 +19,11 @@
 import { contentTokens, STOP_WORDS, tokenize } from '../catalog/searchText';
 import { isRecord, newerSchemaVersion } from '../shared/json';
 
-export const ALIASES_SCHEMA_VERSION = 1;
+const ALIASES_SCHEMA_VERSION = 1;
 
 export const ALIAS_TERM_MAX = 20;
-export const ALIAS_EXPANSIONS_MAX = 8;
-export const ALIAS_EXPANSION_MAX = 60;
+const ALIAS_EXPANSIONS_MAX = 8;
+const ALIAS_EXPANSION_MAX = 60;
 
 export interface AliasEntry {
   /** Mot tapé dans la recherche, tel que saisi (« HDV »). Comparé une fois normalisé. */

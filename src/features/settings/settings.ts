@@ -23,7 +23,7 @@ import { isRecord } from '../shared/json';
 /** Manuel : rien n'est contacté sans action de l'utilisateur. Automatique : vérification au lancement. */
 export type UpdateMode = 'manual' | 'auto';
 
-export const UPDATE_MODES: readonly UpdateMode[] = ['manual', 'auto'];
+const UPDATE_MODES: readonly UpdateMode[] = ['manual', 'auto'];
 
 export interface UpdateSettings {
   mode: UpdateMode;
@@ -79,7 +79,7 @@ export function isUpdateMode(v: unknown): v is UpdateMode {
   return UPDATE_MODES.includes(v as UpdateMode);
 }
 
-export function isVariantKind(v: unknown): v is VariantKind {
+function isVariantKind(v: unknown): v is VariantKind {
   return VARIANT_KINDS.includes(v as VariantKind);
 }
 

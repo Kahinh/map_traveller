@@ -12,7 +12,7 @@
 import type { Catalog, Destination } from './schema';
 import { isRecord, newerSchemaVersion } from '../shared/json';
 
-export const OFFICIAL_STATE_VERSION = 1;
+const OFFICIAL_STATE_VERSION = 1;
 
 /** Contenu de `official.json`. */
 export interface OfficialState {

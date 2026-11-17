@@ -204,8 +204,8 @@ describe('palette : « proche X,Y »', () => {
     twoStep: false,
     command2: '',
   };
-  const index = buildPaletteIndex([dest], new Set(), undefined, CATALOG);
-  const run = (q: string) => searchPalette(index, q, PALETTE_LIMIT);
+  const index = buildPaletteIndex([dest], undefined, CATALOG);
+  const run = (q: string) => searchPalette(index, q, { limit: PALETTE_LIMIT });
 
   it('le plus proche en tête, avec ses coordonnées, sa zone et sa distance', () => {
     const { entries, notice } = run('proche 8,1');
@@ -215,7 +215,7 @@ describe('palette : « proche X,Y »', () => {
       kind: 'zaap',
       subtitle: 'Zaap 10,0 · Zone · à 3 cartes',
       variants: [
-        { kind: 'withZaap', text: '/zaap 10 0;/travel 8 1' },
+        { kind: 'trip', text: '/zaap 10 0;/travel 8 1' },
         { kind: 'zaapOnly', text: '/zaap 10 0' },
       ],
     });
@@ -232,8 +232,8 @@ describe('palette : « proche X,Y »', () => {
   it('messages : saisie en cours, saisie invalide, monde sans zaap', () => {
     expect(run('proche').notice).toBe('Position attendue : proche -20,-20');
     expect(run('proche 1,x').notice).toMatch(/^Position non reconnue/);
-    const noIncarnam = buildPaletteIndex([], new Set(), undefined, { ...CATALOG, zaaps: ZAAPS.slice(0, 2) });
-    expect(searchPalette(noIncarnam, 'proche incarnam 1,1', PALETTE_LIMIT)).toEqual({
+    const noIncarnam = buildPaletteIndex([], undefined, { ...CATALOG, zaaps: ZAAPS.slice(0, 2) });
+    expect(searchPalette(noIncarnam, 'proche incarnam 1,1', { limit: PALETTE_LIMIT })).toEqual({
       entries: [],
       notice: 'Aucun zaap répertorié dans Incarnam',
     });
@@ -244,9 +244,9 @@ describe('palette : « proche X,Y »', () => {
   });
 
   it('référentiel livré : proche -20,-20 trouve Routes Rocailleuses sur place', () => {
-    const shipped = buildPaletteIndex([], new Set(), undefined, DEFAULT_ZAAPS);
-    const [first] = searchPalette(shipped, 'proche -20,-20', PALETTE_LIMIT).entries;
+    const shipped = buildPaletteIndex([], undefined, DEFAULT_ZAAPS);
+    const [first] = searchPalette(shipped, 'proche -20,-20', { limit: PALETTE_LIMIT }).entries;
     expect(first?.title).toBe('Routes Rocailleuses');
-    expect(first?.variants).toEqual([{ kind: 'withZaap', text: '/zaap -20 -20' }]);
+    expect(first?.variants).toEqual([{ kind: 'trip', text: '/zaap -20 -20' }]);
   });
 });

@@ -8,6 +8,9 @@ import {
   PALETTE_LIMIT,
   searchPalette,
   STEP_NAMES,
+  VARIANT_LABELS,
+  variantLabel,
+  variantShortLabel,
   type PaletteEntry,
 } from '../src/features/palette/entries';
 
@@ -31,7 +34,7 @@ function dest(partial: Partial<Destination> & { id: string; name: string }): Des
 const TREMBLE = '/zaap 9 9;/travel 1 1;/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5';
 
 const search = (list: Destination[], query: string, favorites: string[] = [], limit = PALETTE_LIMIT) =>
-  searchPalette(buildPaletteIndex(list, new Set(favorites)), query, limit);
+  searchPalette(buildPaletteIndex(list), query, { limit, favorites: new Set(favorites) });
 const subtitles = (entries: PaletteEntry[]) => entries.map((e) => `${e.title} | ${e.subtitle}`);
 
 describe('cartes dans la palette', () => {
@@ -122,10 +125,14 @@ describe('cartes dans la palette', () => {
     expect(entries[1]!.variants).toEqual([]);
   });
 
-  it('préférence de l\'index appliquée à la recherche', () => {
+  it('préférence donnée à la recherche : même index, ordre des variantes suivant le réglage', () => {
     const list = [dest({ id: 'a', name: 'Alpha', command: '/zaap 1 2;/travel 3 4' })];
-    const index = buildPaletteIndex(list, new Set(), undefined, undefined, 'withZaap');
-    expect(searchPalette(index, 'alpha', PALETTE_LIMIT).entries[0]!.variants[0]!.kind).toBe('withZaap');
+    const index = buildPaletteIndex(list);
+    const first = (defaultVariant: 'withZaap' | 'withoutZaap') =>
+      searchPalette(index, 'alpha', { limit: PALETTE_LIMIT, defaultVariant }).entries[0]!.variants[0]!.kind;
+    expect(first('withZaap')).toBe('withZaap');
+    expect(first('withoutZaap')).toBe('withoutZaap');
+    expect(searchPalette(index, 'alpha', { limit: PALETTE_LIMIT }).entries[0]!.variants[0]!.kind).toBe('withoutZaap');
   });
 
   it('destination désactivée absente', () => {
@@ -274,7 +281,7 @@ describe('recherche tolérante dans la palette (issue n°10)', () => {
     dest({ id: 'tremble', name: 'Tremble', category: 'farm', command: TREMBLE }),
   ];
   const titles = (query: string) =>
-    searchPalette(buildPaletteIndex(list, new Set(), dictionary), query, PALETTE_LIMIT).entries.map((e) => e.title);
+    searchPalette(buildPaletteIndex(list, dictionary), query, { limit: PALETTE_LIMIT }).entries.map((e) => e.title);
 
   it('alias du dictionnaire : toutes les destinations concernées, puis affinage', () => {
     expect(titles('HDV')).toEqual(['Hôtel des ventes de Bonta', 'Hôtel des ventes de Brâkmar']);
@@ -282,7 +289,7 @@ describe('recherche tolérante dans la palette (issue n°10)', () => {
   });
 
   it('les commandes copiées ne changent pas : texte brut, mêmes règles', () => {
-    const [entry] = searchPalette(buildPaletteIndex(list, new Set(), dictionary), 'hdv bonta', PALETTE_LIMIT).entries;
+    const [entry] = searchPalette(buildPaletteIndex(list, dictionary), 'hdv bonta', { limit: PALETTE_LIMIT }).entries;
     expect(entry?.variants).toEqual([
       { kind: 'withoutZaap', text: '/travel 2 2' },
       { kind: 'withZaap', text: '/zaap 1 1;/travel 2 2' },
@@ -295,26 +302,79 @@ describe('recherche tolérante dans la palette (issue n°10)', () => {
   });
 
   it('parcours Farm avec une faute et une position : la reprise reste trouvée par indice', () => {
-    const { entries } = searchPalette(buildPaletteIndex(list, new Set(), dictionary), 'farm tremle 2 2', PALETTE_LIMIT);
+    const { entries } = searchPalette(buildPaletteIndex(list, dictionary), 'farm tremle 2 2', { limit: PALETTE_LIMIT });
     expect(entries[0]?.kind).toBe('farm-step');
     expect(entries[0]?.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
   });
 
   it('un PNJ au nom proche n\'empêche pas de retrouver le parcours à une faute près', () => {
     const withNpc = [...list, dest({ id: 'pnj', name: 'Tremlbe garde', category: 'npc', command: '/travel 9 9' })];
-    const { entries } = searchPalette(buildPaletteIndex(withNpc, new Set(), dictionary), 'tremlbe 2 2', PALETTE_LIMIT);
+    const { entries } = searchPalette(buildPaletteIndex(withNpc, dictionary), 'tremlbe 2 2', { limit: PALETTE_LIMIT });
     expect(entries[0]?.kind).toBe('farm-step');
     expect(entries[0]?.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
   });
 
   it('favoris fournis à la recherche : l\'index n\'a pas à être reconstruit quand ils changent', () => {
-    const index = buildPaletteIndex(list, new Set(), dictionary);
-    expect(searchPalette(index, '', PALETTE_LIMIT).entries[0]?.favorite).toBe(false);
-    const withFav = searchPalette(index, '', PALETTE_LIMIT, new Set(['meu'])).entries;
+    const index = buildPaletteIndex(list, dictionary);
+    expect(searchPalette(index, '', { limit: PALETTE_LIMIT }).entries[0]?.favorite).toBe(false);
+    const withFav = searchPalette(index, '', { limit: PALETTE_LIMIT, favorites: new Set(['meu']) }).entries;
     expect(withFav[0]).toMatchObject({ title: 'Donjon du Meulou', favorite: true });
   });
 
   it('sans dictionnaire, la palette se comporte comme avant', () => {
-    expect(searchPalette(buildPaletteIndex(list, new Set()), 'hdv', PALETTE_LIMIT).entries).toEqual([]);
+    expect(searchPalette(buildPaletteIndex(list), 'hdv', { limit: PALETTE_LIMIT }).entries).toEqual([]);
+  });
+});
+
+describe('libellés des variantes', () => {
+  it('une seule table : libellé long (infobulle) et court (pied d\'aide) par genre', () => {
+    expect(VARIANT_LABELS).toEqual({
+      withoutZaap: { long: 'Sans Zaap : trajet seul', short: 'sans Zaap' },
+      withZaap: { long: 'Avec Zaap : commande complète', short: 'avec Zaap' },
+      trip: { long: 'Trajet complet : zaap puis déplacement', short: 'trajet complet' },
+      zaapOnly: { long: 'Zaap seul', short: 'zaap seul' },
+      route: { long: 'Parcours Farm', short: 'parcours' },
+    });
+    expect(variantLabel('trip')).toBe('Trajet complet : zaap puis déplacement');
+    expect(variantShortLabel('withZaap')).toBe('avec Zaap');
+  });
+
+  it('lignes Farm : genre « parcours », jamais « sans Zaap »', () => {
+    const tremble = dest({ id: 't', name: 'Tremble', category: 'farm', command: TREMBLE });
+    const kinds = search([tremble], 'tremble').entries.flatMap((e) => e.variants.map((v) => v.kind));
+    expect(new Set(kinds)).toEqual(new Set(['route']));
+  });
+});
+
+describe('lignes réutilisées d\'une frappe à l\'autre', () => {
+  const list = [
+    dest({ id: 'a', name: 'Temple alpha', command: '/zaap 1 1;/travel 2 2' }),
+    dest({ id: 'b', name: 'Temple beta', category: 'npc', twoStep: true, command: '/travel 1 1', command2: '/travel 2 2' }),
+    dest({ id: 't', name: 'Temple Farm', category: 'farm', command: TREMBLE }),
+  ];
+
+  it('même destination, même favori, même réglage : MÊME objet', () => {
+    const index = buildPaletteIndex(list);
+    const first = searchPalette(index, 'temple', { limit: PALETTE_LIMIT }).entries;
+    const second = searchPalette(index, 'templ', { limit: PALETTE_LIMIT }).entries;
+    expect(second).toHaveLength(first.length);
+    second.forEach((e, i) => expect(e).toBe(first[i]));
+    // Une autre requête qui retrouve une partie des lignes : ces lignes-là sont les mêmes objets.
+    const beta = searchPalette(index, 'beta', { limit: PALETTE_LIMIT }).entries;
+    expect(beta[0]).toBe(first.find((e) => e.key === beta[0]!.key));
+  });
+
+  it('favori ou réglage changé : nouvelles lignes pour la destination concernée seulement', () => {
+    const index = buildPaletteIndex(list);
+    const before = searchPalette(index, 'temple', { limit: PALETTE_LIMIT }).entries;
+    const fav = searchPalette(index, 'temple', { limit: PALETTE_LIMIT, favorites: new Set(['b']) }).entries;
+    const byKey = new Map(before.map((e) => [e.key, e]));
+    for (const e of fav) {
+      if (e.destinationId === 'b') expect(e).not.toBe(byKey.get(e.key));
+      else expect(e).toBe(byKey.get(e.key));
+    }
+    const variant = searchPalette(index, 'temple alpha', { limit: PALETTE_LIMIT, defaultVariant: 'withZaap' }).entries;
+    expect(variant[0]!.variants[0]!.kind).toBe('withZaap');
+    expect(variant[0]).not.toBe(byKey.get(variant[0]!.key));
   });
 });

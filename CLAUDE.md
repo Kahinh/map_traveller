@@ -35,12 +35,12 @@ src/features/commands/   # PUR : clic gauche / clic droit, zones d'une carte (ca
 src/features/farm/       # PUR : parsing parcours + reprise par indice
 src/features/catalog/    # PUR : types, validation, tri, catalogue livré (official.ts : ajout des entrées jamais proposées, official.json), éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove), recherche (searchText.ts : normalisation, mots ; searchIndex.ts : index, coûts, classement ; search.ts : façade), grille fenêtrée (gridWindow.ts)
 src/features/aliases/    # PUR : dictionnaire GLOBAL d'alias de recherche (alias livrés + aliases.json), lecture tolérante, édition sans mutation
-src/features/palette/    # PUR : lignes de palette (entries.ts), position tapée + lignes Farm (farmQuery.ts), sélection (navigation.ts)
-src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), capture d'un raccourci (accelerator.ts), path.ts
+src/features/palette/    # PUR : lignes de palette (entries.ts, arrêt au plafond, lignes réutilisées par l'index), position tapée + lignes Farm (farmQuery.ts), sélection (navigation.ts), hauteur de fenêtre (windowHeight.ts), empreinte des fichiers relus (fingerprint.ts)
+src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), rubrique palette seule (paletteSettings.ts, lue par la palette), capture d'un raccourci (accelerator.ts), path.ts
 src/features/updates/    # PUR : contrat (types.ts), machine à états, erreurs et décisions au lancement (updates.ts)
 src/features/zaaps/      # PUR : référentiel des zaaps (validation), « proche X,Y » (parseNearQuery, nearestZaaps : distance de Manhattan, même monde, ex aequo par nom), defaultZaaps.ts (référentiel livré)
 src/palette/             # fenêtre palette (entrée palette.html) : Palette, PaletteRow — n'importe rien de la grille
-src/lib/tauri/           # pont système (clipboard, stockage, palette, raccourcis) avec fallback navigateur ; images.ts partagé avec la palette (adresses, vignette manquante), imageImport.ts (dialogue, fenêtre principale) et thumbnails.ts (fabrication des vignettes, fenêtre principale)
+src/lib/tauri/           # pont système (clipboard, stockage, palette, raccourcis) avec fallback navigateur ; storeRead.ts (lecture seule des fichiers, partagée avec la palette) et storage.ts (écritures et fusions, fenêtre principale) ; images.ts partagé avec la palette (adresses, vignette manquante), imageImport.ts (dialogue, fenêtre principale) et thumbnails.ts (fabrication des vignettes, fenêtre principale)
 src/components/          # composants React (rendu + interactions uniquement) : Panel, FarmPanel, DestinationForm…
 src/app/                 # App, état global, useCatalog et useAliases (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useUpdater (moteur de mise à jour, monté dans App), useCopyFeedback, useGridWindow (seules les rangées visibles + 2 sont rendues)
 src/styles/tokens.css    # tokens DA — seule source des couleurs

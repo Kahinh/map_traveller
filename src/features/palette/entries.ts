@@ -11,14 +11,15 @@ import { buildSearchIndex, searchIndexRank } from '../catalog/searchIndex';
 import { queryTokens } from '../catalog/searchText';
 import { cardParts, orderVariants, partVariants, type PartIndex, type VariantKind } from '../commands/cardParts';
 import { parseFarmRoute, type FarmRoute } from '../farm/farmRoute';
+import { farmStartEntry, farmStepEntry, formatPosition, parsePaletteQuery, stepsAtPosition } from './farmQuery';
 import {
-  farmPositionEntries,
-  farmRouteEntries,
-  farmStartEntry,
-  formatPosition,
-  parsePaletteQuery,
-} from './farmQuery';
-import { paletteKey, subtitleBase, type PaletteEntry, type PaletteIndex, type PaletteVariantKind } from './types';
+  paletteKey,
+  subtitleBase,
+  VARIANT_LABELS,
+  type PaletteEntry,
+  type PaletteIndex,
+  type PaletteVariantKind,
+} from './types';
 import {
   DEFAULT_WORLD,
   EMPTY_ZAAPS,
@@ -33,6 +34,7 @@ import {
 } from '../zaaps/zaaps';
 
 export type { PaletteEntry, PaletteEntryKind, PaletteIndex, PaletteStep, PaletteVariant, PaletteVariantKind } from './types';
+export { VARIANT_LABELS } from './types';
 
 /** Nombre maximal de lignes affichées (pas de virtualisation). */
 export const PALETTE_LIMIT = 50;
@@ -46,25 +48,24 @@ export const STEP_NAMES: Record<PartIndex, string> = {
 /** Variante sélectionnée par défaut (réglage absent) : le comportement d'avant l'issue n°11. */
 export const DEFAULT_VARIANT: VariantKind = 'withoutZaap';
 
+const NO_FAVORITES: ReadonlySet<string> = new Set();
+
 /**
  * Index de la palette : destinations actives seulement, index de recherche construit avec le
  * dictionnaire d'alias, et chaque parcours Farm analysé une seule fois ici (jamais pendant la
- * frappe).
+ * frappe). Ni favoris ni variante préférée : ils sont donnés à chaque recherche.
  */
 export function buildPaletteIndex(
   destinations: readonly Destination[],
-  favorites: ReadonlySet<string>,
   dictionary: AliasDictionary = EMPTY_DICTIONARY,
   zaaps: ZaapCatalog = EMPTY_ZAAPS,
-  defaultVariant: VariantKind = DEFAULT_VARIANT,
 ): PaletteIndex {
   const search = buildSearchIndex(destinations, dictionary);
-  const active = search.docs;
   const routes = new Map<string, FarmRoute>();
-  for (const d of active) {
+  for (const d of search.docs) {
     if (d.category === 'farm') routes.set(d.id, parseFarmRoute(d.command));
   }
-  return { destinations: active, favorites, search, routes, zaaps, defaultVariant };
+  return { search, routes, zaaps, cache: new Map() };
 }
 
 /**
@@ -107,9 +108,9 @@ export function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry 
     favorite: false,
     variants:
       trip === zaap.command
-        ? [{ kind: 'withZaap', text: trip }]
+        ? [{ kind: 'trip', text: trip }]
         : [
-            { kind: 'withZaap', text: trip },
+            { kind: 'trip', text: trip },
             { kind: 'zaapOnly', text: zaap.command },
           ],
   };
@@ -138,24 +139,11 @@ export function searchNearestZaap(zaaps: ZaapCatalog, query: string): PaletteSea
   return { entries: found.map((n) => zaapEntry(n, near.position)), notice: null };
 }
 
-/** Libellé d'une variante (infobulle, lecteur d'écran, pied d'aide). */
-const VARIANT_LABELS: Record<PaletteVariantKind, string> = {
-  withoutZaap: 'Sans Zaap : trajet seul',
-  withZaap: 'Avec Zaap : commande complète',
-  zaapOnly: 'Zaap seul',
-};
+/** Libellé d'une variante : infobulle et lecteur d'écran. */
+export const variantLabel = (kind: PaletteVariantKind): string => VARIANT_LABELS[kind].long;
 
-/** Sur une ligne « zaap le plus proche », la commande complète est le trajet. */
-export function variantLabel(entry: Pick<PaletteEntry, 'kind'>, kind: PaletteVariantKind): string {
-  if (entry.kind === 'zaap' && kind === 'withZaap') return 'Trajet complet : zaap puis déplacement';
-  return VARIANT_LABELS[kind];
-}
-
-/** Libellé court du pied d'aide (« avec Zaap », « sans Zaap », « zaap seul », « trajet complet »). */
-export function variantShortLabel(entry: Pick<PaletteEntry, 'kind'>, kind: PaletteVariantKind): string {
-  if (entry.kind === 'zaap' && kind === 'withZaap') return 'trajet complet';
-  return kind === 'withoutZaap' ? 'sans Zaap' : kind === 'withZaap' ? 'avec Zaap' : 'zaap seul';
-}
+/** Libellé court d'une variante : pied d'aide (« sans Zaap », « trajet complet »…). */
+export const variantShortLabel = (kind: PaletteVariantKind): string => VARIANT_LABELS[kind].short;
 
 export interface PaletteSearchResult {
   entries: PaletteEntry[];
@@ -163,14 +151,31 @@ export interface PaletteSearchResult {
   notice: string | null;
 }
 
-/** Retire les doublons par clé, en gardant la première occurrence. */
-function uniqueByKey(entries: readonly PaletteEntry[]): PaletteEntry[] {
-  const seen = new Set<string>();
-  return entries.filter((e) => {
-    if (seen.has(e.key)) return false;
-    seen.add(e.key);
-    return true;
-  });
+export interface PaletteSearchOptions {
+  /** Nombre maximal de lignes. */
+  limit: number;
+  /** Favoris actuels : classement et étoile. */
+  favorites?: ReadonlySet<string>;
+  /** Variante sélectionnée par défaut (réglage, issue n°11). */
+  defaultVariant?: VariantKind;
+}
+
+/**
+ * Lignes d'une destination, prises dans le cache de l'index si elles ont été fabriquées avec
+ * le même favori et la même variante préférée : même objet d'une frappe à l'autre.
+ */
+function cachedEntries(
+  index: PaletteIndex,
+  key: string,
+  favorite: boolean,
+  variant: VariantKind | null,
+  make: () => readonly PaletteEntry[],
+): readonly PaletteEntry[] {
+  const hit = index.cache.get(key);
+  if (hit && hit.favorite === favorite && hit.variant === variant) return hit.entries;
+  const entries = make();
+  index.cache.set(key, { favorite, variant, entries });
+  return entries;
 }
 
 /**
@@ -182,54 +187,59 @@ function uniqueByKey(entries: readonly PaletteEntry[]): PaletteEntry[] {
  *
  * Parcours Farm en (b) : requête vide ou plusieurs parcours trouvés → une ligne « parcours
  * complet » par parcours ; un seul parcours trouvé → « parcours complet » puis chaque position.
- * Le plafond `limit` s'applique en dernier. `favorites` remplace ceux de l'index : la palette
- * peut ainsi garder son index quand seuls les favoris changent.
+ *
+ * Les lignes sont fabriquées dans l'ordre d'affichage, sans doublon, et la fabrication s'arrête
+ * au plafond `limit` : une requête d'une lettre ne construit pas les lignes de tout le catalogue.
  */
-export function searchPalette(
-  index: PaletteIndex,
-  query: string,
-  limit: number,
-  favorites: ReadonlySet<string> = index.favorites,
-): PaletteSearchResult {
+export function searchPalette(index: PaletteIndex, query: string, options: PaletteSearchOptions): PaletteSearchResult {
+  const limit = Math.max(0, options.limit);
+  const favorites = options.favorites ?? NO_FAVORITES;
+  const defaultVariant = options.defaultVariant ?? DEFAULT_VARIANT;
+
   // « proche X,Y » : recherche du zaap le plus proche, exclusive des autres résultats.
   const zaapResult = searchNearestZaap(index.zaaps, query);
-  if (zaapResult) return { entries: zaapResult.entries.slice(0, Math.max(0, limit)), notice: zaapResult.notice };
+  if (zaapResult) return { entries: zaapResult.entries.slice(0, limit), notice: zaapResult.notice };
 
   const { routes } = index;
-  const isFav = (d: Destination) => favorites.has(d.id);
-
-  // (b) Requête entière prise comme texte.
-  const textMatches = searchIndexRank(index.search, query, favorites);
-  const hasWords = queryTokens(query).length > 0;
-  const expand = hasWords && textMatches.filter((d) => d.category === 'farm').length === 1;
-  const textEntries: PaletteEntry[] = [];
-  for (const d of textMatches) {
-    if (d.category !== 'farm') {
-      textEntries.push(...cardEntries(d, isFav(d), index.defaultVariant));
-      continue;
+  const entries: PaletteEntry[] = [];
+  const seen = new Set<string>();
+  const full = () => entries.length >= limit;
+  const add = (lines: readonly PaletteEntry[]) => {
+    for (const e of lines) {
+      if (full()) return;
+      if (seen.has(e.key)) continue;
+      seen.add(e.key);
+      entries.push(e);
     }
-    const route = routes.get(d.id);
-    if (route) textEntries.push(...farmRouteEntries(d, route, isFav(d), expand));
-  }
+  };
+  const isFav = (d: Destination) => favorites.has(d.id);
+  const startLine = (d: Destination, route: FarmRoute) =>
+    cachedEntries(index, paletteKey(d.id, 'farm-start'), isFav(d), null, () => [farmStartEntry(d, route, isFav(d))]);
+  const stepLine = (d: Destination, route: FarmRoute, i: number) =>
+    cachedEntries(index, paletteKey(d.id, 'farm-step', i), isFav(d), null, () => [farmStepEntry(d, route, i, isFav(d))]);
 
-  // (a) Position en fin de requête, précédée d'un texte.
+  // (a) Position en fin de requête, précédée d'un texte : ses étapes passent en tête.
   const { text, position } = parsePaletteQuery(query);
-  const positionEntries: PaletteEntry[] = [];
-  const restartEntries: PaletteEntry[] = [];
+  const restart: Destination[] = [];
   let notice: string | null = null;
   if (position && queryTokens(text).length > 0) {
     // Restreint aux parcours AVANT la seconde passe : une destination d'une autre catégorie qui
     // correspond exactement ne doit pas empêcher de retrouver un parcours à une faute près.
     const farms = searchIndexRank(index.search, text, favorites, (d) => d.category === 'farm');
+    let found = false;
     for (const d of farms) {
       const route = routes.get(d.id);
       if (!route) continue;
-      const lines = farmPositionEntries(d, route, isFav(d), position);
-      // Position absente de ce parcours : « parcours complet » reste proposé.
-      if (lines.length > 0) positionEntries.push(...lines);
-      else restartEntries.push(farmStartEntry(d, route, isFav(d)));
+      const steps = stepsAtPosition(route, position);
+      // Position absente de ce parcours : « parcours complet » reste proposé, en fin de liste.
+      if (steps.length === 0) restart.push(d);
+      found ||= steps.length > 0;
+      for (const s of steps) {
+        if (full()) break;
+        add(stepLine(d, route, s.index));
+      }
     }
-    if (farms.length > 0 && positionEntries.length === 0) {
+    if (farms.length > 0 && !found) {
       const several = farms.length > 1;
       notice =
         position.y === undefined
@@ -238,9 +248,35 @@ export function searchPalette(
     }
   }
 
-  const ordered =
-    positionEntries.length > 0
-      ? [...positionEntries, ...textEntries, ...restartEntries]
-      : [...textEntries, ...restartEntries];
-  return { entries: uniqueByKey(ordered).slice(0, Math.max(0, limit)), notice };
+  // (b) Requête entière prise comme texte. Un seul parcours trouvé : déplié (compté jusqu'à 2).
+  const textMatches = searchIndexRank(index.search, query, favorites);
+  let farmCount = 0;
+  if (queryTokens(query).length > 0) {
+    for (const d of textMatches) if (d.category === 'farm' && ++farmCount > 1) break;
+  }
+  const expand = farmCount === 1;
+  for (const d of textMatches) {
+    if (full()) break;
+    if (d.category !== 'farm') {
+      add(cachedEntries(index, paletteKey(d.id, 'card'), isFav(d), defaultVariant, () =>
+        cardEntries(d, isFav(d), defaultVariant),
+      ));
+      continue;
+    }
+    const route = routes.get(d.id);
+    if (!route) continue;
+    add(startLine(d, route));
+    if (!expand) continue;
+    for (const s of route.steps) {
+      if (full()) break;
+      add(stepLine(d, route, s.index));
+    }
+  }
+
+  for (const d of restart) {
+    if (full()) break;
+    const route = routes.get(d.id);
+    if (route) add(startLine(d, route));
+  }
+  return { entries, notice };
 }

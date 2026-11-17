@@ -6,9 +6,11 @@
  * ce qui évite un effet + un état par carte.
  *
  * Vignettes (issue n°14, A4) : `thumbSrc()` donne l'adresse de la vignette 256 px. Une vignette
- * absente est signalée par `thumbMissing()` : la carte affiche alors l'original, et la fenêtre
- * principale, seule à avoir enregistré un producteur (`setThumbnailMaker`), la fabrique pour les
- * affichages suivants. La palette n'en enregistre pas : elle n'embarque pas ce code.
+ * absente est signalée par `thumbMissing()` et mémorisée : les affichages suivants prennent
+ * directement l'original. La fenêtre principale, seule à avoir enregistré un producteur
+ * (`setThumbnailMaker`), la fabrique. La palette n'en a pas (elle n'embarque pas ce code) : elle
+ * oublie ces échecs à chaque ouverture (`forgetMissingThumbs`), pour retrouver une fois par
+ * ouverture une vignette fabriquée entre-temps.
  *
  * Ce module est partagé avec la palette : rien ici n'importe le dialogue de fichiers
  * (import d'images : `imageImport.ts`, fenêtre principale seulement).
@@ -47,15 +49,16 @@ export function thumbSrc(relative: string | null): string | null {
   return imageSrc(thumbPath(relative));
 }
 
-/**
- * La vignette de `relative` n'a pas pu être affichée : original jusqu'à sa fabrication. Sans
- * producteur (palette, qui vit tant que l'application tourne), rien n'est mémorisé : chaque
- * affichage retente la vignette, que la fenêtre principale a pu fabriquer entre-temps.
- */
+/** La vignette de `relative` n'a pas pu être affichée : original jusqu'à sa fabrication. */
 export function thumbMissing(relative: string): void {
-  if (!thumbnailMaker) return;
+  if (missingThumbs.has(relative)) return;
   missingThumbs.add(relative);
-  thumbnailMaker(relative);
+  thumbnailMaker?.(relative);
+}
+
+/** Palette, à chaque ouverture : les vignettes manquantes sont retentées une fois. */
+export function forgetMissingThumbs(): void {
+  missingThumbs.clear();
 }
 
 /** La vignette de `relative` vient d'être enregistrée : les prochains affichages l'utilisent. */

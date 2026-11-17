@@ -1,7 +1,10 @@
 /**
- * Pont de la fenêtre palette. Dans Tauri : commande Rust `hide_palette` et événement
- * `palette:shown` émis par Rust à chaque affichage. Dans le navigateur (`npm run dev`,
- * page `palette.html`) : masquer ne fait rien, et l'affichage est simulé une fois au chargement.
+ * Pont de la fenêtre palette. Dans Tauri : commande Rust `hide_palette`, événements
+ * `palette:shown` et `palette:hidden` émis par Rust à chaque affichage et à chaque masquage.
+ * Dans le navigateur (`npm run dev`, page `palette.html`) : l'affichage est simulé une fois au
+ * chargement, et les deux événements sont des événements DOM de `window`, que l'on peut émettre
+ * à la main pour contrôler la page (`dispatchEvent(new Event('palette:hidden'))`) ; masquer
+ * émet `palette:hidden`, comme le ferait Rust.
  */
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
@@ -13,10 +16,40 @@ export const HIDE_PALETTE_COMMAND = 'hide_palette';
 export const SET_PALETTE_HEIGHT_COMMAND = 'set_palette_height';
 /** Événement émis par Rust vers la fenêtre palette juste après son affichage. */
 export const PALETTE_SHOWN_EVENT = 'palette:shown';
+/** Événement émis par Rust vers la fenêtre palette après chaque masquage (`palette::HIDDEN_EVENT`). */
+export const PALETTE_HIDDEN_EVENT = 'palette:hidden';
 
-/** Masque la palette. Sans effet dans le navigateur. Lève si la commande Rust échoue. */
+/** Masque la palette. Lève si la commande Rust échoue. Navigateur : émet seulement `palette:hidden`. */
 export async function hidePalette(): Promise<void> {
   if (isTauri()) await invoke(HIDE_PALETTE_COMMAND);
+  else window.dispatchEvent(new Event(PALETTE_HIDDEN_EVENT));
+}
+
+/**
+ * Abonne `callback` à un événement de la palette : événement Tauri émis par Rust, ou événement
+ * DOM de `window` dans le navigateur. Renvoie la fonction de désabonnement, sûre même si
+ * l'abonnement Tauri n'est pas encore établi.
+ */
+function subscribe(event: string, callback: () => void): () => void {
+  if (!isTauri()) {
+    window.addEventListener(event, callback);
+    return () => window.removeEventListener(event, callback);
+  }
+  let disposed = false;
+  let unlisten: UnlistenFn | null = null;
+  listen(event, () => {
+    if (!disposed) callback();
+  })
+    .then((fn) => {
+      if (disposed) fn();
+      else unlisten = fn;
+    })
+    .catch((e: unknown) => console.error(`Écoute de ${event} impossible`, e));
+  return () => {
+    disposed = true;
+    unlisten?.();
+    unlisten = null;
+  };
 }
 
 /**
@@ -34,36 +67,28 @@ export function setPaletteHeight(height: number): void {
 /**
  * Appelle `callback` à chaque affichage de la palette. Renvoie la fonction de désabonnement.
  *
- * - Tauri : écoute `palette:shown`. Le rappel est AUSSI appelé une fois à l'abonnement : à la
- *   première ouverture, la fenêtre est créée puis l'événement émis, possiblement avant que la
- *   page ait fini de charger et d'écouter ; sans cet appel, le premier affichage serait vide.
- * - Navigateur : appelé une fois au chargement.
- *
- * L'appel initial est différé d'une micro-tâche et annulé si l'on s'est désabonné entre-temps
- * (double montage de `StrictMode` en développement).
+ * Le rappel est AUSSI appelé une fois à l'abonnement : à la première ouverture, la fenêtre peut
+ * être affichée et l'événement émis avant que la page ait fini de charger et d'écouter ; sans
+ * cet appel, le premier affichage ne chargerait rien. Dans le navigateur, c'est l'affichage
+ * simulé au chargement. L'appel initial est différé d'une micro-tâche et annulé si l'on s'est
+ * désabonné entre-temps (double montage de `StrictMode` en développement).
  */
 export function onPaletteShown(callback: () => void): () => void {
   let disposed = false;
-  let unlisten: UnlistenFn | null = null;
-
   queueMicrotask(() => {
     if (!disposed) callback();
   });
-
-  if (isTauri()) {
-    listen(PALETTE_SHOWN_EVENT, () => {
-      if (!disposed) callback();
-    })
-      .then((fn) => {
-        if (disposed) fn();
-        else unlisten = fn;
-      })
-      .catch((e: unknown) => console.error('Écoute de palette:shown impossible', e));
-  }
-
+  const unsubscribe = subscribe(PALETTE_SHOWN_EVENT, callback);
   return () => {
     disposed = true;
-    unlisten?.();
-    unlisten = null;
+    unsubscribe();
   };
+}
+
+/**
+ * Appelle `callback` après chaque masquage effectif de la palette (un seul appel par masquage,
+ * quelle qu'en soit la cause). Renvoie la fonction de désabonnement.
+ */
+export function onPaletteHidden(callback: () => void): () => void {
+  return subscribe(PALETTE_HIDDEN_EVENT, callback);
 }

@@ -9,11 +9,12 @@
  */
 import type { Destination } from '../catalog/schema';
 import { farmResumeCommand, farmStartCommand, type FarmRoute, type FarmStep } from '../farm/farmRoute';
+import { isCoordinate } from '../shared/coordinates';
 import { paletteKey, subtitleBase, type PaletteEntry, type PaletteVariant } from './types';
 
 /** Ligne Farm : une seule variante (aucune case latérale), ou aucune s'il n'y a rien à copier. */
 const single = (command: string | null): PaletteVariant[] =>
-  command === null ? [] : [{ kind: 'withoutZaap', text: command }];
+  command === null ? [] : [{ kind: 'route', text: command }];
 
 export interface QueryPosition {
   x: number;
@@ -27,7 +28,8 @@ export interface ParsedQuery {
   position: QueryPosition | null;
 }
 
-const NUM = '-?\\d{1,7}';
+/** Nombre entier, signé ; ses bornes sont contrôlées après coup (`isCoordinate`). */
+const NUM = '-?\\d+';
 /**
  * Deux nombres en fin de requête, précédés d'un début ou d'un séparateur. Séparateurs entre
  * les deux : virgule, point-virgule (espaces tolérés autour), espaces, ou tiret collé
@@ -42,14 +44,23 @@ const textBefore = (query: string, end: number) => query.slice(0, end).replace(/
 
 /**
  * Sépare la position éventuelle, cherchée en fin de requête uniquement. Les nombres au milieu
- * de la requête restent dans le texte.
+ * de la requête restent dans le texte, de même qu'un nombre hors des bornes d'une coordonnée
+ * (`MAX_COORDINATE`) : aucune étape ne peut s'y trouver.
  */
 export function parsePaletteQuery(query: string): ParsedQuery {
+  const noPosition: ParsedQuery = { text: query.trim(), position: null };
   const two = TWO_NUMBERS.exec(query);
-  if (two) return { text: textBefore(query, two.index), position: { x: Number(two[1]), y: Number(two[2]) } };
+  if (two) {
+    const x = Number(two[1]);
+    const y = Number(two[2]);
+    return isCoordinate(x) && isCoordinate(y) ? { text: textBefore(query, two.index), position: { x, y } } : noPosition;
+  }
   const one = ONE_NUMBER.exec(query);
-  if (one) return { text: textBefore(query, one.index), position: { x: Number(one[1]) } };
-  return { text: query.trim(), position: null };
+  if (one) {
+    const x = Number(one[1]);
+    return isCoordinate(x) ? { text: textBefore(query, one.index), position: { x } } : noPosition;
+  }
+  return noPosition;
 }
 
 /** Libellé d'une position tapée : `2,2`, ou `2` pour un seul nombre. */
@@ -103,21 +114,4 @@ export function farmStepEntry(d: Destination, route: FarmRoute, stepIndex: numbe
     favorite,
     variants: single(command),
   };
-}
-
-/** « Parcours complet », puis toutes les positions si `expand`. */
-export function farmRouteEntries(d: Destination, route: FarmRoute, favorite: boolean, expand: boolean): PaletteEntry[] {
-  const start = farmStartEntry(d, route, favorite);
-  if (!expand) return [start];
-  return [start, ...route.steps.map((s) => farmStepEntry(d, route, s.index, favorite))];
-}
-
-/** Lignes de reprise pour chaque occurrence de la position, première occurrence en tête. */
-export function farmPositionEntries(
-  d: Destination,
-  route: FarmRoute,
-  favorite: boolean,
-  position: QueryPosition,
-): PaletteEntry[] {
-  return stepsAtPosition(route, position).map((s) => farmStepEntry(d, route, s.index, favorite));
 }

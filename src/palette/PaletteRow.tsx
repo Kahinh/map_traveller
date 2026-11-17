@@ -9,6 +9,8 @@ interface Props {
   /** Catégorie de la destination : icône de la vignette sans image (`null` si inconnue). */
   category: Category | null;
   index: number;
+  /** Nombre total de lignes (lecteurs d'écran : toutes ne sont pas forcément rendues). */
+  count: number;
   /** Identifiant DOM, référencé par `aria-activedescendant` du champ. */
   id: string;
   selected: boolean;
@@ -27,9 +29,9 @@ interface Props {
 }
 
 function VariantIcon({ kind }: { kind: PaletteVariantKind }) {
-  if (kind === 'withoutZaap') return <TravelIcon />;
   if (kind === 'zaapOnly') return <MarkIcon />;
-  return <ZaapIcon />;
+  if (kind === 'withZaap' || kind === 'trip') return <ZaapIcon />;
+  return <TravelIcon />;
 }
 
 /** Case visée par un évènement souris (`data-choice` d'une case de variante), ou `null`. */
@@ -43,13 +45,18 @@ function choiceFromTarget(target: EventTarget): number | null {
  * Une ligne de résultat (issue n°11) : une destination, ou une étape d'une destination à
  * plusieurs étapes (« — Étape 2 »). Deux cases à droite seulement si la ligne a deux variantes
  * (avec / sans Zaap) : actives sur la ligne sélectionnée, atténuées ailleurs. Composant
- * d'affichage mémoïsé : la variante active vient du réducteur de navigation du parent. Ni la
- * ligne ni les cases ne prennent le focus : il reste dans le champ.
+ * d'affichage mémoïsé : la ligne (`entry`) et les rappels sont des objets stables, seule une
+ * ligne dont la sélection ou la position change est redessinée.
+ *
+ * Accessibilité : l'option est nommée par son titre et son sous-titre ; la variante active est
+ * sa description, mise à jour par ←/→. Les cases ne sont que des cibles pour la souris : ni
+ * focalisables ni annoncées (le focus reste dans le champ, ←/→ les remplacent au clavier).
  */
 export const PaletteRow = memo(function PaletteRow({
   entry,
   category,
   index,
+  count,
   id,
   selected,
   activeChoice,
@@ -59,7 +66,8 @@ export const PaletteRow = memo(function PaletteRow({
   const { variants } = entry;
   const two = variants.length === 2;
   const current = selected && activeChoice !== null && activeChoice < variants.length ? activeChoice : 0;
-  const preview = variants[current]?.text ?? null;
+  const active = variants[current];
+  const preview = active?.text ?? null;
   const empty = preview === null;
 
   // Sélection sur `mousemove` et non `mouseenter` : une liste qui défile au clavier sous un
@@ -79,6 +87,10 @@ export const PaletteRow = memo(function PaletteRow({
       role="option"
       aria-selected={selected}
       aria-disabled={empty || undefined}
+      aria-setsize={count}
+      aria-posinset={index + 1}
+      aria-labelledby={`${id}-title ${id}-sub`}
+      aria-describedby={two ? `${id}-variant` : undefined}
       className={`palette__row${selected ? ' is-selected' : ''}${empty ? ' is-empty' : ''}`}
       onMouseMove={onMouseMove}
       onMouseDown={(e) => e.preventDefault()}
@@ -95,7 +107,7 @@ export const PaletteRow = memo(function PaletteRow({
         )}
       </span>
       <span className="palette__text">
-        <span className="palette__title">
+        <span className="palette__title" id={`${id}-title`}>
           <span className="palette__title-text">{entry.title}</span>
           {entry.step && <span className="palette__step-tag">— Étape {entry.step.index}</span>}
           {entry.favorite && (
@@ -105,34 +117,31 @@ export const PaletteRow = memo(function PaletteRow({
             </span>
           )}
         </span>
-        <span className="palette__subtitle">{entry.subtitle}</span>
+        <span className="palette__subtitle" id={`${id}-sub`}>
+          {entry.subtitle}
+        </span>
       </span>
       <span className="palette__preview" title={preview ?? undefined}>
         {preview ?? (entry.kind === 'farm-step' ? 'fin de parcours, rien à copier' : 'rien à copier')}
       </span>
-      {two && (
-        <span className="palette__variants" aria-hidden={selected ? undefined : true}>
-          {variants.map((v, i) =>
-            selected ? (
-              <button
+      {two && active && (
+        <>
+          <span className="palette__sr" id={`${id}-variant`}>
+            {variantLabel(active.kind)}
+          </span>
+          <span className="palette__variants" aria-hidden>
+            {variants.map((v, i) => (
+              <span
                 key={v.kind}
-                type="button"
-                tabIndex={-1}
-                data-choice={i}
-                className={`palette__variant${i === current ? ' is-active' : ''}`}
-                aria-pressed={i === current}
-                aria-label={variantLabel(entry, v.kind)}
-                title={variantLabel(entry, v.kind)}
+                data-choice={selected ? i : undefined}
+                className={`palette__variant${!selected ? ' is-idle' : i === current ? ' is-active' : ''}`}
+                title={selected ? variantLabel(v.kind) : undefined}
               >
                 <VariantIcon kind={v.kind} />
-              </button>
-            ) : (
-              <span key={v.kind} className="palette__variant is-idle">
-                <VariantIcon kind={v.kind} />
               </span>
-            ),
-          )}
-        </span>
+            ))}
+          </span>
+        </>
       )}
     </li>
   );

@@ -1,35 +1,29 @@
 /**
- * Pont de persistance. Dans Tauri, délègue aux commandes Rust (`src-tauri/src/storage.rs`)
- * qui écrivent de façon atomique dans `%APPDATA%\MapTraveller\`. Dans le navigateur
- * (`npm run dev`), retombe sur localStorage + seed pour itérer sur l'UI.
+ * Pont de persistance de la fenêtre principale. Dans Tauri, délègue aux commandes Rust
+ * (`src-tauri/src/storage.rs`) qui écrivent de façon atomique dans `%APPDATA%\MapTraveller\`.
+ * Dans le navigateur (`npm run dev`), retombe sur localStorage + seed pour itérer sur l'UI.
+ * La lecture et l'analyse des fichiers, partagées avec la palette, sont dans `storeRead.ts` ;
+ * ici, ce que seule la fenêtre principale lit (catalogue livré, réglages complets) et écrit.
  */
 import { invoke } from '@tauri-apps/api/core';
-import defaultAliases from '../../../resources/aliases.default.json';
-import {
-  aliasesFileProblem,
-  EMPTY_USER_ALIASES,
-  mergeUserAliases,
-  parseDefaultAliases,
-  parseUserAliases,
-  type UserAliases,
-} from '../../features/aliases/aliases';
+import { aliasesFileProblem, mergeUserAliases, type UserAliases } from '../../features/aliases/aliases';
 import { parseOfficialState, type OfficialState, type OfficialStateResult } from '../../features/catalog/official';
-import { SCHEMA_VERSION, validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
+import { validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
 import { mergeSettings, parseSettings, type Settings } from '../../features/settings/settings';
+import { isRecord } from '../../features/shared/json';
 import { IS_TAURI } from './env';
+import {
+  LS_PREFIX,
+  parseAliasesText,
+  parseCatalogText,
+  parseFavoritesText,
+  readStoreText as readRaw,
+  type LoadedAliases,
+  type StoreName,
+  type StoreRead,
+} from './storeRead';
 
-type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases' | 'official';
-
-const LS_PREFIX = 'map-traveller:';
-
-async function readRaw(name: StoreName): Promise<string | null> {
-  if (IS_TAURI) return invoke<string | null>('load_store', { name });
-  try {
-    return localStorage.getItem(LS_PREFIX + name);
-  } catch {
-    return null;
-  }
-}
+export { DEFAULT_ALIASES, parseFavoritesText, type StoreRead } from './storeRead';
 
 async function writeRaw(name: StoreName, json: string): Promise<void> {
   if (IS_TAURI) return invoke('save_store', { name, json });
@@ -47,33 +41,6 @@ async function readJson(name: StoreName): Promise<unknown> {
 }
 
 const writeJson = (name: StoreName, data: unknown) => writeRaw(name, JSON.stringify(data, null, 2));
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
-/**
- * Texte brut d'un stockage, ou `null` s'il n'existe pas encore. La palette s'en sert pour ne
- * rien recharger quand le fichier n'a pas changé depuis son dernier affichage.
- */
-export const readStoreText = (name: StoreName): Promise<string | null> => readRaw(name);
-
-const EMPTY_CATALOG: Catalog = { schemaVersion: SCHEMA_VERSION, destinations: [] };
-
-/**
- * Valide le texte de `catalog.json`. Ne lève jamais. Fichier absent (`null`) : `fallback`. Dans
- * l'application, Rust copie le seed avant l'ouverture des fenêtres : le fichier existe toujours.
- * La palette garde le catalogue vide par défaut, pour ne pas embarquer le catalogue livré.
- */
-export function parseCatalogText(raw: string | null, fallback: unknown = EMPTY_CATALOG): ValidationResult {
-  let data: unknown;
-  try {
-    data = raw == null ? undefined : JSON.parse(raw);
-  } catch {
-    return { ok: false, errors: [{ path: '', message: 'catalog.json illisible (JSON invalide).' }] };
-  }
-  return validateCatalog(data ?? fallback);
-}
 
 /**
  * Charge et valide le catalogue utilisateur. `seed` n'est appelé que si le fichier n'existe pas
@@ -102,65 +69,13 @@ export async function saveCatalog(catalog: Catalog): Promise<void> {
   await writeJson('catalog', check.catalog);
 }
 
-/**
- * Lecture d'un fichier que la fenêtre principale réécrit : `error` non nul si le fichier existe
- * mais n'est pas lisible. L'appelant n'écrit alors plus rien par-dessus (`createWriteGate`).
- */
-export interface StoreRead<T> {
-  value: T;
-  error: string | null;
-}
-
-/** Favoris lus du texte de `favorites.json` (`null` : fichier absent). Ne lève jamais. */
-export function parseFavoritesText(raw: string | null): StoreRead<ReadonlySet<string>> {
-  if (raw == null) return { value: new Set(), error: null };
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return { value: new Set(), error: 'favorites.json illisible (JSON invalide)' };
-  }
-  if (!isRecord(data) || !Array.isArray(data.ids)) {
-    return { value: new Set(), error: 'favorites.json illisible (forme inattendue)' };
-  }
-  return { value: new Set(data.ids.filter((x): x is string => typeof x === 'string')), error: null };
-}
-
 /** Favoris de la fenêtre principale. Rejette si la lecture elle-même échoue. */
 export async function readFavorites(): Promise<StoreRead<ReadonlySet<string>>> {
   return parseFavoritesText(await readRaw('favorites'));
 }
 
-/** Favoris pour la palette, qui n'écrit jamais : tout problème donne un ensemble vide. */
-export async function loadFavorites(): Promise<ReadonlySet<string>> {
-  return (await readFavorites().catch(() => parseFavoritesText(null))).value;
-}
-
 export function saveFavorites(ids: ReadonlySet<string>): Promise<void> {
   return writeJson('favorites', { ids: [...ids].sort() });
-}
-
-/** Alias de recherche livrés avec l'application (lecture seule, embarqués dans le paquet). */
-export const DEFAULT_ALIASES = parseDefaultAliases(defaultAliases);
-
-interface LoadedAliases {
-  user: UserAliases;
-  /** Fichier présent mais illisible : rien n'est écrit par-dessus tant qu'il l'est. */
-  error: string | null;
-}
-
-/** Personnalisations lues du texte de `aliases.json` (`null` : fichier absent). Ne lève jamais. */
-export function parseAliasesText(raw: string | null): LoadedAliases {
-  if (raw == null) return { user: EMPTY_USER_ALIASES, error: null };
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return { user: EMPTY_USER_ALIASES, error: 'aliases.json illisible (JSON invalide) : les alias fournis sont utilisés.' };
-  }
-  // Version plus récente ou forme inattendue : lu au mieux pour la recherche, jamais réécrit.
-  const problem = aliasesFileProblem(data);
-  return { user: parseUserAliases(data), error: problem === null ? null : `${problem} Il n'est pas modifiable ici.` };
 }
 
 /** Alias personnalisés. Un fichier absent donne une liste vide ; un fichier illisible, une erreur. */
@@ -205,11 +120,6 @@ export function parseSettingsText(raw: string | null): StoreRead<Settings> {
 /** Réglages de la fenêtre principale. Rejette si la lecture elle-même échoue. */
 export async function readSettings(): Promise<StoreRead<Settings>> {
   return parseSettingsText(await readRaw('settings'));
-}
-
-/** Réglages pour la palette, qui n'écrit jamais : tout problème donne les valeurs par défaut. */
-export async function loadSettings(): Promise<Settings> {
-  return (await readSettings().catch(() => parseSettingsText(null))).value;
 }
 
 /**

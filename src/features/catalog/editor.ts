@@ -18,6 +18,7 @@ import {
   type Category,
   type Destination,
 } from './schema';
+import { textKey } from './searchIndex';
 
 /** État du formulaire : uniquement des chaînes et des booléens, tels que saisis. */
 export interface DestinationDraft {
@@ -99,9 +100,12 @@ export function draftFromDestination(d: Destination): DestinationDraft {
   };
 }
 
-/** Copie d'une destination : nouvel identifiant à l'enregistrement, même image, mêmes commandes. */
+/**
+ * Copie d'une destination : nouvel identifiant à l'enregistrement, même image, mêmes commandes.
+ * Sans les alias : un alias n'appartient qu'à une destination (`aliasOwner`), la copie serait refusée.
+ */
 export function duplicateDraft(d: Destination): DestinationDraft {
-  return { ...draftFromDestination(d), id: null, name: `${d.name} (copie)` };
+  return { ...draftFromDestination(d), id: null, name: `${d.name} (copie)`, aliases: '' };
 }
 
 /** Vrai si la case « deux étapes » s'applique : cochée ET catégorie PNJ ou Donjon. */
@@ -133,8 +137,27 @@ const isBlank = (s: string) => s.trim() === '';
 /** Libellé d'un segment Farm non reconnu, tel que saisi. */
 const segmentLabel = (segment: string) => `« ${isBlank(segment) ? '(vide)' : segment.trim()} »`;
 
-/** Erreurs du brouillon, par champ. Ne modifie jamais le brouillon. */
-export function validateDraft(draft: DestinationDraft): DraftErrors {
+/**
+ * Destination ACTIVE, autre que celle du brouillon, qui porte déjà l'un des alias saisis (comparés
+ * normalisés, ordre des mots compris : ils désigneraient la même requête exacte), ou `null`.
+ * Seule la saisie est contrôlée : un catalogue qui contient déjà des doublons reste valide, et la
+ * recherche les affiche tous.
+ */
+export function aliasOwner(draft: DestinationDraft, others: readonly Destination[]): Destination | null {
+  const wanted = new Set(splitList(draft.aliases).map(textKey).filter((k) => k !== ''));
+  if (wanted.size === 0) return null;
+  for (const d of others) {
+    if (!d.enabled || d.id === draft.id) continue;
+    if (d.aliases.some((a) => wanted.has(textKey(a)))) return d;
+  }
+  return null;
+}
+
+/**
+ * Erreurs du brouillon, par champ. Ne modifie jamais le brouillon. `others` : destinations du
+ * catalogue, pour refuser un alias déjà porté par une autre destination active.
+ */
+export function validateDraft(draft: DestinationDraft, others: readonly Destination[] = []): DraftErrors {
   const errors: DraftErrors = {};
   const twoStep = draftIsTwoStep(draft);
 
@@ -156,6 +179,9 @@ export function validateDraft(draft: DestinationDraft): DraftErrors {
   if (draft.image !== null && !isSafeImagePath(draft.image)) errors.image = 'Chemin d\'image invalide';
 
   if (parseSortOrder(draft.sortOrder) === null) errors.sortOrder = 'Nombre entier attendu (vide = 0)';
+
+  const owner = aliasOwner(draft, others);
+  if (owner) errors.aliases = `Alias déjà utilisé par « ${owner.name} »`;
 
   return errors;
 }
@@ -192,7 +218,7 @@ function fieldsFromDraft(draft: DestinationDraft) {
  * Lève une erreur si le brouillon est invalide ou si la destination modifiée n'existe plus.
  */
 export function upsertDestination(catalog: Catalog, draft: DestinationDraft): { catalog: Catalog; id: string } {
-  const errors = validateDraft(draft);
+  const errors = validateDraft(draft, catalog.destinations);
   if (hasErrors(errors)) throw new Error(Object.values(errors).join(' '));
   const fields = fieldsFromDraft(draft);
 

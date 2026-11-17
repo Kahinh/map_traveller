@@ -321,8 +321,10 @@ describe('recherche tolérante dans la palette (issue n°10)', () => {
     expect(withFav[0]).toMatchObject({ title: 'Donjon du Meulou', favorite: true });
   });
 
-  it('sans dictionnaire, la palette se comporte comme avant', () => {
-    expect(searchPalette(buildPaletteIndex(list), 'hdv', { limit: PALETTE_LIMIT }).entries).toEqual([]);
+  it('sans dictionnaire, « hdv » ne trouve que les initiales calculées (issue n°24)', () => {
+    const found = searchPalette(buildPaletteIndex(list), 'hdv', { limit: PALETTE_LIMIT }).entries.map((e) => e.title);
+    expect(found).toEqual(['Hôtel des ventes de Bonta', 'Hôtel des ventes de Brâkmar']);
+    expect(searchPalette(buildPaletteIndex(list), 'hdx', { limit: PALETTE_LIMIT }).entries).toEqual([]);
   });
 });
 

@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildDictionary, type AliasDictionary, type AliasEntry } from '../src/features/aliases/aliases';
 import type { Destination } from '../src/features/catalog/schema';
 import { filterDestinations } from '../src/features/catalog/search';
-import { buildSearchIndex, getSearchIndex, searchIndexMatch, searchIndexRank } from '../src/features/catalog/searchIndex';
+import { acronymsOf, buildSearchIndex, getSearchIndex, searchIndexMatch, searchIndexRank } from '../src/features/catalog/searchIndex';
+import { tokenize } from '../src/features/catalog/searchText';
 import * as searchText from '../src/features/catalog/searchText';
 import { makeDestination } from './helpers/destination';
 
@@ -80,21 +81,24 @@ describe('critères de l\'issue n°10', () => {
   it('mots de liaison, tirets et apostrophes ignorés', () => {
     expect(search('donjon de meulou')).toEqual(['meulou']);
     expect(search('bonta-atelier')).toEqual(['bijoutiers']);
-    // « atelier » n'est le premier mot d'aucun des deux noms : à coût égal, ordre du catalogue (nom).
-    expect(search("l'atelier")).toEqual(['bijoutiers', 'atelier']);
+    // « l'atelier » est le début du nom « L'atelier d'Astrub » (palier 3) ; l'autre n'a que le mot (palier 4).
+    expect(search("l'atelier")).toEqual(['atelier', 'bijoutiers']);
     expect(search('atelier de astrub')).toEqual(['atelier']);
   });
 });
 
 describe('dictionnaire d\'alias', () => {
-  it('sans dictionnaire, un acronyme ne trouve rien', () => {
-    expect(search('hdv', new Map())).toEqual([]);
+  it('sans dictionnaire, un terme ne trouve que les initiales calculées', () => {
+    // « Hôtel des ventes de … » a pour initiales « hdvdb » : « hdv » en est le début (palier 5).
+    expect(search('hdv', new Map())).toEqual(['hdv-bonta', 'hdv-brakmar']);
+    // « Donjon Reine des Voleurs » : « drdv », « drv » ; « rdv » n'en est pas le début.
+    expect(search('rdv', new Map())).toEqual([]);
   });
 
   it('alias désactivé : sans effet', () => {
-    const dict = buildDictionary(DEFAULTS, { custom: [], disabledDefaults: ['hdv'] });
-    expect(search('hdv', dict)).toEqual([]);
-    expect(search('rdv', dict)).toEqual(['reine']);
+    const dict = buildDictionary(DEFAULTS, { custom: [], disabledDefaults: ['rdv'] });
+    expect(search('rdv', dict)).toEqual([]);
+    expect(search('hdv', dict)).toEqual(['hdv-bonta', 'hdv-brakmar']);
   });
 
   it('alias personnalisé : remplace l\'alias livré du même terme', () => {
@@ -102,7 +106,8 @@ describe('dictionnaire d\'alias', () => {
       custom: [{ term: 'HDV', expansions: ['atelier'] }],
       disabledDefaults: [],
     });
-    expect(search('hdv', dict)).toEqual(['bijoutiers', 'atelier']);
+    // Le terme (palier 1) passe devant les initiales calculées des hôtels (palier 5).
+    expect(search('hdv', dict)).toEqual(['bijoutiers', 'atelier', 'hdv-bonta', 'hdv-brakmar']);
   });
 
   it('plusieurs significations : union des résultats, aucun choix arbitraire', () => {
@@ -126,9 +131,10 @@ describe('dictionnaire d\'alias', () => {
     expect(search('hdv', dictionary, list)).toEqual(['nom', 'tag']);
   });
 
-  it('un terme du dictionnaire garde sa correspondance directe', () => {
+  it('un terme du dictionnaire garde sa correspondance directe, après ce qu\'il désigne', () => {
     const list = [dest('direct', 'Rdvium fictif'), dest('reine', 'Reine des Voleurs')];
-    expect(search('rdv', dictionary, list)).toEqual(['direct', 'reine']);
+    // Alias exact (palier 1) devant le début d'un nom (palier 3) : issue n°24.
+    expect(search('rdv', dictionary, list)).toEqual(['reine', 'direct']);
   });
 });
 
@@ -286,5 +292,77 @@ describe('index', () => {
     expect(ids(filterDestinations(list, 'all', 'hdv', new Set(), dictionary))).toEqual(['a', 'z']);
     expect(ids(filterDestinations(list, 'all', 'atelié', new Set(), dictionary))).toEqual(['autre']);
     expect(ids(filterDestinations(list, 'favorites', 'hdv', new Set(['z']), dictionary))).toEqual(['z']);
+  });
+});
+
+describe('paliers de pertinence (issue n°24)', () => {
+  it('un témoin par palier : alias exact > nom exact > début > mots > acronyme > sous-chaîne', () => {
+    const dict = buildDictionary([], { custom: [{ term: 'vortex', expansions: ['portail bleu'] }], disabledDefaults: [] });
+    const list = [
+      dest('dedans', 'Supervortex'),
+      dest('acronyme-debut', 'Vieux Ormeau Rouge Tour Est Xénon Ouest'),
+      dest('acronyme', 'Vieux Ormeau Rouge Tour Est Xénon'),
+      dest('tag', 'Lieu C', { tags: ['vortex'] }),
+      dest('mot', 'Grand vortex'),
+      dest('prefixe-alias', 'Lieu B', { aliases: ['vortex sud'] }),
+      dest('prefixe', 'Vortex du nord'),
+      dest('exact', 'Vortex'),
+      dest('terme', 'Portail bleu fictif'),
+      dest('alias', 'Autre lieu', { aliases: ['Vortex'] }),
+    ];
+    expect(search('vortex', dict, list)).toEqual([
+      'alias',
+      'terme',
+      'exact',
+      'prefixe',
+      'prefixe-alias',
+      'mot',
+      'tag',
+      'acronyme',
+      'acronyme-debut',
+      'dedans',
+    ]);
+  });
+
+  it('« rdv » : l\'alias de fiche exact passe devant les acronymes et les débuts de nom', () => {
+    const list = [
+      dest('rdvium', 'Rdvium fictif'),
+      dest('repaire', 'Repaire du Vent'),
+      dest('trone', 'Trône de la Cour Sombre', { aliases: ['RDV', 'Reine des Voleurs'] }),
+    ];
+    expect(search('rdv', new Map(), list)).toEqual(['trone', 'rdvium', 'repaire']);
+    expect(search('RDV', dictionary, list)[0]).toBe('trone');
+  });
+
+  it('acronymes calculés : avec et sans mots de liaison, jamais pour un seul mot', () => {
+    expect(acronymsOf(tokenize('Reine des Voleurs'))).toEqual(['rdv', 'rv']);
+    expect(acronymsOf(tokenize('Grand Vortex'))).toEqual(['gv']);
+    expect(acronymsOf(tokenize('Le Pont'))).toEqual(['lp']);
+    expect(acronymsOf(tokenize('Vortex'))).toEqual([]);
+    const list = [dest('reine', 'Reine des Voleurs'), dest('seul', 'Rv')];
+    expect(search('rv', new Map(), list)).toEqual(['seul', 'reine']);
+    // Début d'acronyme : « ad » commence « adb » (Atelier des bijoutiers).
+    expect(search('ad', new Map(), [dest('a', 'Atelier des bijoutiers')])).toEqual(['a']);
+  });
+
+  it('un acronyme ne s\'applique qu\'à une requête d\'un seul mot', () => {
+    const list = [dest('reine', 'Reine des Voleurs')];
+    expect(search('rdv bonta', new Map(), list)).toEqual([]);
+  });
+
+  it('alias de fiche en double (catalogue existant) : toutes les fiches, ordre déterministe', () => {
+    const list = [
+      dest('b', 'Beta', { aliases: ['xy'], sortOrder: 2 }),
+      dest('a', 'Alpha', { aliases: ['xy'], sortOrder: 1 }),
+    ];
+    expect(search('xy', new Map(), list)).toEqual(['a', 'b']);
+    expect(ids(searchIndexRank(getSearchIndex(list, new Map()), 'xy', new Set(['b'])))).toEqual(['b', 'a']);
+  });
+
+  it('les acronymes comptent comme une correspondance exacte : pas de seconde passe', () => {
+    const distance = vi.mocked(searchText.boundedPrefixDistance);
+    distance.mockClear();
+    expect(search('rdvd', new Map(), [dest('r', 'Reine des Voleurs Dorés'), dest('x', 'Rdvdx')])).toEqual(['x', 'r']);
+    expect(distance).not.toHaveBeenCalled();
   });
 });

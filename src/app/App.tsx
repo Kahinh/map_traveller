@@ -256,6 +256,7 @@ export function App() {
         <DestinationForm
           key={panel.key}
           initial={panel.draft}
+          destinations={destinations}
           onSave={onSaveDraft}
           onDelete={onDeleteDestination}
           onDuplicate={onDuplicate}

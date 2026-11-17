@@ -7,7 +7,7 @@ import {
   type DestinationDraft,
   type DraftField,
 } from '../../features/catalog/editor';
-import { allowsTwoStep } from '../../features/catalog/schema';
+import { allowsTwoStep, type Destination } from '../../features/catalog/schema';
 
 /** Ordre de parcours des champs, pour donner le focus au premier champ en erreur. */
 const FIELD_ORDER: readonly DraftField[] = [
@@ -40,7 +40,7 @@ export interface FieldBinding {
  * première tentative d'enregistrement), aperçu de la copie, focus du premier champ en erreur.
  * L'état est local au formulaire : la frappe ne re-rend pas la grille.
  */
-export function useDestinationDraft(initial: DestinationDraft) {
+export function useDestinationDraft(initial: DestinationDraft, destinations: readonly Destination[]) {
   const uid = useId();
   const [draft, setDraft] = useState(initial);
   const [touched, setTouched] = useState<ReadonlySet<DraftField>>(() => new Set());
@@ -48,7 +48,8 @@ export function useDestinationDraft(initial: DestinationDraft) {
   const [moreOpen, setMoreOpen] = useState(false);
   const fieldRefs = useRef<Partial<Record<DraftField, HTMLElement | null>>>({});
 
-  const errors = useMemo(() => validateDraft(draft), [draft]);
+  // Le catalogue sert à refuser un alias déjà porté par une autre destination.
+  const errors = useMemo(() => validateDraft(draft, destinations), [draft, destinations]);
   const dirty = isDraftDirty(initial, draft);
 
   // L'aperçu ne dépend que de la catégorie et des commandes.

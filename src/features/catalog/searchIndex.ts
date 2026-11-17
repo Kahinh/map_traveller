@@ -1,17 +1,33 @@
 /**
- * Index de recherche du catalogue (issue n°10). Fonctions pures.
+ * Index de recherche du catalogue (issues n°10 et n°24). Fonctions pures.
  *
  * Construit une fois par catalogue et par dictionnaire, puis interrogé à chaque frappe. La
  * recherche d'un mot parcourt le VOCABULAIRE (les mots distincts du catalogue), pas les
  * destinations ; le résultat par mot est mémorisé, si bien qu'en tapant « bijoutier bo » puis
  * « bon », seul le dernier mot est recalculé.
  *
- * Classement : chaque mot de la requête a un coût par destination (tableau ci-dessous), tous
- * les mots doivent correspondre (ET), et le coût d'une destination est la SOMME des coûts :
- * l'ordre des mots tapés ne change donc rien. À coût égal : favori, puis `sortOrder` et nom.
+ * Classement par PALIERS déterministes (`TIER`), du meilleur au moins bon :
  *
- * Tolérance aux fautes de frappe : en seconde passe seulement, quand la recherche exacte ne
- * renvoie rien. Un résultat approximatif ne peut donc jamais noyer un résultat exact.
+ * | Palier | Constante    | La destination est retenue parce que…                                          |
+ * |-------:|--------------|--------------------------------------------------------------------------------|
+ * |      1 | `aliasExact` | la requête entière est un alias entier de la fiche, ou un terme du dictionnaire |
+ * |        |              | global dont une signification la désigne (« rdv » → « reine des voleurs »)     |
+ * |      2 | `nameExact`  | la requête entière est son nom entier (ordre des mots libre)                   |
+ * |      3 | `prefix`     | la requête est le début de son nom ou d'un alias de la fiche (« reine des v »)  |
+ * |      4 | `words`      | chaque mot tapé commence un mot du nom, d'un alias, d'un tag, de la zone, ou     |
+ * |        |              | désigne la catégorie (ET, ordre libre)                                          |
+ * |      5 | `acronym`    | requête d'un seul mot = initiales du nom ou d'un alias (« rdv », « rv ») ;      |
+ * |        |              | début d'initiales (2 lettres au moins) ensuite                                 |
+ * |      6 | `inside`     | un mot tapé n'est trouvé qu'à l'intérieur d'un mot (« plan » dans « Esplanade ») |
+ * |      7 | `typo`       | à une faute de frappe près (seconde passe, seulement si rien d'autre)          |
+ *
+ * Dans un palier : coût des champs où les mots ont été trouvés (`FIELD_COST`, somme sur les
+ * mots : nom avant alias avant tag, zone ou catégorie), puis favori, puis rang du catalogue
+ * (`sortOrder`, puis nom). Paliers 1, 3 et 5 : alias de fiche avant terme du dictionnaire,
+ * nom avant alias, acronyme exact avant début d'acronyme.
+ *
+ * Tolérance aux fautes de frappe : en seconde passe seulement, quand la recherche exacte (paliers
+ * 1 à 6) ne renvoie rien. Un résultat approximatif ne peut donc jamais noyer un résultat exact.
  */
 import { EMPTY_DICTIONARY, type AliasDictionary } from '../aliases/aliases';
 import {
@@ -21,23 +37,46 @@ import {
   type Category,
   type Destination,
 } from './schema';
-import { boundedPrefixDistance, maxTypos, queryTokensOf, tokenize } from './searchText';
+import { boundedPrefixDistance, maxTypos, queryTokensOf, STOP_WORDS, tokenize } from './searchText';
 
-/** Coût d'un mot de la requête pour une destination (plus petit = meilleur). */
-export const COST = {
-  /** Commence le premier mot du nom, ou égale un alias entier de la fiche. */
-  nameStart: 0,
-  /** Commence un autre mot du nom. */
-  nameWord: 1,
-  /** Contenu dans un mot du nom. */
-  nameInside: 2,
-  /** Commence un mot d'un alias de la fiche. */
-  aliasWord: 3,
-  /** Contenu dans un alias, trouvé dans un tag ou la zone, ou désigne la catégorie. */
-  other: 4,
-  /** Ne correspond qu'à une faute de frappe près (nom ou alias). */
-  typo: 6,
+/** Paliers de pertinence (plus petit = meilleur). Voir le tableau en tête du fichier. */
+export const TIER = {
+  aliasExact: 1,
+  nameExact: 2,
+  prefix: 3,
+  words: 4,
+  acronym: 5,
+  inside: 6,
+  typo: 7,
 } as const;
+
+/** Coût d'un mot selon le champ où il est trouvé, pour départager un même palier (plus petit = meilleur). */
+export const FIELD_COST = {
+  /** Premier mot du nom. */
+  nameFirst: 0,
+  /** Autre mot du nom. */
+  nameOther: 1,
+  /** Mot d'un alias de la fiche. */
+  alias: 2,
+  /** Tag, zone ou catégorie. */
+  other: 3,
+} as const;
+
+/**
+ * Coût d'un mot pour une destination, sur un octet : genre de correspondance (`Kind`) × 4 +
+ * coût du champ. Le plus petit octet est donc la meilleure correspondance.
+ */
+const Kind = {
+  /** Commence un mot. */
+  start: 0,
+  /** Contenu dans un mot. */
+  inside: 1,
+  /** À une faute de frappe près. */
+  typo: 2,
+} as const;
+const code = (kind: number, field: number) => kind * 4 + field;
+const codeKind = (c: number) => c >> 2;
+const codeField = (c: number) => c & 3;
 
 /** Absence de correspondance dans un tableau de coûts. */
 const NO_MATCH = 255;
@@ -45,19 +84,19 @@ const NO_MATCH = 255;
 const CACHE_LIMIT = 64;
 /** Un mot désigne une catégorie à partir de deux lettres (« on » ne doit rien ramener). */
 const CATEGORY_MIN_LENGTH = 2;
+/** Un acronyme, ou un début d'acronyme tapé, a au moins deux lettres. */
+const ACRONYM_MIN_LENGTH = 2;
+/** Coût d'un acronyme tapé en entier, puis d'un début d'acronyme. */
+const ACRONYM_EXACT = 0;
+const ACRONYM_START = 1;
 
-/** Champ d'où vient un mot indexé. */
+
+/** Champ d'où vient un mot indexé ; sa valeur est son coût (`FIELD_COST`). */
 const Field = {
-  /** Premier mot du nom. */
-  NameFirst: 0,
-  /** Autre mot du nom. */
-  NameOther: 1,
-  /** Alias de la fiche fait d'un seul mot. */
-  AliasWhole: 2,
-  /** Mot d'un alias de plusieurs mots. */
-  AliasPart: 3,
-  /** Tag ou zone. */
-  Other: 4,
+  NameFirst: FIELD_COST.nameFirst,
+  NameOther: FIELD_COST.nameOther,
+  Alias: FIELD_COST.alias,
+  Other: FIELD_COST.other,
 } as const;
 type Field = (typeof Field)[keyof typeof Field];
 
@@ -68,6 +107,34 @@ function wholeKey(words: readonly string[]): string {
   const distinct: string[] = [];
   for (const w of words) if (!distinct.includes(w)) distinct.push(w);
   return distinct.sort().join(' ');
+}
+
+/**
+ * Clé normalisée d'un texte entier (alias, nom) : deux textes de même clé répondent à la même
+ * requête exacte (« Reine des Voleurs » et « voleurs  reine des »).
+ */
+export function textKey(text: string): string {
+  return wholeKey(tokenize(text));
+}
+
+/** Première lettre de chaque mot (point de code entier : un nom dans un autre alphabet reste juste). */
+function initials(words: readonly string[]): string {
+  let result = '';
+  for (const w of words) result += String.fromCodePoint(w.codePointAt(0) ?? 0);
+  return result;
+}
+
+/**
+ * Acronymes d'un texte de plusieurs mots : initiales de tous les mots, puis sans les mots de
+ * liaison (« Reine des Voleurs » → « rdv », « rv »), chacun de deux lettres au moins. Un texte
+ * d'un seul mot n'en a pas : ses initiales ne seraient qu'une lettre, ou le début du mot.
+ */
+export function acronymsOf(words: readonly string[]): string[] {
+  if (words.length < ACRONYM_MIN_LENGTH) return [];
+  const all = initials(words);
+  const content = words.filter((w) => !STOP_WORDS.has(w));
+  if (content.length < ACRONYM_MIN_LENGTH || content.length === words.length) return [all];
+  return [all, initials(content)];
 }
 
 /**
@@ -92,8 +159,16 @@ export interface SearchIndex {
   readonly rank: Uint32Array;
   /** Destinations triées par rang. */
   readonly byRank: readonly number[];
-  /** Nom ou alias entier (`wholeKey` de ses mots) → destinations. */
-  readonly wholeKeys: ReadonlyMap<string, readonly number[]>;
+  /** Alias entier de la fiche (`wholeKey` de ses mots) → destinations (palier 1). */
+  readonly aliasKeys: ReadonlyMap<string, readonly number[]>;
+  /** Nom entier (`wholeKey` de ses mots) → destinations (palier 2). */
+  readonly nameKeys: ReadonlyMap<string, readonly number[]>;
+  /** Mots du nom de chaque destination, joints par une espace (palier 3). */
+  readonly nameTexts: readonly string[];
+  /** Mots de chaque alias de la fiche, joints par une espace (palier 3). */
+  readonly aliasTexts: readonly (readonly string[])[];
+  /** Acronymes du nom et des alias de la fiche (`acronymsOf`) → destinations (palier 5). */
+  readonly acronyms: ReadonlyMap<string, readonly number[]>;
   /** Coûts déjà calculés, par mot et par mode. */
   readonly cache: Map<string, Uint8Array>;
 }
@@ -123,6 +198,17 @@ export function categoriesForWord(word: string): Category[] {
   );
 }
 
+/** Destination sans alias : un seul tableau vide partagé. */
+const NO_TEXTS: readonly string[] = [];
+
+/** Ajoute `doc` à la liste de `key`, sans doublon consécutif. */
+function addKey(map: Map<string, number[]>, key: string, doc: number): void {
+  if (key === '') return;
+  const list = map.get(key);
+  if (!list) map.set(key, [doc]);
+  else if (list[list.length - 1] !== doc) list.push(doc);
+}
+
 /** Index des destinations ACTIVES. À construire une fois par catalogue et par dictionnaire. */
 export function buildSearchIndex(
   destinations: readonly Destination[],
@@ -131,18 +217,16 @@ export function buildSearchIndex(
   const docs = destinations.filter((d) => d.enabled);
   const vocabulary = new Map<string, Posting[]>();
   const byCategory = Object.fromEntries(CATEGORIES.map((c) => [c, [] as number[]])) as Record<Category, number[]>;
-  const wholeKeys = new Map<string, number[]>();
+  const aliasKeys = new Map<string, number[]>();
+  const nameKeys = new Map<string, number[]>();
+  const acronyms = new Map<string, number[]>();
+  const nameTexts: string[] = [];
+  const aliasTexts: (readonly string[])[] = [];
 
   const add = (word: string, doc: number, field: Field) => {
     const list = vocabulary.get(word);
     if (list) list.push(posting(doc, field));
     else vocabulary.set(word, [posting(doc, field)]);
-  };
-  const addWhole = (key: string, doc: number) => {
-    if (key === '') return;
-    const list = wholeKeys.get(key);
-    if (!list) wholeKeys.set(key, [doc]);
-    else if (list[list.length - 1] !== doc) list.push(doc);
   };
 
   // Zones et tags se répètent d'une destination à l'autre : chacun n'est découpé qu'une fois.
@@ -155,16 +239,25 @@ export function buildSearchIndex(
 
   docs.forEach((d, doc) => {
     byCategory[d.category].push(doc);
-    // Une seule découpe par texte : elle sert aux mots indexés et à la clé du texte entier.
+    // Une seule découpe par texte : elle sert aux mots indexés, à la clé du texte entier, au
+    // texte joint et aux acronymes.
     const nameWords = tokenize(d.name);
     nameWords.forEach((word, i) => add(word, doc, i === 0 ? Field.NameFirst : Field.NameOther));
-    addWhole(wholeKey(nameWords), doc);
+    addKey(nameKeys, wholeKey(nameWords), doc);
+    nameTexts.push(nameWords.join(' '));
+    for (const acronym of acronymsOf(nameWords)) addKey(acronyms, acronym, doc);
+
+    let texts: string[] | null = null;
     for (const alias of d.aliases) {
       const words = tokenize(alias);
-      const field = words.length === 1 ? Field.AliasWhole : Field.AliasPart;
-      for (const word of words) add(word, doc, field);
-      addWhole(wholeKey(words), doc);
+      if (words.length === 0) continue;
+      for (const word of words) add(word, doc, Field.Alias);
+      addKey(aliasKeys, wholeKey(words), doc);
+      (texts ??= []).push(words.join(' '));
+      for (const acronym of acronymsOf(words)) addKey(acronyms, acronym, doc);
     }
+    aliasTexts.push(texts ?? NO_TEXTS);
+
     for (const word of tokenizeShared(d.zone)) add(word, doc, Field.Other);
     for (const tag of d.tags) for (const word of tokenizeShared(tag)) add(word, doc, Field.Other);
   });
@@ -192,28 +285,13 @@ export function buildSearchIndex(
     byCategory,
     rank,
     byRank,
-    wholeKeys,
+    aliasKeys,
+    nameKeys,
+    nameTexts,
+    aliasTexts,
+    acronyms,
     cache: new Map(),
   };
-}
-
-function prefixCost(field: Field, exact: boolean): number {
-  switch (field) {
-    case Field.NameFirst:
-      return COST.nameStart;
-    case Field.NameOther:
-      return COST.nameWord;
-    case Field.AliasWhole:
-      return exact ? COST.nameStart : COST.aliasWord;
-    case Field.AliasPart:
-      return COST.aliasWord;
-    default:
-      return COST.other;
-  }
-}
-
-function insideCost(field: Field): number {
-  return field === Field.NameFirst || field === Field.NameOther ? COST.nameInside : COST.other;
 }
 
 type Mode = 'exact' | 'prefix' | 'typo';
@@ -258,39 +336,37 @@ function vocabularyCosts(index: SearchIndex, word: string, mode: Mode): Uint8Arr
   index.words.forEach((candidate, w) => {
     const postings = index.postings[w] ?? [];
     if (candidate.startsWith(word)) {
-      const exact = candidate.length === word.length;
-      for (const p of postings) lower(postingDoc(p), prefixCost(postingField(p), exact));
+      for (const p of postings) lower(postingDoc(p), code(Kind.start, postingField(p)));
     } else if (mode !== 'prefix' && candidate.includes(word)) {
-      for (const p of postings) lower(postingDoc(p), insideCost(postingField(p)));
+      for (const p of postings) lower(postingDoc(p), code(Kind.inside, postingField(p)));
     } else if (typos > 0 && candidate.charCodeAt(0) === word.charCodeAt(0)) {
       // Calculé seulement s'il existe un mot du nom ou d'un alias à rapprocher.
       if (postings.every((p) => postingField(p) === Field.Other)) return;
       if (boundedPrefixDistance(word, candidate, typos) > typos) return;
-      for (const p of postings) if (postingField(p) !== Field.Other) lower(postingDoc(p), COST.typo);
+      for (const p of postings) if (postingField(p) !== Field.Other) lower(postingDoc(p), code(Kind.typo, postingField(p)));
     }
   });
 
   if (mode !== 'prefix') {
-    for (const category of categoriesForWord(word)) for (const doc of index.byCategory[category]) lower(doc, COST.other);
+    const category = code(Kind.start, Field.Other);
+    for (const c of categoriesForWord(word)) for (const doc of index.byCategory[c]) lower(doc, category);
   }
   return remember(index, key, costs);
 }
 
 /**
- * Coût d'un mot de la requête : sa correspondance directe, ou, si c'est un terme du
- * dictionnaire, la meilleure de ses significations. Une signification coûte le PIRE coût de
- * ses mots, chacun devant commencer un mot de la destination.
+ * Destinations désignées par un terme du dictionnaire, ou `null` si ce n'est pas un terme. Une
+ * signification coûte le PIRE coût de ses mots, chacun devant commencer un mot de la
+ * destination ; le terme vaut la meilleure de ses significations (union).
  */
-function wordCosts(index: SearchIndex, word: string, typo: boolean): Uint8Array {
-  const direct = vocabularyCosts(index, word, typo ? 'typo' : 'exact');
+function termCosts(index: SearchIndex, word: string): Uint8Array | null {
   const expansions = index.dictionary.get(word);
-  if (!expansions) return direct;
-
-  const key = `${typo ? 'typo' : 'exact'}+alias:${word}`;
+  if (!expansions) return null;
+  const key = `alias:${word}`;
   const cached = recall(index, key);
   if (cached) return cached;
 
-  const costs = Uint8Array.from(direct);
+  const costs = new Uint8Array(index.docs.length).fill(NO_MATCH);
   for (const expansion of expansions) {
     const parts = expansion.map((w) => vocabularyCosts(index, w, 'prefix'));
     if (parts.length === 0) continue;
@@ -306,20 +382,71 @@ function wordCosts(index: SearchIndex, word: string, typo: boolean): Uint8Array 
   return remember(index, key, costs);
 }
 
+/** Coût d'un mot de la requête : sa correspondance directe, ou, si c'est un terme du dictionnaire, ce qu'il désigne. */
+function wordCosts(index: SearchIndex, word: string, typo: boolean): Uint8Array {
+  const mode = typo ? 'typo' : 'exact';
+  const direct = vocabularyCosts(index, word, mode);
+  if (!index.dictionary.has(word)) return direct;
+
+  const key = `${mode}+alias:${word}`;
+  const cached = recall(index, key);
+  if (cached) return cached;
+  const designated = termCosts(index, word) as Uint8Array;
+  const costs = Uint8Array.from(direct);
+  for (let doc = 0; doc < costs.length; doc++) {
+    const c = designated[doc] ?? NO_MATCH;
+    if (c < (costs[doc] ?? NO_MATCH)) costs[doc] = c;
+  }
+  return remember(index, key, costs);
+}
+
+/**
+ * Destinations dont un acronyme égale le mot (`ACRONYM_EXACT`) ou commence par lui
+ * (`ACRONYM_START`, deux lettres au moins), ou `null` si aucune ne peut correspondre.
+ */
+function acronymCosts(index: SearchIndex, word: string): Uint8Array | null {
+  if (word.length < ACRONYM_MIN_LENGTH || index.acronyms.size === 0) return null;
+  const key = `acronym:${word}`;
+  const cached = recall(index, key);
+  if (cached) return cached;
+
+  const costs = new Uint8Array(index.docs.length).fill(NO_MATCH);
+  for (const [acronym, docs] of index.acronyms) {
+    if (!acronym.startsWith(word)) continue;
+    const cost = acronym.length === word.length ? ACRONYM_EXACT : ACRONYM_START;
+    for (const doc of docs) if (cost < (costs[doc] ?? NO_MATCH)) costs[doc] = cost;
+  }
+  return remember(index, key, costs);
+}
+
 interface Scored {
   doc: number;
+  /** Palier (`TIER`). */
+  tier: number;
+  /** Départage dans le palier (plus petit = meilleur). */
   cost: number;
 }
 
 /** Restreint une recherche à certaines destinations (les parcours Farm, par exemple). */
 export type Accept = (d: Destination) => boolean;
 
-/** Destinations acceptées qui portent tous les mots, avec leur coût total. */
-function scoreAll(index: SearchIndex, words: readonly string[], typo: boolean, accept?: Accept): Scored[] {
+/**
+ * Destinations acceptées qui portent tous les mots (paliers 4, 6 ou 7), ou dont un acronyme
+ * correspond (palier 5), avec leur palier et leur coût. Les paliers 1 à 3 sont attribués
+ * ensuite, au classement (`promote`).
+ */
+function scoreAll(
+  index: SearchIndex,
+  words: readonly string[],
+  typo: boolean,
+  accept: Accept | undefined,
+  acronym: Uint8Array | null,
+): Scored[] {
   const perWord = words.map((w) => wordCosts(index, w, typo));
   const scored: Scored[] = [];
   for (let doc = 0; doc < index.docs.length; doc++) {
     if (accept && !accept(index.docs[doc] as Destination)) continue;
+    let worstKind: number = Kind.start;
     let cost = 0;
     for (const costs of perWord) {
       const c = costs[doc] ?? NO_MATCH;
@@ -327,21 +454,18 @@ function scoreAll(index: SearchIndex, words: readonly string[], typo: boolean, a
         cost = -1;
         break;
       }
-      cost += c;
+      if (codeKind(c) > worstKind) worstKind = codeKind(c);
+      cost += codeField(c);
     }
-    if (cost >= 0) scored.push({ doc, cost });
+    let tier: number = typo ? TIER.typo : worstKind === Kind.inside ? TIER.inside : TIER.words;
+    const initialsCost = acronym?.[doc] ?? NO_MATCH;
+    if (initialsCost !== NO_MATCH && (cost < 0 || tier > TIER.acronym)) {
+      tier = TIER.acronym;
+      cost = initialsCost;
+    }
+    if (cost >= 0) scored.push({ doc, tier, cost });
   }
   return scored;
-}
-
-/**
- * Recherche exacte, puis à une faute près seulement si elle ne renvoie rien PARMI les
- * destinations acceptées : un résultat exact écarté par le filtre ne bloque pas la seconde passe.
- */
-function score(index: SearchIndex, words: readonly string[], accept?: Accept, typos = true): Scored[] {
-  const exact = scoreAll(index, words, false, accept);
-  if (exact.length > 0 || !typos || !words.some((w) => maxTypos(w) > 0)) return exact;
-  return scoreAll(index, words, true, accept);
 }
 
 /** Requête découpée une seule fois, pour toutes les étapes de la recherche. */
@@ -350,19 +474,73 @@ interface PreparedQuery {
   words: string[];
   /** Du texte, mais aucun mot (ponctuation seule) : rien ne correspond. */
   wordless: boolean;
-  /** Clé du texte entier (`wholeKey`), mots de liaison compris. */
+  /** Clé du texte entier (`wholeKey`), mots de liaison compris (paliers 1 et 2). */
   whole: string;
+  /** Tous les mots tapés, dans l'ordre, joints par une espace (palier 3). */
+  text: string;
+  /** Le mot tapé, si la requête n'en compte qu'un (terme du dictionnaire, acronyme). */
+  single: string | null;
 }
 
 function prepareQuery(query: string): PreparedQuery {
   const tokens = tokenize(query);
-  return { words: queryTokensOf(tokens), wordless: tokens.length === 0 && query.trim() !== '', whole: wholeKey(tokens) };
+  return {
+    words: queryTokensOf(tokens),
+    wordless: tokens.length === 0 && query.trim() !== '',
+    whole: wholeKey(tokens),
+    text: tokens.join(' '),
+    single: tokens.length === 1 ? (tokens[0] as string) : null,
+  };
 }
 
 /**
- * Destinations correspondant à la requête, de la plus pertinente à la moins pertinente.
- * Requête vide : toutes les destinations actives, favoris d'abord. Requête sans aucun mot
- * (ponctuation seule) : rien. `accept` restreint la recherche avant tout classement.
+ * Recherche exacte (acronymes compris), puis à une faute près seulement si elle ne renvoie rien
+ * PARMI les destinations acceptées : un résultat exact écarté par le filtre ne bloque pas la
+ * seconde passe.
+ */
+function score(index: SearchIndex, query: PreparedQuery, accept?: Accept, typos = true): Scored[] {
+  const acronym = query.single === null ? null : acronymCosts(index, query.single);
+  const exact = scoreAll(index, query.words, false, accept, acronym);
+  if (exact.length > 0 || !typos || !query.words.some((w) => maxTypos(w) > 0)) return exact;
+  return scoreAll(index, query.words, true, accept, null);
+}
+
+/**
+ * Paliers 1 à 3, qui portent sur la requête ENTIÈRE : alias exact (de la fiche, puis terme du
+ * dictionnaire qui la désigne), nom exact, début du nom (puis d'un alias). Modifie `scored`.
+ */
+function promote(index: SearchIndex, query: PreparedQuery, scored: Scored[]): void {
+  if (query.text === '') return;
+  const aliasDocs = new Set(index.aliasKeys.get(query.whole));
+  const nameDocs = new Set(index.nameKeys.get(query.whole));
+  const designated = query.single === null ? null : termCosts(index, query.single);
+  for (const s of scored) {
+    // Seconde passe : une correspondance de la requête entière aurait abouti dès la première.
+    if (s.tier === TIER.typo) continue;
+    const term = designated?.[s.doc] ?? NO_MATCH;
+    if (aliasDocs.has(s.doc)) {
+      s.tier = TIER.aliasExact;
+      s.cost = 0;
+    } else if (term !== NO_MATCH) {
+      s.tier = TIER.aliasExact;
+      s.cost = 1 + codeField(term);
+    } else if (nameDocs.has(s.doc)) {
+      s.tier = TIER.nameExact;
+      s.cost = 0;
+    } else if ((index.nameTexts[s.doc] as string).startsWith(query.text)) {
+      s.tier = TIER.prefix;
+      s.cost = 0;
+    } else if ((index.aliasTexts[s.doc] as readonly string[]).some((t) => t.startsWith(query.text))) {
+      s.tier = TIER.prefix;
+      s.cost = 1;
+    }
+  }
+}
+
+/**
+ * Destinations correspondant à la requête, de la plus pertinente à la moins pertinente (paliers
+ * en tête du fichier). Requête vide : toutes les destinations actives, favoris d'abord. Requête
+ * sans aucun mot (ponctuation seule) : rien. `accept` restreint la recherche avant tout classement.
  */
 export function searchIndexRank(
   index: SearchIndex,
@@ -372,24 +550,21 @@ export function searchIndexRank(
 ): Destination[] {
   const { docs, rank } = index;
   const isFavorite = (doc: number) => favorites.has((docs[doc] as Destination).id);
-  const { words, wordless, whole } = prepareQuery(query);
-  if (wordless) return [];
-  if (words.length === 0) {
+  const prepared = prepareQuery(query);
+  if (prepared.wordless) return [];
+  if (prepared.words.length === 0) {
     const accepted = accept ? index.byRank.filter((doc) => accept(docs[doc] as Destination)) : index.byRank;
     const favs = accepted.filter(isFavorite);
     const others = accepted.filter((doc) => !isFavorite(doc));
     return [...favs, ...others].map((doc) => docs[doc] as Destination);
   }
 
-  const scored = score(index, words, accept);
-  // Requête faite exactement des mots du nom entier ou d'un alias entier : en tête.
-  const wholeDocs = new Set(index.wholeKeys.get(whole) ?? []);
-  const sortable = scored.map((s) => ({
-    doc: s.doc,
-    cost: wholeDocs.has(s.doc) ? -1 : s.cost,
-    fav: isFavorite(s.doc) ? 0 : 1,
-  }));
-  sortable.sort((a, b) => a.cost - b.cost || a.fav - b.fav || (rank[a.doc] ?? 0) - (rank[b.doc] ?? 0));
+  const scored = score(index, prepared, accept);
+  promote(index, prepared, scored);
+  const sortable = scored.map((s) => ({ ...s, fav: isFavorite(s.doc) ? 0 : 1 }));
+  sortable.sort(
+    (a, b) => a.tier - b.tier || a.cost - b.cost || a.fav - b.fav || (rank[a.doc] ?? 0) - (rank[b.doc] ?? 0),
+  );
   return sortable.map((s) => docs[s.doc] as Destination);
 }
 
@@ -404,10 +579,10 @@ export function searchIndexMatch(
   query: string,
   options: { typos?: boolean; accept?: Accept } = {},
 ): ReadonlySet<Destination> | null {
-  const { words, wordless } = prepareQuery(query);
-  if (wordless) return new Set();
-  if (words.length === 0) return null;
-  return new Set(score(index, words, options.accept, options.typos ?? true).map((s) => index.docs[s.doc] as Destination));
+  const prepared = prepareQuery(query);
+  if (prepared.wordless) return new Set();
+  if (prepared.words.length === 0) return null;
+  return new Set(score(index, prepared, options.accept, options.typos ?? true).map((s) => index.docs[s.doc] as Destination));
 }
 
 /** Dernier index construit pour un tableau de destinations (jamais muté : invariant 10). */

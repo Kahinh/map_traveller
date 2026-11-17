@@ -10,12 +10,8 @@ import {
 } from 'react';
 import { SearchIcon } from '../components/icons';
 import { Keys } from '../components/Keys';
-import { buildDictionary, EMPTY_DICTIONARY, type AliasDictionary } from '../features/aliases/aliases';
-import type { Destination } from '../features/catalog/schema';
-import type { VariantKind } from '../features/commands/cardParts';
 import {
   buildPaletteIndex,
-  DEFAULT_VARIANT,
   PALETTE_LIMIT,
   searchPalette,
   variantShortLabel,
@@ -23,38 +19,29 @@ import {
   type PaletteSearchResult,
 } from '../features/palette/entries';
 import { createCopyGate, enterChoice, variantText, type CopyChoice } from '../features/palette/enter';
-import { textFingerprint } from '../features/palette/fingerprint';
 import { navReducer, type NavAction, type NavState } from '../features/palette/navigation';
-import { heightToSend, PALETTE_BAR_HEIGHT } from '../features/palette/windowHeight';
+import { heightToSend, PALETTE_BAR_HEIGHT, PALETTE_VISIBLE_ROWS } from '../features/palette/windowHeight';
 import { DEFAULT_ZAAPS } from '../features/zaaps/defaultZaaps';
 import { errorText } from '../lib/errors';
 import { copyText } from '../lib/tauri/clipboard';
-import { forgetMissingThumbs, initImages } from '../lib/tauri/images';
-import { hidePalette, onPaletteHidden, onPaletteShown, onStoreChanged, setPaletteHeight } from '../lib/tauri/palette';
-import {
-  DEFAULT_ALIASES,
-  loadFavorites,
-  loadPaletteSettings,
-  parseAliasesText,
-  parseCatalogText,
-  readStoreText,
-  type StoreName,
-} from '../lib/tauri/storeRead';
+import { forgetMissingThumbs } from '../lib/tauri/images';
+import { hidePalette, onPaletteHidden, onPaletteShown, setPaletteHeight } from '../lib/tauri/palette';
 import { perf } from './perf';
 import { PaletteRow } from './PaletteRow';
+import { usePaletteData } from './usePaletteData';
 
 const LIST_ID = 'palette-list';
 const optionId = (i: number) => `palette-opt-${i}`;
 
 /**
- * Lignes rendues avant tout défilement : les 8 visibles (`--pal-max-rows`) et une marge. Les
- * suivantes sont remplacées par un espace de même hauteur (barre de défilement juste, aucun
+ * Lignes rendues avant tout défilement : les visibles (`PALETTE_VISIBLE_ROWS`) et cette marge.
+ * Les suivantes sont remplacées par un espace de même hauteur (barre de défilement juste, aucun
  * saut) et rendues au premier défilement, ou au fil de la flèche bas.
  */
-const VISIBLE_ROWS = 8;
 const ROW_MARGIN = 4;
 
-type Status = { kind: 'copied' | 'warning'; text: string } | null;
+/** Message d'état ; `detail` (infobulle) garde le texte technique d'un échec. */
+type Status = { kind: 'copied' | 'warning'; text: string; detail?: string } | null;
 
 /**
  * État de navigation rattaché à la liste de résultats pour laquelle il a été calculé. Quand
@@ -69,18 +56,6 @@ interface NavSlot {
 const EMPTY_SLOT: NavSlot = { entries: null, nav: { index: -1, choice: 0 } };
 /** Champ vide : la barre seule, aucune ligne (objet stable : la navigation n'est pas recalculée). */
 const NO_RESULT: PaletteSearchResult = { entries: [], notice: null };
-
-/** Vrai si les deux ensembles ont les mêmes éléments. */
-function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
-  if (a.size !== b.size) return false;
-  for (const x of a) if (!b.has(x)) return false;
-  return true;
-}
-
-/** Fichiers relus par la palette. */
-type PaletteStore = Extract<StoreName, 'catalog' | 'aliases' | 'favorites' | 'settings'>;
-const PALETTE_STORES: readonly PaletteStore[] = ['catalog', 'aliases', 'favorites', 'settings'];
-const isPaletteStore = (name: string): name is PaletteStore => (PALETTE_STORES as readonly string[]).includes(name);
 
 /** Une case par variante ; une ligne sans variante compte une case (rien à copier). */
 const choiceCountsOf = (entries: readonly PaletteEntry[]) => entries.map((e) => Math.max(1, e.variants.length));
@@ -110,16 +85,7 @@ const choiceCountsOf = (entries: readonly PaletteEntry[]) => entries.map((e) => 
  * (`heightToSend`).
  */
 export function Palette() {
-  const [destinations, setDestinations] = useState<readonly Destination[]>([]);
-  const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
-  const [dictionary, setDictionary] = useState<AliasDictionary>(EMPTY_DICTIONARY);
-  /** Réglage « variante sélectionnée par défaut » (issue n°11), relu à chaque affichage. */
-  const [defaultVariant, setDefaultVariant] = useState<VariantKind>(DEFAULT_VARIANT);
-  const [loaded, setLoaded] = useState(false);
-  /** Catalogue invalide : conservée tant que le texte du fichier ne change pas. */
-  const [catalogError, setCatalogError] = useState<string | null>(null);
-  /** Échec du dernier chargement : effacée dès qu'un chargement réussit. */
-  const [readError, setReadError] = useState<string | null>(null);
+  const { destinations, favorites, dictionary, defaultVariant, loaded, loadError, reload } = usePaletteData();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<Status>(null);
   const [slot, setSlot] = useState<NavSlot>(EMPTY_SLOT);
@@ -127,16 +93,10 @@ export function Palette() {
   const [scrolledList, setScrolledList] = useState<readonly PaletteEntry[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const loadSeq = useRef(0);
-  /** Dernière lecture lancée par fichier : seule la plus récente s'applique. */
-  const storeSeq = useRef<Record<PaletteStore, number>>({ catalog: 0, aliases: 0, favorites: 0, settings: 0 });
   const [copyGate] = useState(createCopyGate);
   const rootRef = useRef<HTMLDivElement>(null);
   /** Hauteur actuelle de la fenêtre ; `null` : inconnue, à renvoyer au prochain rendu. */
   const windowHeight = useRef<number | null>(PALETTE_BAR_HEIGHT);
-  /** Empreintes des fichiers au dernier chargement : inchangés, rien n'est revalidé ni réindexé. */
-  const catalogPrint = useRef<string | null>(null);
-  const aliasesPrint = useRef<string | null>(null);
   /** Dernière position écran du pointeur vue sur la liste. */
   const lastPointer = useRef<{ x: number; y: number } | null>(null);
 
@@ -180,65 +140,6 @@ export function Palette() {
   }, []);
 
   /**
-   * Relit un fichier ; seule la dernière lecture lancée pour ce fichier s'applique. Un catalogue
-   * ou des alias dont l'empreinte n'a pas changé ne sont ni revalidés ni réindexés : l'état, donc
-   * l'index de recherche et les parcours analysés, est réutilisé tel quel. Lève si la lecture
-   * du catalogue ou des alias échoue.
-   */
-  const loadStore = useCallback(async (name: PaletteStore) => {
-    const seq = ++storeSeq.current[name];
-    const stale = () => seq !== storeSeq.current[name];
-    switch (name) {
-      case 'catalog': {
-        const text = await readStoreText('catalog');
-        const print = textFingerprint(text);
-        if (stale() || print === catalogPrint.current) return;
-        catalogPrint.current = print;
-        const catalog = parseCatalogText(text);
-        if (catalog.ok) {
-          setDestinations(catalog.catalog.destinations);
-          setCatalogError(null);
-        } else {
-          setCatalogError(`Catalogue invalide : ${catalog.errors[0]?.message ?? 'erreur inconnue'}`);
-        }
-        return;
-      }
-      case 'aliases': {
-        const text = await readStoreText('aliases');
-        const print = textFingerprint(text);
-        if (stale() || print === aliasesPrint.current) return;
-        aliasesPrint.current = print;
-        // Fichier illisible : les alias fournis restent utilisés (la rubrique Alias signale l'erreur).
-        setDictionary(buildDictionary(DEFAULT_ALIASES, parseAliasesText(text).user));
-        return;
-      }
-      case 'favorites': {
-        const favs = await loadFavorites();
-        if (!stale()) setFavorites((prev) => (sameSet(prev, favs) ? prev : favs));
-        return;
-      }
-      case 'settings': {
-        const settings = await loadPaletteSettings();
-        if (!stale()) setDefaultVariant(settings.defaultVariant);
-        return;
-      }
-    }
-  }, []);
-
-  /** Relit les quatre fichiers (montage, chaque affichage) ; seul le dernier chargement signale son état. */
-  const reload = useCallback(async () => {
-    const seq = ++loadSeq.current;
-    try {
-      await Promise.all([...PALETTE_STORES.map(loadStore), initImages()]);
-      if (seq === loadSeq.current) setReadError(null);
-    } catch (e) {
-      if (seq === loadSeq.current) setReadError(`Chargement impossible : ${errorText(e)}`);
-    } finally {
-      if (seq === loadSeq.current) setLoaded(true);
-    }
-  }, [loadStore]);
-
-  /**
    * Donne à la fenêtre la hauteur réelle du contenu. La feuille de style reste la seule source
    * des dimensions : rien n'est recalculé ici. Un seul appel à Rust par CHANGEMENT de hauteur.
    */
@@ -256,17 +157,6 @@ export function Palette() {
   useLayoutEffect(() => {
     perf?.mark('results_rendered');
   }, [query, entries]);
-
-  // Fichier écrit par la fenêtre principale : relu et réindexé tout de suite, palette masquée
-  // comprise, pour que la prochaine ouverture n'ait rien à reconstruire.
-  useEffect(
-    () =>
-      onStoreChanged((name) => {
-        if (!isPaletteStore(name)) return;
-        loadStore(name).catch((e: unknown) => setReadError(`Chargement impossible : ${errorText(e)}`));
-      }),
-    [loadStore],
-  );
 
   /** Masquée : tout revient à la barre vide, hors de la vue de l'utilisateur. */
   const onHidden = useCallback(() => {
@@ -330,7 +220,7 @@ export function Palette() {
       perf?.mark('clipboard_done');
     } catch (e) {
       copyGate.release();
-      setStatus({ kind: 'warning', text: `Copie impossible : ${errorText(e)}` });
+      setStatus({ kind: 'warning', text: 'Copie impossible, réessayez', detail: errorText(e) });
       return; // la palette reste ouverte : rien n'a été copié
     }
     // Visible seulement si le masquage tarde ou échoue (et dans le navigateur) : la page est
@@ -339,7 +229,7 @@ export function Palette() {
     try {
       await hidePalette();
     } catch (e) {
-      setStatus({ kind: 'warning', text: `Copié, mais fermeture impossible : ${errorText(e)}` });
+      setStatus({ kind: 'warning', text: 'Copié, mais fermeture impossible', detail: errorText(e) });
     } finally {
       copyGate.release();
     }
@@ -415,7 +305,7 @@ export function Palette() {
       case 'Escape':
         e.preventDefault();
         void hidePalette().catch((err: unknown) =>
-          setStatus({ kind: 'warning', text: `Fermeture impossible : ${errorText(err)}` }),
+          setStatus({ kind: 'warning', text: 'Fermeture impossible', detail: errorText(err) }),
         );
         return;
       case 'Tab':
@@ -430,7 +320,6 @@ export function Palette() {
   const activeIdx = twoVariants ? Math.min(nav.choice, 1) : 0;
   const enterLabel = twoVariants ? variantShortLabel(variants[activeIdx]!.kind) : 'copier';
   const otherLabel = twoVariants ? variantShortLabel(variants[1 - activeIdx]!.kind) : '';
-  const loadError = readError ?? catalogError;
   const trimmed = query.trim();
 
   const hasResults = entries.length > 0;
@@ -439,7 +328,7 @@ export function Palette() {
   const rendered =
     scrolledList === entries
       ? entries.length
-      : Math.min(entries.length, Math.max(VISIBLE_ROWS, nav.index + 1) + ROW_MARGIN);
+      : Math.min(entries.length, Math.max(PALETTE_VISIBLE_ROWS, nav.index + 1) + ROW_MARGIN);
   const rest = entries.length - rendered;
   const onScroll = () => {
     if (rest > 0) setScrolledList(entries);
@@ -479,7 +368,7 @@ export function Palette() {
           autoComplete="off"
         />
         {barInfo && (
-          <span className={`palette__bar-info${status ? ` is-${barInfo.kind}` : ''}`} title={barInfo.text}>
+          <span className={`palette__bar-info${status ? ` is-${barInfo.kind}` : ''}`} title={barInfo.detail ?? barInfo.text}>
             {barInfo.text}
           </span>
         )}
@@ -523,7 +412,9 @@ export function Palette() {
       {hasResults && (
         <footer className="palette__hints">
           {status ? (
-            <span className={`palette__status is-${status.kind}`}>{status.text}</span>
+            <span className={`palette__status is-${status.kind}`} title={status.detail}>
+              {status.text}
+            </span>
           ) : (
             <>
               <span className="palette__hint">

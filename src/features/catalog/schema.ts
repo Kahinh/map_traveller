@@ -92,6 +92,14 @@ export type ValidationResult =
   | { ok: true; catalog: Catalog }
   | { ok: false; errors: ValidationError[] };
 
+/**
+ * Erreurs de validation en un seul texte, au même format partout (chargement, enregistrement,
+ * palette) : `chemin message`, séparés par `sep`.
+ */
+export function formatValidationErrors(errors: readonly ValidationError[], sep: string): string {
+  return errors.map((e) => `${e.path} ${e.message}`.trim()).join(sep);
+}
+
 function stringArray(v: unknown): string[] | null {
   if (v === undefined) return [];
   if (!Array.isArray(v) || !v.every((s) => typeof s === 'string')) return null;

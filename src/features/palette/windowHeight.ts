@@ -13,6 +13,9 @@
 /** Hauteur de la barre seule : `BAR_HEIGHT` de `src-tauri/src/palette.rs` (cadre 2 + barre 46). */
 export const PALETTE_BAR_HEIGHT = 48;
 
+/** Lignes de résultats visibles avant défilement : `--pal-max-rows` de `src/styles/palette.css`. */
+export const PALETTE_VISIBLE_ROWS = 8;
+
 /**
  * Hauteur à envoyer à la fenêtre après une mesure, ou `null` : rien à envoyer (même hauteur que
  * la fenêtre, ou mesure impossible). `known` = hauteur actuelle de la fenêtre, `null` si inconnue.

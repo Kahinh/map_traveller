@@ -12,6 +12,8 @@ describe('thumbPath', () => {
     null,
     '',
     'images/img-1.thumb.webp',
+    'images/banque.webp',
+    'images/atelier-bijoutiers.png',
     'images/../catalog.json',
     'images/sub/img-1.png',
     'images/IMG-1.png',

@@ -7,6 +7,8 @@
  * est accepté tel quel : les champs absents prennent leur valeur par défaut.
  */
 
+import { normalizeText } from './searchText';
+
 export const SCHEMA_VERSION = 3;
 
 export const CATEGORIES = ['npc', 'dungeon', 'place', 'farm'] as const;
@@ -44,7 +46,12 @@ export const CATEGORY_EXACT_KEYWORDS: Record<Category, string> = {
 };
 
 /** Catégories qui peuvent porter un trajet en deux étapes. */
-export const TWO_STEP_CATEGORIES: readonly Category[] = ['npc', 'dungeon'];
+const TWO_STEP_CATEGORIES: readonly Category[] = ['npc', 'dungeon'];
+
+/** Vrai si la catégorie peut porter un trajet en deux étapes (PNJ et Donjons). Seul endroit de la règle. */
+export function allowsTwoStep(category: Category): boolean {
+  return TWO_STEP_CATEGORIES.includes(category);
+}
 
 export interface Destination {
   id: string;
@@ -141,7 +148,7 @@ export function validateCatalog(input: unknown): ValidationResult {
       errors.push({ path: at('twoStep'), message: 'twoStep doit valoir true ou false.' });
     }
     const twoStep = raw.twoStep === true;
-    if (twoStep && CATEGORIES.includes(category as Category) && !TWO_STEP_CATEGORIES.includes(category as Category)) {
+    if (twoStep && CATEGORIES.includes(category as Category) && !allowsTwoStep(category as Category)) {
       errors.push({ path: at('twoStep'), message: 'Le trajet en deux étapes est réservé aux PNJ et aux Donjons.' });
     }
     if (raw.command2 !== undefined && typeof raw.command2 !== 'string') {
@@ -180,13 +187,14 @@ export function validateCatalog(input: unknown): ValidationResult {
   return { ok: true, catalog: { schemaVersion: SCHEMA_VERSION, destinations } };
 }
 
-/** Génère un identifiant stable et lisible à partir d'un nom, unique dans `existing`. */
+/**
+ * Génère un identifiant stable et lisible à partir d'un nom, unique dans `existing`. Même
+ * normalisation que la recherche (ligatures dépliées : « Cœur » → `coeur`). Appelé à la
+ * création seulement : un identifiant existant ne change jamais.
+ */
 export function makeDestinationId(name: string, existing: Iterable<string>): string {
   const base =
-    name
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase()
+    normalizeText(name)
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'destination';
   const taken = new Set(existing);

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Destination } from '../src/features/catalog/schema';
 import { cardParts, isTwoStep, orderVariants, partCommand, partVariants } from '../src/features/commands/cardParts';
 import { leftClickCommand, rightClickCommand } from '../src/features/commands/copyRules';
+import { allowsTwoStep } from '../src/features/catalog/schema';
 import { makeDestination } from './helpers/destination';
 
 const dest = (partial: Partial<Destination>): Destination =>
@@ -66,7 +67,15 @@ describe('carte à deux étapes', () => {
       const d = dest({ category, twoStep: true, command2: '/travel 2 2' });
       expect(isTwoStep(d)).toBe(false);
       expect(cardParts(d)).toHaveLength(1);
+      expect(allowsTwoStep(category)).toBe(false);
     }
+    expect(allowsTwoStep('npc')).toBe(true);
+    expect(allowsTwoStep('dungeon')).toBe(true);
+  });
+
+  it('accepte un brouillon : seuls catégorie, case et commandes comptent', () => {
+    const shape = { category: 'npc' as const, twoStep: true, command: '/travel 1 1', command2: '/travel 2 2' };
+    expect(cardParts(shape).map((p) => p.command)).toEqual(['/travel 1 1', '/travel 2 2']);
   });
 });
 

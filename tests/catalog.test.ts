@@ -140,6 +140,9 @@ describe('validation du catalogue (CdC §8)', () => {
     expect(makeDestinationId('Abraknyde Ancestral', [])).toBe('abraknyde-ancestral');
     expect(makeDestinationId('Mériana', ['meriana'])).toBe('meriana-2');
     expect(makeDestinationId('!!!', [])).toBe('destination');
+    // Ligatures dépliées comme dans la recherche, au lieu de couper le mot.
+    expect(makeDestinationId('Cœur de Ætheria', [])).toBe('coeur-de-aetheria');
+    expect(makeDestinationId('Straße  Łódź', [])).toBe('strasse-lodz');
   });
 });
 

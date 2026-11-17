@@ -9,7 +9,7 @@ import {
   type DraftField,
   type DraftPreview,
 } from '../features/catalog/editor';
-import { CATEGORIES, TWO_STEP_CATEGORIES, type Category } from '../features/catalog/schema';
+import { allowsTwoStep, CATEGORIES, type Category } from '../features/catalog/schema';
 import { canImportImages, pickAndImportImage } from '../lib/tauri/imageImport';
 import { CardName } from './CompactCard';
 import { Segmented, Switch, type SegmentedOption } from './controls';
@@ -141,7 +141,7 @@ export function DestinationForm({ initial, onSave, onDelete, onDuplicate, onClos
   const fieldRefs = useRef<Partial<Record<DraftField, HTMLElement | null>>>({});
 
   const isEdit = initial.id !== null;
-  const twoStepAvailable = TWO_STEP_CATEGORIES.includes(draft.category);
+  const twoStepAvailable = allowsTwoStep(draft.category);
   const twoStep = draftIsTwoStep(draft);
   const dirty = isDraftDirty(initial, draft);
   const errors = useMemo(() => validateDraft(draft), [draft]);

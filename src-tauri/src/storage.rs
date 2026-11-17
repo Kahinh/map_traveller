@@ -6,9 +6,13 @@
 //!   n'écrase jamais les données utilisateur. Les entrées livrées absentes d'un catalogue
 //!   existant y sont ajoutées par l'interface (`src/features/catalog/official.ts`).
 //! - Images du catalogue livré (`resources/images/`) : copiées dans `images/` à chaque lancement
-//!   quand elles y manquent ; un fichier déjà présent n'est jamais remplacé.
+//!   quand elles y manquent (absentes ou vides) ; un fichier non vide n'est jamais remplacé.
 //! - Écriture atomique et durable (`replace_file`) : `*.tmp` écrit puis synchronisé sur le disque,
 //!   puis renommé ; copie `*.bak` de la version précédente par le même chemin (`write_atomic`).
+//! - Les commandes s'exécutent hors du fil principal (`#[tauri::command(async)]`) : une écriture
+//!   lente ne gèle ni les fenêtres ni les raccourcis globaux. Chaque fichier de stockage a donc son
+//!   verrou (`Store::lock`), le `.tmp` ayant un nom fixe. Un seul verrou est tenu à la fois (aucun
+//!   interblocage possible) ; celui de `settings.json` est `SETTINGS_LOCK`, partagé avec Rust.
 //! - Lecture avant réécriture (`read_json_object_for_write`) : une erreur d'E/S autre que
 //!   « fichier absent » n'écrit rien, pour ne jamais remplacer un fichier qu'on n'a pas pu lire.
 //! - Le contenu est validé comme JSON avant écriture ; la validation métier est faite côté TS.
@@ -42,13 +46,23 @@ pub const SHORTCUTS_KEY: &str = "shortcuts";
 /// écrit (`catalog`, `aliases`…) ; écouté par `onStoreChanged` (`src/lib/tauri/palette.ts`).
 pub const STORE_CHANGED_EVENT: &str = "store:changed";
 
-/// Sérialise les lectures-modifications-écritures de `settings.json`.
+/// Sérialise les lectures-modifications-écritures de `settings.json` (interface et raccourcis).
 static SETTINGS_LOCK: Mutex<()> = Mutex::new(());
+/// Verrous des autres fichiers de stockage, un par fichier (voir `store`).
+static CATALOG_LOCK: Mutex<()> = Mutex::new(());
+static FAVORITES_LOCK: Mutex<()> = Mutex::new(());
+static ALIASES_LOCK: Mutex<()> = Mutex::new(());
+static OFFICIAL_LOCK: Mutex<()> = Mutex::new(());
 
-/// Prend le verrou de `settings.json`. Un verrou « empoisonné » (panique d'un autre
-/// détenteur) est repris tel quel : il ne protège aucune donnée en mémoire.
+/// Prend `lock`. Un verrou « empoisonné » (panique d'un autre détenteur) est repris tel quel :
+/// il ne protège aucune donnée en mémoire, seulement l'accès au fichier.
+fn acquire(lock: &'static Mutex<()>) -> MutexGuard<'static, ()> {
+    lock.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// Prend le verrou de `settings.json`.
 pub fn lock_settings() -> MutexGuard<'static, ()> {
-    SETTINGS_LOCK.lock().unwrap_or_else(PoisonError::into_inner)
+    acquire(&SETTINGS_LOCK)
 }
 
 /// Objet JSON contenu dans `bytes` ; objet vide si ce n'est pas du JSON ou pas un objet.
@@ -86,9 +100,8 @@ pub fn read_json_object_for_write(path: &Path) -> Result<Map<String, Value>, Str
 /// Réglages envoyés par l'interface, dont la clé `shortcuts` est remplacée par celle du
 /// fichier existant (ou retirée si le fichier n'en a pas). Renvoie le JSON à écrire.
 pub fn settings_from_ui(incoming: Value, existing: Map<String, Value>) -> Result<String, String> {
-    let mut settings = match incoming {
-        Value::Object(map) => map,
-        _ => return Err("Réglages invalides : un objet JSON est attendu, rien n'a été écrit.".to_string()),
+    let Value::Object(mut settings) = incoming else {
+        return Err("Réglages invalides : un objet JSON est attendu, rien n'a été écrit.".to_string());
     };
     settings.remove(SHORTCUTS_KEY);
     let mut existing = existing;
@@ -98,18 +111,25 @@ pub fn settings_from_ui(incoming: Value, existing: Map<String, Value>) -> Result
     serde_json::to_string_pretty(&Value::Object(settings)).map_err(|e| format!("Réglages non sérialisables : {e}"))
 }
 
+/// Fichier de stockage et verrou qui en sérialise les écritures.
+struct Store {
+    file: &'static str,
+    lock: &'static Mutex<()>,
+}
+
 /// Fichiers autorisés : aucun nom de fichier arbitraire n'est accepté depuis le front.
-fn store_file(name: &str) -> Result<&'static str, String> {
-    match name {
-        "catalog" => Ok("catalog.json"),
-        "favorites" => Ok("favorites.json"),
-        "settings" => Ok(SETTINGS_FILE),
+fn store(name: &str) -> Result<Store, String> {
+    let (file, lock) = match name {
+        "catalog" => ("catalog.json", &CATALOG_LOCK),
+        "favorites" => ("favorites.json", &FAVORITES_LOCK),
+        "settings" => (SETTINGS_FILE, &SETTINGS_LOCK),
         // Alias de recherche personnalisés (issue n°10) ; les alias livrés sont dans l'interface.
-        "aliases" => Ok("aliases.json"),
+        "aliases" => ("aliases.json", &ALIASES_LOCK),
         // Entrées du catalogue livré déjà proposées (issue n°8) : jamais rajoutées une fois supprimées.
-        "official" => Ok("official.json"),
-        other => Err(format!("Stockage inconnu : {other}")),
-    }
+        "official" => ("official.json", &OFFICIAL_LOCK),
+        other => return Err(format!("Stockage inconnu : {other}")),
+    };
+    Ok(Store { file, lock })
 }
 
 /// Chemin du dossier de données, résolu une fois puis gardé en mémoire.
@@ -166,12 +186,22 @@ fn with_suffix(path: &Path, suffix: &str) -> Result<PathBuf, String> {
 /// Remplace `path` par `contents` sans jamais laisser sous ce nom un fichier à moitié écrit :
 /// `*.tmp` écrit, synchronisé sur le disque (une coupure de courant après le renommage ne laisse
 /// pas un fichier vide) et fermé, puis renommé. Le `.tmp` est supprimé en cas d'échec.
+/// Deux appels simultanés sur le même `path` partagent le même `.tmp` : l'appelant les sérialise.
 pub fn replace_file(path: &Path, contents: &[u8]) -> Result<(), String> {
+    replace_file_with(path, contents, true)
+}
+
+/// `replace_file`, avec ou sans synchronisation du `.tmp` avant le renommage. Sans elle, une
+/// coupure de courant peut laisser un fichier VIDE sous le vrai nom, jamais un fichier tronqué.
+fn replace_file_with(path: &Path, contents: &[u8], durable: bool) -> Result<(), String> {
     let tmp = with_suffix(path, ".tmp")?;
     // Le fichier est fermé à la fin de la fermeture : obligatoire avant `rename` sous Windows.
     let written = File::create(&tmp).and_then(|mut out| {
         out.write_all(contents)?;
-        out.sync_all()
+        if durable {
+            out.sync_all()?;
+        }
+        Ok(())
     });
     if let Err(e) = written {
         let _ = fs::remove_file(&tmp);
@@ -210,24 +240,36 @@ fn is_bundled_image_name(name: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
 }
 
-/// Copie dans `dest` les images de `src` qui y manquent. Ne remplace jamais un fichier présent.
-/// Renvoie le nombre de fichiers copiés.
+/// Image livrée à (re)copier : absente, ou fichier vide, seul reste possible d'une copie non
+/// synchronisée interrompue par une coupure. Tout autre fichier (non vide, dossier, illisible)
+/// est laissé tel quel.
+fn needs_bundled_copy(target: &Path) -> bool {
+    match fs::metadata(target) {
+        Ok(meta) => meta.is_file() && meta.len() == 0,
+        Err(e) => e.kind() == ErrorKind::NotFound,
+    }
+}
+
+/// Copie dans `dest` les images de `src` qui y manquent (`needs_bundled_copy`). Ne remplace
+/// jamais un fichier non vide. Renvoie le nombre de fichiers copiés.
 fn copy_missing_images(src: &Path, dest: &Path) -> Result<usize, String> {
     let entries = fs::read_dir(src).map_err(|e| format!("Lecture de {} impossible : {e}", src.display()))?;
     let mut copied = 0;
     for entry in entries.flatten() {
         let name = entry.file_name();
         let Some(name) = name.to_str() else { continue };
-        if !is_bundled_image_name(name) || !entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
+        if !is_bundled_image_name(name) || !entry.file_type().is_ok_and(|t| t.is_file()) {
             continue;
         }
         let target = dest.join(name);
-        if target.exists() {
+        if !needs_bundled_copy(&target) {
             continue;
         }
-        // Jamais d'image tronquée sous son vrai nom (images livrées : quelques Ko chacune).
+        // Jamais d'image tronquée sous son vrai nom (images livrées : quelques Ko chacune). Pas de
+        // synchronisation : au premier lancement, une par image retardait l'affichage de plusieurs
+        // centaines de ms, et une copie perdue (fichier vide) est refaite au lancement suivant.
         let data = fs::read(entry.path()).map_err(|e| format!("Copie de {name} impossible : {e}"))?;
-        replace_file(&target, &data).map_err(|e| format!("Copie de {name} impossible : {e}"))?;
+        replace_file_with(&target, &data, false).map_err(|e| format!("Copie de {name} impossible : {e}"))?;
         copied += 1;
     }
     Ok(copied)
@@ -262,10 +304,11 @@ pub fn ensure_initialized(app: &AppHandle) -> Result<(), String> {
     write_atomic(&catalog, &seed)
 }
 
-/// Contenu brut d'un fichier de stockage, ou `None` s'il n'existe pas encore.
-#[tauri::command]
+/// Contenu brut d'un fichier de stockage, ou `None` s'il n'existe pas encore. Sans verrou :
+/// le renommage atomique ne laisse jamais lire un fichier à moitié écrit.
+#[tauri::command(async)]
 pub fn load_store(app: AppHandle, name: String) -> Result<Option<String>, String> {
-    let path = app_data_dir(&app)?.join(store_file(&name)?);
+    let path = app_data_dir(&app)?.join(store(&name)?.file);
     match fs::read_to_string(&path) {
         Ok(text) => Ok(Some(text)),
         Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
@@ -275,23 +318,28 @@ pub fn load_store(app: AppHandle, name: String) -> Result<Option<String>, String
 
 /// Enregistre un fichier de stockage après vérification que le contenu est du JSON valide.
 /// Pour `settings`, la clé `shortcuts` du fichier existant est conservée (voir l'en-tête).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn save_store(app: AppHandle, name: String, json: String) -> Result<(), String> {
     let value = serde_json::from_str::<Value>(&json).map_err(|e| format!("JSON invalide, rien n'a été écrit : {e}"))?;
-    let file = store_file(&name)?;
-    let path = app_data_dir(&app)?.join(file);
-    if file == SETTINGS_FILE {
-        let _guard = lock_settings();
-        let merged = settings_from_ui(value, read_json_object_for_write(&path)?)?;
-        write_atomic(&path, &merged)?;
-    } else {
-        write_atomic(&path, &json)?;
-    }
+    let store = store(&name)?;
+    write_store(&app_data_dir(&app)?.join(store.file), &store, value, &json)?;
     notify_store_changed(&app, &name);
     Ok(())
 }
 
-/// Prévient la palette qu'un fichier vient d'être écrit (verrou des réglages déjà relâché). Un
+/// Écrit `json` (déjà validé en `value`) dans `path`, sous le verrou du fichier : l'écriture
+/// (`.tmp`, `.bak`) et, pour `settings`, la lecture qui la précède ne se croisent jamais.
+fn write_store(path: &Path, store: &Store, value: Value, json: &str) -> Result<(), String> {
+    let _guard = acquire(store.lock);
+    if store.file == SETTINGS_FILE {
+        let merged = settings_from_ui(value, read_json_object_for_write(path)?)?;
+        write_atomic(path, &merged)
+    } else {
+        write_atomic(path, json)
+    }
+}
+
+/// Prévient la palette qu'un fichier vient d'être écrit (verrou du fichier déjà relâché). Un
 /// échec n'annule pas l'écriture, déjà faite : la palette relira de toute façon les fichiers à
 /// son prochain affichage.
 fn notify_store_changed(app: &AppHandle, name: &str) {
@@ -301,7 +349,7 @@ fn notify_store_changed(app: &AppHandle, name: &str) {
 }
 
 /// Chemin absolu du dossier de données (utilisé pour afficher les images via `asset:`).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn data_dir(app: AppHandle) -> Result<String, String> {
     Ok(app_data_dir(&app)?.to_string_lossy().into_owned())
 }
@@ -324,11 +372,12 @@ pub fn open_data_dir(app: AppHandle) -> Result<(), String> {
 /// lit pas le code ; seule une erreur de lancement est remontée.
 #[cfg(windows)]
 fn open_in_explorer(dir: &Path) -> Result<(), String> {
-    // Chemin complet de l'Explorateur : un `explorer.exe` posé à côté de l'application ne doit
-    // jamais être lancé à sa place (Windows cherche d'abord dans le dossier du programme).
+    // Chemin complet de l'Explorateur, jamais de repli sur un nom nu : un `explorer.exe` posé à
+    // côté de l'application serait lancé à sa place (Windows cherche d'abord dans le dossier du
+    // programme).
     let explorer = std::env::var_os("SystemRoot")
         .map(|root| PathBuf::from(root).join("explorer.exe"))
-        .unwrap_or_else(|| PathBuf::from("explorer.exe"));
+        .ok_or_else(|| "Dossier Windows introuvable (SystemRoot absent) : Explorateur non lancé".to_string())?;
     std::process::Command::new(explorer)
         .arg(dir)
         .spawn()
@@ -424,6 +473,27 @@ mod tests {
     }
 
     #[test]
+    fn empty_bundled_images_are_copied_again() {
+        let root = std::env::temp_dir().join(format!("map-traveller-images-vides-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let (src, dest) = (root.join("src"), root.join("dest"));
+        fs::create_dir_all(&src).unwrap();
+        fs::create_dir_all(dest.join("dossier.webp")).unwrap();
+        fs::write(src.join("vide.webp"), "livree").unwrap();
+        fs::write(src.join("pleine.webp"), "livree").unwrap();
+        fs::write(src.join("dossier.webp"), "livree").unwrap();
+        // Reste d'une copie interrompue par une coupure : fichier vide sous le vrai nom.
+        fs::write(dest.join("vide.webp"), "").unwrap();
+        fs::write(dest.join("pleine.webp"), "u").unwrap();
+
+        assert_eq!(copy_missing_images(&src, &dest), Ok(1));
+        assert_eq!(fs::read_to_string(dest.join("vide.webp")).unwrap(), "livree");
+        assert_eq!(fs::read_to_string(dest.join("pleine.webp")).unwrap(), "u");
+        assert!(dest.join("dossier.webp").is_dir());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn bundled_image_names_are_plain_webp_files() {
         assert!(is_bundled_image_name("metier-paysan.webp"));
         assert!(!is_bundled_image_name(".webp"));
@@ -434,9 +504,46 @@ mod tests {
 
     #[test]
     fn store_names_are_whitelisted() {
-        assert!(store_file("catalog").is_ok());
-        assert_eq!(store_file("aliases"), Ok("aliases.json"));
-        assert!(store_file("../secret").is_err());
+        assert_eq!(store("catalog").map(|s| s.file), Ok("catalog.json"));
+        assert_eq!(store("aliases").map(|s| s.file), Ok("aliases.json"));
+        assert!(store("../secret").is_err());
+    }
+
+    #[test]
+    fn settings_store_shares_the_shortcuts_lock() {
+        // Un seul verrou pour `settings.json`, celui que prend aussi `shortcuts::set_shortcut`.
+        assert!(std::ptr::eq(store("settings").unwrap().lock, &SETTINGS_LOCK));
+        assert!(!std::ptr::eq(store("catalog").unwrap().lock, &SETTINGS_LOCK));
+    }
+
+    #[test]
+    fn concurrent_writes_of_one_store_leave_valid_files() {
+        let dir = std::env::temp_dir().join(format!("map-traveller-concurrent-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("catalog.json");
+        // Contenus assez gros pour que les écritures se chevauchent sans verrou.
+        let contents: Vec<String> = (0..2)
+            .map(|i| serde_json::json!({ "v": i, "pad": "x".repeat(256 * 1024) }).to_string())
+            .collect();
+        for _ in 0..10 {
+            std::thread::scope(|scope| {
+                for json in &contents {
+                    let path = &path;
+                    scope.spawn(move || {
+                        let value = serde_json::from_str::<Value>(json).unwrap();
+                        write_store(path, &store("catalog").unwrap(), value, json).unwrap();
+                    });
+                }
+            });
+            let written = fs::read_to_string(&path).unwrap();
+            assert!(contents.contains(&written));
+            let backup = fs::read_to_string(dir.join("catalog.json.bak")).unwrap();
+            assert!(contents.contains(&backup));
+            assert!(!dir.join("catalog.json.tmp").exists());
+            assert!(!dir.join("catalog.json.bak.tmp").exists());
+        }
+        let _ = fs::remove_dir_all(&dir);
     }
 
     fn object(text: &str) -> Map<String, Value> {

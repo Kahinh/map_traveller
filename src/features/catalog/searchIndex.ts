@@ -37,10 +37,11 @@ import {
   type Category,
   type Destination,
 } from './schema';
-import { boundedPrefixDistance, maxTypos, queryTokensOf, STOP_WORDS, tokenize } from './searchText';
+import { frCollator } from '../shared/collator';
+import { boundedPrefixDistance, isWordlessQuery, maxTypos, queryTokensOf, STOP_WORDS, tokenize } from './searchText';
 
 /** Paliers de pertinence (plus petit = meilleur). Voir le tableau en tête du fichier. */
-export const TIER = {
+const TIER = {
   aliasExact: 1,
   nameExact: 2,
   prefix: 3,
@@ -51,7 +52,7 @@ export const TIER = {
 } as const;
 
 /** Coût d'un mot selon le champ où il est trouvé, pour départager un même palier (plus petit = meilleur). */
-export const FIELD_COST = {
+const FIELD_COST = {
   /** Premier mot du nom. */
   nameFirst: 0,
   /** Autre mot du nom. */
@@ -61,10 +62,16 @@ export const FIELD_COST = {
   /** Tag, zone ou catégorie. */
   other: 3,
 } as const;
+/** Champ d'où vient un mot indexé ; sa valeur est son coût. */
+type Field = (typeof FIELD_COST)[keyof typeof FIELD_COST];
+/** Un coût de champ tient sur deux bits : seul masque, partagé par les coûts et les occurrences. */
+const FIELD_BITS = 2;
+const FIELD_MASK = (1 << FIELD_BITS) - 1;
 
 /**
- * Coût d'un mot pour une destination, sur un octet : genre de correspondance (`Kind`) × 4 +
- * coût du champ. Le plus petit octet est donc la meilleure correspondance.
+ * Coût d'un mot pour une destination, sur un octet : genre de correspondance (`Kind`) dans les
+ * bits hauts, coût du champ dans les deux bits bas. Le plus petit octet est donc la meilleure
+ * correspondance.
  */
 const Kind = {
   /** Commence un mot. */
@@ -74,9 +81,9 @@ const Kind = {
   /** À une faute de frappe près. */
   typo: 2,
 } as const;
-const code = (kind: number, field: number) => kind * 4 + field;
-const codeKind = (c: number) => c >> 2;
-const codeField = (c: number) => c & 3;
+const code = (kind: number, field: Field) => (kind << FIELD_BITS) | field;
+const codeKind = (c: number) => c >> FIELD_BITS;
+const codeField = (c: number) => c & FIELD_MASK;
 
 /** Absence de correspondance dans un tableau de coûts. */
 const NO_MATCH = 255;
@@ -89,16 +96,6 @@ const ACRONYM_MIN_LENGTH = 2;
 /** Coût d'un acronyme tapé en entier, puis d'un début d'acronyme. */
 const ACRONYM_EXACT = 0;
 const ACRONYM_START = 1;
-
-
-/** Champ d'où vient un mot indexé ; sa valeur est son coût (`FIELD_COST`). */
-const Field = {
-  NameFirst: FIELD_COST.nameFirst,
-  NameOther: FIELD_COST.nameOther,
-  Alias: FIELD_COST.alias,
-  Other: FIELD_COST.other,
-} as const;
-type Field = (typeof Field)[keyof typeof Field];
 
 /** Clé d'un texte entier, indépendante de l'ordre des mots : mots distincts (mots de liaison compris), triés. */
 function wholeKey(words: readonly string[]): string {
@@ -145,13 +142,13 @@ export function acronymsOf(words: readonly string[]): string[] {
 }
 
 /**
- * Occurrence d'un mot : destination et champ réunis dans un seul entier (`doc << 3 | champ`).
+ * Occurrence d'un mot : destination et champ réunis dans un seul entier (`doc << 2 | champ`).
  * Un objet par occurrence chargeait le ramasse-miettes à chaque construction de l'index.
  */
 type Posting = number;
-const posting = (doc: number, field: Field): Posting => (doc << 3) | field;
-const postingDoc = (p: Posting) => p >>> 3;
-const postingField = (p: Posting) => (p & 7) as Field;
+const posting = (doc: number, field: Field): Posting => (doc << FIELD_BITS) | field;
+const postingDoc = (p: Posting) => p >>> FIELD_BITS;
+const postingField = (p: Posting) => (p & FIELD_MASK) as Field;
 
 export interface SearchIndex {
   /** Destinations actives, dans l'ordre du catalogue. */
@@ -180,12 +177,6 @@ export interface SearchIndex {
   readonly cache: Map<string, Uint8Array>;
 }
 
-/**
- * Ordre du catalogue : `sortOrder`, puis nom insensible à la casse et aux accents (« Zone 2 »
- * avant « Zone 10 »). Un seul collateur pour toute l'application : en créer un coûte cher.
- */
-const nameCollator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
-
 const KEYWORDS: Record<Category, { prefix: string[]; exact: string[] }> = Object.fromEntries(
   CATEGORIES.map((c) => [
     c,
@@ -198,7 +189,7 @@ const KEYWORDS: Record<Category, { prefix: string[]; exact: string[] }> = Object
  * moins (une simple inclusion ne suffit pas, sinon « on » trouverait tous les donjons), ou
  * égaler exactement un mot-clé secondaire (« dit »).
  */
-export function categoriesForWord(word: string): Category[] {
+function categoriesForWord(word: string): Category[] {
   if (word.length < CATEGORY_MIN_LENGTH) return [];
   return CATEGORIES.filter(
     (c) => KEYWORDS[c].prefix.some((k) => k.startsWith(word)) || KEYWORDS[c].exact.includes(word),
@@ -249,7 +240,7 @@ export function buildSearchIndex(
     // Une seule découpe par texte : elle sert aux mots indexés, à la clé du texte entier, au
     // texte joint et aux acronymes.
     const nameWords = tokenize(d.name);
-    nameWords.forEach((word, i) => add(word, doc, i === 0 ? Field.NameFirst : Field.NameOther));
+    nameWords.forEach((word, i) => add(word, doc, i === 0 ? FIELD_COST.nameFirst : FIELD_COST.nameOther));
     addKey(nameKeys, wholeKey(nameWords), doc);
     nameTexts.push(joinWords(nameWords));
     for (const acronym of acronymsOf(nameWords)) addKey(acronyms, acronym, doc);
@@ -258,15 +249,15 @@ export function buildSearchIndex(
     for (const alias of d.aliases) {
       const words = tokenize(alias);
       if (words.length === 0) continue;
-      for (const word of words) add(word, doc, Field.Alias);
+      for (const word of words) add(word, doc, FIELD_COST.alias);
       addKey(aliasKeys, wholeKey(words), doc);
       (texts ??= []).push(joinWords(words));
       for (const acronym of acronymsOf(words)) addKey(acronyms, acronym, doc);
     }
     aliasTexts.push(texts ?? NO_TEXTS);
 
-    for (const word of tokenizeShared(d.zone)) add(word, doc, Field.Other);
-    for (const tag of d.tags) for (const word of tokenizeShared(tag)) add(word, doc, Field.Other);
+    for (const word of tokenizeShared(d.zone)) add(word, doc, FIELD_COST.other);
+    for (const tag of d.tags) for (const word of tokenizeShared(tag)) add(word, doc, FIELD_COST.other);
   });
 
   // `sortOrder` puis nom, clés lues une fois. Le tri étant stable, l'ordre du catalogue départage les égalités.
@@ -277,7 +268,7 @@ export function buildSearchIndex(
     .sort(
       (a, b) =>
         (sortOrders[a] as number) - (sortOrders[b] as number) ||
-        nameCollator.compare(names[a] as string, names[b] as string),
+        frCollator.compare(names[a] as string, names[b] as string),
     );
   const rank = new Uint32Array(docs.length);
   byRank.forEach((doc, position) => {
@@ -348,14 +339,14 @@ function vocabularyCosts(index: SearchIndex, word: string, mode: Mode): Uint8Arr
       for (const p of postings) lower(postingDoc(p), code(Kind.inside, postingField(p)));
     } else if (typos > 0 && candidate.charCodeAt(0) === word.charCodeAt(0)) {
       // Calculé seulement s'il existe un mot du nom ou d'un alias à rapprocher.
-      if (postings.every((p) => postingField(p) === Field.Other)) return;
+      if (postings.every((p) => postingField(p) === FIELD_COST.other)) return;
       if (boundedPrefixDistance(word, candidate, typos) > typos) return;
-      for (const p of postings) if (postingField(p) !== Field.Other) lower(postingDoc(p), code(Kind.typo, postingField(p)));
+      for (const p of postings) if (postingField(p) !== FIELD_COST.other) lower(postingDoc(p), code(Kind.typo, postingField(p)));
     }
   });
 
   if (mode !== 'prefix') {
-    const category = code(Kind.start, Field.Other);
+    const category = code(Kind.start, FIELD_COST.other);
     for (const c of categoriesForWord(word)) for (const doc of index.byCategory[c]) lower(doc, category);
   }
   return remember(index, key, costs);
@@ -493,7 +484,7 @@ function prepareQuery(query: string): PreparedQuery {
   const tokens = tokenize(query);
   return {
     words: queryTokensOf(tokens),
-    wordless: tokens.length === 0 && query.trim() !== '',
+    wordless: isWordlessQuery(query, tokens),
     whole: wholeKey(tokens),
     text: tokens.join(' '),
     single: tokens.length === 1 ? (tokens[0] as string) : null,

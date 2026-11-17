@@ -21,3 +21,20 @@ export function newerSchemaVersion(data: Record<string, unknown>, current: numbe
   const version = data.schemaVersion;
   return typeof version === 'number' && version > current ? version : null;
 }
+
+/** Texte JSON analysé : `data` vaut `undefined` quand le fichier est absent (`raw` nul). */
+export type JsonText = { ok: true; data: unknown } | { ok: false };
+
+/**
+ * Analyse le texte d'un fichier JSON sans jamais lever : `null` (fichier absent) donne
+ * `{ ok: true, data: undefined }`, un texte invalide `{ ok: false }`. Chaque appelant décide
+ * ensuite du message et de la valeur de repli.
+ */
+export function parseJsonText(raw: string | null): JsonText {
+  if (raw == null) return { ok: true, data: undefined };
+  try {
+    return { ok: true, data: JSON.parse(raw) as unknown };
+  } catch {
+    return { ok: false };
+  }
+}

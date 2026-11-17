@@ -7,6 +7,7 @@
  * une mise à jour que si elle est plus récente) : elle n'est pas réécrite ici.
  */
 import type { UpdateMode } from '../settings/settings';
+import { errorText } from '../shared/errors';
 import { canCheckForUpdate, type UpdateState } from './types';
 
 export type UpdateEvent =
@@ -117,21 +118,6 @@ export const UPDATE_ERROR_MESSAGES = {
 
 /** Longueur maximale du détail technique affiché pour une erreur inconnue. */
 const MAX_DETAIL = 160;
-
-/** Texte brut d'une erreur quelconque (le plugin rejette avec une chaîne). Ne lève jamais. */
-function errorText(error: unknown): string {
-  if (typeof error === 'string') return error;
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const m = (error as { message: unknown }).message;
-    if (typeof m === 'string') return m;
-  }
-  try {
-    return String(error);
-  } catch {
-    return '';
-  }
-}
 
 const TIMEOUT_PATTERNS = ['timed out', 'timeout', 'délai dépassé', 'os error 10060'];
 const OFFLINE_PATTERNS = [

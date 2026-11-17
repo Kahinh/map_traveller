@@ -1,6 +1,6 @@
 /**
  * Parcours Farm : analyse d'une commande brute en étapes et calcul de la reprise.
- * Cahier des charges §5. Fonctions pures.
+ * Invariant 3 de `CLAUDE.md`. Fonctions pures.
  *
  * Chaque étape représente la DERNIÈRE POSITION ATTEINTE. Un clic sur l'étape i copie
  * le texte original qui suit son segment. La reprise se fait par

@@ -1,5 +1,5 @@
 /**
- * Filtre de la grille (cahier des charges §7). Fonctions pures.
+ * Filtre de la grille. Fonctions pures.
  *
  * Façade du moteur : la normalisation est dans `searchText.ts`, l'index et le classement dans
  * `searchIndex.ts`. La grille (filtre) et la palette (classement, `searchIndexRank`) passent

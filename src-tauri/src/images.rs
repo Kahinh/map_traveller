@@ -20,6 +20,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{ErrorKind, Read, Write};
 use std::path::{Component, Path, Prefix};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, PoisonError};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use tauri::ipc::{InvokeBody, Request, Response};
@@ -39,6 +40,11 @@ const MAX_NAME_ATTEMPTS: u32 = 100;
 
 /// Compteur de processus : deux imports dans la même nanoseconde reçoivent deux noms différents.
 static IMPORT_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// Sérialise les écritures de vignettes : `save_thumbnail` s'exécute hors du fil principal, et deux
+/// vignettes de la même image partageraient le même `.tmp`. Verrou global léger (une vignette
+/// pèse quelques dizaines de Ko), jamais tenu en même temps qu'un verrou de `storage`.
+static THUMB_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageFormat {
@@ -76,10 +82,7 @@ pub fn detect_format(bytes: &[u8]) -> Option<ImageFormat> {
 
 /// Nom interne unique (`img-<horodatage>-<processus>-<compteur>`), uniquement `[a-z0-9-]`.
 fn unique_stem() -> String {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
+    let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
     let count = IMPORT_COUNTER.fetch_add(1, Ordering::Relaxed);
     format!("img-{nanos:x}-{:x}-{count:x}", std::process::id())
 }
@@ -152,7 +155,7 @@ pub fn import_into(source: &Path, images_dir: &Path) -> Result<String, String> {
                     }
                 };
             }
-            Err(e) if e.kind() == ErrorKind::AlreadyExists => continue,
+            Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
             Err(e) => return Err(format!("Création de {} impossible : {e}", target.display())),
         }
     }
@@ -209,6 +212,7 @@ pub fn write_thumbnail(relative: &str, data: &[u8], images_dir: &Path) -> Result
         return Err("Image d'origine introuvable.".to_string());
     }
     let target = images_dir.join(format!("{stem}{THUMB_SUFFIX}"));
+    let _guard = THUMB_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     replace_file(&target, data).map_err(|e| format!("Enregistrement de la vignette impossible : {e}"))?;
     Ok(format!("{IMAGES_DIR}/{stem}{THUMB_SUFFIX}"))
 }
@@ -223,8 +227,8 @@ pub async fn read_image(app: AppHandle, window: Window, relative: String) -> Res
 }
 
 /// Enregistre la vignette produite par la page. Corps brut (les octets WebP), image d'origine
-/// dans l'en-tête `x-image`. Fenêtre principale uniquement.
-#[tauri::command]
+/// dans l'en-tête `x-image`. Fenêtre principale uniquement, hors du fil principal.
+#[tauri::command(async)]
 pub fn save_thumbnail(app: AppHandle, window: Window, request: Request<'_>) -> Result<String, String> {
     ensure_main(&window)?;
     let relative = request
@@ -239,10 +243,12 @@ pub fn save_thumbnail(app: AppHandle, window: Window, request: Request<'_>) -> R
     write_thumbnail(relative, data, &images_dir)
 }
 
-/// Importe une image choisie dans le dialogue natif. Renvoie `images/<nom>.<ext>`.
-/// Asynchrone : la lecture (jusqu'à 10 Mo) ne bloque pas le fil de l'interface.
+/// Importe une image choisie dans le dialogue natif. Renvoie `images/<nom>.<ext>`. Fenêtre
+/// principale uniquement. Asynchrone : la lecture (jusqu'à 10 Mo) ne bloque pas le fil de
+/// l'interface.
 #[tauri::command]
-pub async fn import_image(app: AppHandle, source_path: String) -> Result<String, String> {
+pub async fn import_image(app: AppHandle, window: Window, source_path: String) -> Result<String, String> {
+    ensure_main(&window)?;
     let images_dir = app_data_dir(&app)?.join(IMAGES_DIR);
     import_into(Path::new(&source_path), &images_dir)
 }
@@ -300,7 +306,7 @@ mod tests {
         let images = dir.join("images");
         assert!(import_into(&source, &images).is_err());
         // Rien n'a été copié.
-        let copied = fs::read_dir(&images).map(|it| it.count()).unwrap_or(0);
+        let copied = fs::read_dir(&images).map_or(0, Iterator::count);
         assert_eq!(copied, 0);
         let _ = fs::remove_dir_all(&dir);
     }

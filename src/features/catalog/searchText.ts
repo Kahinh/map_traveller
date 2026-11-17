@@ -84,8 +84,8 @@ export function queryTokensOf(tokens: readonly string[]): string[] {
  * Vrai si la requête contient du texte mais aucun mot (ponctuation seule, « --- ») : elle ne
  * doit alors rien trouver, à la différence d'une requête vide qui montre tout.
  */
-export function isWordlessQuery(query: string): boolean {
-  return query.trim() !== '' && tokenize(query).length === 0;
+export function isWordlessQuery(query: string, tokens: readonly string[] = tokenize(query)): boolean {
+  return tokens.length === 0 && query.trim() !== '';
 }
 
 /**

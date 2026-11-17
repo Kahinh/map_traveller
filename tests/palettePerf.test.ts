@@ -4,6 +4,7 @@ import type { Destination } from '../src/features/catalog/schema';
 import { cardParts } from '../src/features/commands/cardParts';
 import { parseFarmRoute } from '../src/features/farm/farmRoute';
 import { buildPaletteIndex, PALETTE_LIMIT, searchPalette } from '../src/features/palette/entries';
+import { makeDestination } from './helpers/destination';
 
 // Compte les analyses de parcours et les découpes de cartes sans changer leur comportement.
 // Les compteurs vérifient le travail fait ; les temps ne servent que de filet très large (une
@@ -21,23 +22,14 @@ vi.mock('../src/features/commands/cardParts', async (importOriginal) => {
 const SAFETY_NET_MS = 500;
 
 // Coordonnées fictives uniquement.
-function dest(i: number, partial: Partial<Destination>): Destination {
-  return {
+const dest = (i: number, partial: Partial<Destination>) =>
+  makeDestination({
     id: `d${i}`,
     name: `Destination ${i}`,
-    category: 'place',
     zone: `Zone fictive ${i % 40}`,
-    aliases: [],
-    tags: [],
-    image: null,
     command: `/zaap 1 1;/travel ${i % 30} ${i % 17}`,
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
     ...partial,
-  };
-}
+  });
 
 function timed<T>(run: () => T): { value: T; elapsed: number } {
   const t = performance.now();

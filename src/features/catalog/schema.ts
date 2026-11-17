@@ -1,5 +1,5 @@
 /**
- * Schéma du catalogue de destinations (cahier des charges §8).
+ * Schéma du catalogue de destinations (invariant 5).
  * Fonctions pures : validation et normalisation légère des champs facultatifs.
  * Les champs `command` et `command2` ne sont JAMAIS modifiés.
  *
@@ -91,6 +91,14 @@ export interface ValidationError {
 export type ValidationResult =
   | { ok: true; catalog: Catalog }
   | { ok: false; errors: ValidationError[] };
+
+/**
+ * Erreurs de validation en un seul texte, au même format partout (chargement, enregistrement,
+ * palette) : `chemin message`, séparés par `sep`.
+ */
+export function formatValidationErrors(errors: readonly ValidationError[], sep: string): string {
+  return errors.map((e) => `${e.path} ${e.message}`.trim()).join(sep);
+}
 
 function stringArray(v: unknown): string[] | null {
   if (v === undefined) return [];

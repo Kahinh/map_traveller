@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { CatalogGrid } from '../components/CatalogGrid';
 import { DestinationForm } from '../components/DestinationForm';
 import { FarmPanel } from '../components/FarmPanel';
 import { DEFAULT_SETTINGS_SECTION, SettingsPanel, type SettingsSectionId } from '../components/SettingsPanel';
-import { StatusBubble } from '../components/StatusBubble';
+import { StatusBubble, type StatusMessage } from '../components/StatusBubble';
 import { Toolbar } from '../components/Toolbar';
 import { WindowHeader } from '../components/WindowHeader';
 import {
@@ -14,7 +14,7 @@ import {
 } from '../features/catalog/editor';
 import { CATEGORIES, type Category, type Destination } from '../features/catalog/schema';
 import type { ViewFilter } from '../features/catalog/search';
-import { cardParts, partCommand, type ClickButton, type PartIndex } from '../features/commands/cardParts';
+import { cardParts, partCommand, partVariants, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
 import { describeUpdateState } from '../features/updates/types';
 import { setMainBusy } from '../lib/tauri/window';
@@ -36,12 +36,24 @@ type PanelState =
   | { type: 'settings'; section: SettingsSectionId };
 
 const NOTHING_TO_COPY = 'Aucune commande à copier';
+/** Message de copie d'une zone à deux variantes : clic gauche sans Zaap, clic droit avec. */
+const COPIED_LABEL: Record<ClickButton, string> = { left: 'Copié sans Zaap', right: 'Copié avec Zaap' };
 const FARM_KEY = 'farm:';
 const GRID_ID = 'catalog-grid';
 
 /** Le menu contextuel du navigateur n'a pas sa place dans l'app, sauf dans les champs de saisie. */
 function blockContextMenu(e: MouseEvent) {
   if (!(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) e.preventDefault();
+}
+
+/** Première zone de copie de la grille dont le bas est sous le haut de la zone défilante. */
+function firstCardOnScreen(): HTMLElement | null {
+  const grid = document.getElementById(GRID_ID);
+  if (!grid) return null;
+  const top = grid.getBoundingClientRect().top;
+  const zones = grid.querySelectorAll<HTMLElement>('.card__main, .card__zone--1');
+  for (const zone of zones) if (zone.getBoundingClientRect().bottom > top) return zone;
+  return null;
 }
 
 const isCategory = (v: ViewFilter): v is Category => CATEGORIES.includes(v as Category);
@@ -66,7 +78,8 @@ export function App() {
   const settingsSectionRef = useRef<SettingsSectionId>(DEFAULT_SETTINGS_SECTION);
 
   const ready = load.status === 'ready';
-  const { view, setView, query, setQuery, deferredQuery, visible, counts, showDestination } = useCatalogView(
+  const { view, setView, query, setQuery, deferredQuery, visible, counts, allMatches, firstMatch, showDestination } =
+    useCatalogView(
     destinations,
     favorites,
     dictionary,
@@ -136,11 +149,40 @@ export function App() {
       }
       const parts = cardParts(d);
       const target = parts[part - 1];
+      // Deux variantes : la bulle dit laquelle a été copiée (clic gauche = sans Zaap).
+      const label = target && partVariants(target).length === 2 ? COPIED_LABEL[button] : undefined;
       // La zone n'est transmise au retour visuel que pour une carte à deux étapes.
-      void copy(d.id, target ? partCommand(target, button) : null, NOTHING_TO_COPY, parts.length > 1 ? part : undefined);
+      void copy(d.id, target ? partCommand(target, button) : null, NOTHING_TO_COPY, {
+        part: parts.length > 1 ? part : undefined,
+        label,
+      });
     },
     [copy, openPanel],
   );
+
+  /**
+   * Clavier propre au champ de recherche (invariant 11 : c'est la recherche) : ↓ donne le focus
+   * à la première carte à l'écran (première zone d'une carte à deux étapes) ; Entrée agit comme
+   * un clic gauche sur la première carte de la recherche tapée, ou un clic droit si le clic gauche
+   * n'a rien à copier (commande réduite à un `/zaap`, comme la palette). Requête vide : rien.
+   */
+  const onSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key === 'ArrowDown') {
+      const card = firstCardOnScreen();
+      if (!card) return;
+      e.preventDefault();
+      card.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.repeat) return;
+      const first = firstMatch();
+      if (!first) return;
+      const part = cardParts(first)[0];
+      const button = part && partCommand(part, 'left') === null && partCommand(part, 'right') !== null ? 'right' : 'left';
+      onCardAction(first, 1, button);
+    }
+  };
 
   const onToggleFavorite = useCallback((d: Destination) => toggleFavorite(d.id), [toggleFavorite]);
 
@@ -187,7 +229,7 @@ export function App() {
   const farmRoute = useMemo(() => (farm ? parseFarmRoute(farm.command) : null), [farm]);
   const farmStep = farm ? farmProgress.stepOf(farm.id) : -1;
 
-  const statusText = feedback?.text ?? updateIndicator;
+  const statusMessage: StatusMessage | null = feedback ?? (updateIndicator === null ? null : { text: updateIndicator });
 
   return (
     <div className="app" onContextMenu={blockContextMenu}>
@@ -205,6 +247,7 @@ export function App() {
         searchRef={searchRef}
         query={query}
         onQueryChange={setQuery}
+        onSearchKeyDown={onSearchKeyDown}
         view={view}
         onViewChange={setView}
         counts={counts}
@@ -223,6 +266,8 @@ export function App() {
         visible={visible}
         view={view}
         query={deferredQuery}
+        allMatches={allMatches}
+        onShowAll={() => setView('all')}
         favorites={favorites}
         feedback={feedback}
         manageMode={manageMode}
@@ -278,7 +323,7 @@ export function App() {
         />
       )}
 
-      <StatusBubble text={statusText} warning={feedback?.kind === 'warning'} />
+      <StatusBubble message={statusMessage} warning={feedback?.kind === 'warning'} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildDictionary } from '../src/features/aliases/aliases';
 import type { Destination } from '../src/features/catalog/schema';
+import { makeDestination } from './helpers/destination';
 import { farmResumeCommand, parseFarmRoute } from '../src/features/farm/farmRoute';
 import {
   buildPaletteIndex,
@@ -8,28 +9,14 @@ import {
   PALETTE_LIMIT,
   searchPalette,
   STEP_NAMES,
-  VARIANT_LABELS,
   variantLabel,
   variantShortLabel,
   type PaletteEntry,
 } from '../src/features/palette/entries';
+import { VARIANT_LABELS } from '../src/features/palette/types';
 
 // Coordonnées fictives uniquement.
-function dest(partial: Partial<Destination> & { id: string; name: string }): Destination {
-  return {
-    category: 'place',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/travel 0 0',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-    ...partial,
-  };
-}
+const dest = (partial: Partial<Destination> & { id: string; name: string }) => makeDestination(partial);
 
 const TREMBLE = '/zaap 9 9;/travel 1 1;/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5';
 

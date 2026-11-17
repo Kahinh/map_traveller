@@ -1,4 +1,4 @@
-/* Tokens DA Map Traveller — seule source des couleurs et dimensions (CdC §3.1).
+/* Tokens DA Map Traveller — seule source des couleurs et dimensions (invariant 8).
    Inspiration ergonomique PNJ ; aucune ressource propriétaire reprise. */
 :root {
   --mt-bg: #252739;
@@ -61,6 +61,9 @@
   --mt-icon-halo: rgba(14, 15, 26, 0.7);
   /* Retour de copie : léger lavis d'accent sous la pastille cochée. */
   --mt-copied-wash: rgba(229, 240, 82, 0.14);
+  /* Masques (`mask-image`) : seule l'opacité compte, la teinte est ignorée. */
+  --mt-mask-solid: rgba(0, 0, 0, 1);
+  --mt-mask-clear: rgba(0, 0, 0, 0);
 
   /* Espacement (issue n°13, A4) : grille de 4 px ; le demi-pas ne sert que dans un petit contrôle. */
   --mt-space-half: 2px;
@@ -73,6 +76,8 @@
   --mt-card-size: 90px;
   /* Écart de la grille : lu par `useGridWindow` (grille fenêtrée), ne pas renommer. */
   --mt-gap: var(--mt-space-2);
+  /* Bord estompé d'une rangée d'onglets qui déborde encore (`overflowFade`). */
+  --mt-fade-w: var(--mt-space-6);
   --mt-split-gap: 4px; /* interstice des cartes à deux étapes, mesuré perpendiculairement à la diagonale */
   /* Rayons : à l'intérieur d'une bordure de 1 px, `calc(var(--mt-radius) - 1px)`. */
   --mt-radius: 12px;

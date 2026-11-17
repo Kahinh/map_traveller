@@ -9,7 +9,7 @@ import {
 
 const ROUTE = '/travel 1 1;/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5;/travel 6 6';
 
-describe('parcours Farm (CdC §5)', () => {
+describe('parcours Farm (invariant 3)', () => {
   const route = parseFarmRoute(ROUTE);
 
   it('test 7 : toutes les positions, dans l\'ordre', () => {
@@ -22,7 +22,7 @@ describe('parcours Farm (CdC §5)', () => {
     expect(farmStartCommand(route)).toBe(ROUTE);
   });
 
-  it('table du cahier des charges', () => {
+  it('table de référence', () => {
     expect(farmResumeCommand(route, 0)).toBe('/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5;/travel 6 6');
     expect(farmResumeCommand(route, 1)).toBe('/travel 3 3;/travel 4 4;/travel 5 5;/travel 6 6');
     expect(farmResumeCommand(route, 2)).toBe('/travel 4 4;/travel 5 5;/travel 6 6'); // test 8

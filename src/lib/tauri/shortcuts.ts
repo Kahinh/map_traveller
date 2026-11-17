@@ -11,24 +11,17 @@ import {
   type ShortcutAction,
   type ShortcutsState,
 } from '../../features/settings/accelerator';
-import { isTauri } from './env';
-
-export const BROWSER_SHORTCUTS_MESSAGE = "Réglage disponible uniquement dans l'application installée";
-
-/** Vrai si les raccourcis peuvent être modifiés (application installée). */
-export function canConfigureShortcuts(): boolean {
-  return isTauri();
-}
+import { INSTALLED_ONLY, IS_TAURI } from './env';
 
 function toState(value: unknown): ShortcutsState {
   const state = parseShortcutsState(value);
-  if (state === null) throw new Error("Réponse inattendue de l'application pour les raccourcis.");
+  if (state === null) throw new Error("Réponse inattendue de l'application pour les raccourcis");
   return state;
 }
 
 /** Raccourcis effectifs et état de leur enregistrement. */
 export async function getShortcuts(): Promise<ShortcutsState> {
-  if (!isTauri()) return defaultShortcutsState();
+  if (!IS_TAURI) return defaultShortcutsState();
   return toState(await invoke<unknown>('get_shortcuts'));
 }
 
@@ -38,12 +31,12 @@ export async function getShortcuts(): Promise<ShortcutsState> {
  * reste alors actif.
  */
 export async function setShortcut(action: ShortcutAction, accelerator: string): Promise<ShortcutsState> {
-  if (!isTauri()) throw new Error(BROWSER_SHORTCUTS_MESSAGE);
+  if (!IS_TAURI) throw new Error(INSTALLED_ONLY);
   return toState(await invoke<unknown>('set_shortcut', { action, accelerator }));
 }
 
 /** Rétablit les deux raccourcis par défaut. */
 export async function resetShortcuts(): Promise<ShortcutsState> {
-  if (!isTauri()) throw new Error(BROWSER_SHORTCUTS_MESSAGE);
+  if (!IS_TAURI) throw new Error(INSTALLED_ONLY);
   return toState(await invoke<unknown>('reset_shortcuts'));
 }

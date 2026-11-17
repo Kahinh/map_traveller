@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, type ComponentType } from 'react';
 import type { AliasesBinding } from '../app/useAliases';
 import type { Destination } from '../features/catalog/schema';
 import type { Settings, SettingsPatch } from '../features/settings/settings';
-import { UPDATER_NOT_AVAILABLE, type UpdaterBinding } from '../features/updates/types';
+import type { UpdaterBinding } from '../features/updates/types';
 import { Panel } from './Panel';
 import { AliasesSection } from './settings/AliasesSection';
 import { DataSection } from './settings/DataSection';
@@ -11,6 +11,7 @@ import { PaletteSection } from './settings/PaletteSection';
 import { ShortcutsSection } from './settings/ShortcutsSection';
 import type { SettingsSectionProps } from './settings/types';
 import { UpdatesSection } from './settings/UpdatesSection';
+import { useRovingFocus } from './useRovingFocus';
 
 interface SectionDef {
   id: string;
@@ -22,7 +23,7 @@ interface SectionDef {
  * Registre des rubriques : SEULE chose à modifier pour en ajouter une (un fichier par rubrique
  * dans `components/settings/`). L'ordre du tableau est celui des onglets.
  */
-export const SETTINGS_SECTIONS = [
+const SETTINGS_SECTIONS = [
   { id: 'updates', label: 'Mises à jour', render: UpdatesSection },
   { id: 'data', label: 'Données', render: DataSection },
   { id: 'display', label: 'Affichage', render: DisplaySection },
@@ -38,8 +39,10 @@ export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = SETTINGS_SECTIONS[0].
 interface Props {
   section: SettingsSectionId;
   settings: Settings;
-  /** Moteur de mise à jour, fourni par l'issue n°5 ; indisponible par défaut. */
-  updater?: UpdaterBinding;
+  /** `settings.json` illisible : réglages par défaut, rien n'est enregistré. */
+  settingsError: string | null;
+  /** Moteur de mise à jour (`useUpdater`). */
+  updater: UpdaterBinding;
   aliases: AliasesBinding;
   destinations: readonly Destination[];
   onSectionChange: (section: SettingsSectionId) => void;
@@ -54,7 +57,8 @@ interface Props {
 export function SettingsPanel({
   section,
   settings,
-  updater = UPDATER_NOT_AVAILABLE,
+  settingsError,
+  updater,
   aliases,
   destinations,
   onSectionChange,
@@ -63,10 +67,23 @@ export function SettingsPanel({
 }: Props) {
   const uid = useId();
   const tabId = (id: SettingsSectionId) => `${uid}-tab-${id}`;
-  const current = SETTINGS_SECTIONS.find((s) => s.id === section) ?? SETTINGS_SECTIONS[0];
+  const index = Math.max(
+    0,
+    SETTINGS_SECTIONS.findIndex((s) => s.id === section),
+  );
+  const current = SETTINGS_SECTIONS[index] ?? SETTINGS_SECTIONS[0];
   // Type élargi : une rubrique peut ignorer tout ou partie des props communes.
   const Section: ComponentType<SettingsSectionProps> = current.render;
-  const tabsRef = useRef<HTMLElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const tabProps = useRovingFocus(
+    SETTINGS_SECTIONS.length,
+    index,
+    (i) => {
+      const s = SETTINGS_SECTIONS[i];
+      if (s) onSectionChange(s.id);
+    },
+    'horizontal',
+  );
 
   // Fenêtre étroite ou zoom : la rangée défile ; l'onglet actif (rubrique mémorisée) reste visible.
   useEffect(() => {
@@ -77,10 +94,11 @@ export function SettingsPanel({
 
   return (
     <Panel label="Paramètres" title="Paramètres" backTitle="Fermer (Échap)" onBack={onClose}>
-      <nav ref={tabsRef} className="tabs settings__tabs" role="tablist" aria-label="Rubriques des paramètres">
-        {SETTINGS_SECTIONS.map((s) => (
+      <div ref={tabsRef} className="tabs settings__tabs" role="tablist" aria-label="Rubriques des paramètres">
+        {SETTINGS_SECTIONS.map((s, i) => (
           <button
             key={s.id}
+            {...tabProps(i)}
             id={tabId(s.id)}
             type="button"
             role="tab"
@@ -92,8 +110,13 @@ export function SettingsPanel({
             {s.label}
           </button>
         ))}
-      </nav>
+      </div>
       <div className="form__body settings__body" role="tabpanel" id={`${uid}-panel`} aria-labelledby={tabId(current.id)}>
+        {settingsError && (
+          <p className="form__error" role="alert">
+            {settingsError}
+          </p>
+        )}
         <Section
           key={current.id}
           settings={settings}

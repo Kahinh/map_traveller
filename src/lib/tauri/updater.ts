@@ -16,22 +16,15 @@
 import { relaunch } from '@tauri-apps/plugin-process';
 import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
 import { UpdateTimeoutError } from '../../features/updates/updates';
-import { isTauri } from './env';
-
-export const UPDATER_BROWSER_MESSAGE = "Disponible dans l'application installée";
+import { INSTALLED_ONLY, IS_TAURI } from './env';
 
 /** Délai maximal de la requête de vérification, transmis au plugin (ms). */
-export const CHECK_TIMEOUT_MS = 15_000;
+const CHECK_TIMEOUT_MS = 15_000;
 /** Délai maximal de la vérification côté interface : filet si le plugin ne rend jamais la main. */
 const CHECK_WATCHDOG_MS = CHECK_TIMEOUT_MS + 5_000;
 /** Délai maximal du téléchargement de l'installateur, transmis au plugin (ms). */
-export const DOWNLOAD_TIMEOUT_MS = 10 * 60_000;
+const DOWNLOAD_TIMEOUT_MS = 10 * 60_000;
 const DOWNLOAD_WATCHDOG_MS = DOWNLOAD_TIMEOUT_MS + 30_000;
-
-/** Vrai si les mises à jour sont possibles (application installée). */
-export function canUseUpdater(): boolean {
-  return isTauri();
-}
 
 /** Version trouvée par `checkForUpdate`. `handle` est une ressource native, à libérer par `releaseUpdate`. */
 export interface AvailableUpdate {
@@ -41,7 +34,7 @@ export interface AvailableUpdate {
 }
 
 /** Progression du téléchargement : taille annoncée (au premier morceau), puis chaque morceau reçu. */
-export type DownloadProgress = { kind: 'length'; total: number | null } | { kind: 'chunk'; bytes: number };
+type DownloadProgress = { kind: 'length'; total: number | null } | { kind: 'chunk'; bytes: number };
 
 /**
  * Promesse rejetée par `UpdateTimeoutError` si `promise` ne s'est pas réglée après `ms`.
@@ -85,7 +78,7 @@ export async function releaseUpdate(update: AvailableUpdate | Update | null): Pr
  * réseau, d'index invalide ou de délai dépassé (`UpdateTimeoutError`).
  */
 export async function checkForUpdate(): Promise<AvailableUpdate | null> {
-  if (!canUseUpdater()) throw new Error(UPDATER_BROWSER_MESSAGE);
+  if (!IS_TAURI) throw new Error(INSTALLED_ONLY);
   const update = await withWatchdog(check({ timeout: CHECK_TIMEOUT_MS }), CHECK_WATCHDOG_MS, (late) => {
     void releaseUpdate(late);
   });
@@ -118,7 +111,7 @@ export async function downloadAndInstall(
   onProgress: (progress: DownloadProgress) => void,
   beforeInstall: () => Promise<void>,
 ): Promise<void> {
-  if (!canUseUpdater()) throw new Error(UPDATER_BROWSER_MESSAGE);
+  if (!IS_TAURI) throw new Error(INSTALLED_ONLY);
   await withWatchdog(
     update.handle.download(
       (event) => {
@@ -135,5 +128,5 @@ export async function downloadAndInstall(
 
 /** Relance l'application (plugin de processus). Sans effet dans le navigateur. */
 export async function relaunchApp(): Promise<void> {
-  if (canUseUpdater()) await relaunch();
+  if (IS_TAURI) await relaunch();
 }

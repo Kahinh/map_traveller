@@ -11,11 +11,14 @@ function Icon({
   filled = false,
   strokeWidth = 1.5,
   className,
+  dragRegion,
 }: {
   children: ReactNode;
   filled?: boolean;
   strokeWidth?: number;
   className?: string;
+  /** Zone de déplacement de la fenêtre (barre de titre). */
+  dragRegion?: boolean;
 }) {
   return (
     <svg
@@ -29,6 +32,7 @@ function Icon({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
+      data-tauri-drag-region={dragRegion || undefined}
     >
       {children}
     </svg>
@@ -40,8 +44,8 @@ function Icon({
  * l'application, à plat, d'une seule couleur. N'apparaît qu'à trois endroits : la barre de titre,
  * l'étape courante d'un parcours Farm et les zaaps proposés par la palette (« proche X,Y »).
  */
-export const MarkIcon = ({ className }: { className?: string }) => (
-  <Icon className={className}>
+export const MarkIcon = ({ className, dragRegion }: { className?: string; dragRegion?: boolean }) => (
+  <Icon className={className} dragRegion={dragRegion}>
     <path d="M8 1.75L14.25 8 8 14.25 1.75 8z" />
     <circle cx="8" cy="8" r="1.75" fill="currentColor" stroke="none" />
   </Icon>

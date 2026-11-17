@@ -4,16 +4,11 @@
  */
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { isTauri } from './env';
+import { INSTALLED_ONLY, IS_TAURI } from './env';
 import { makeThumbnail } from './thumbnails';
 
 /** Extensions proposées par le dialogue ; le format réel est contrôlé par Rust (`images.rs`). */
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
-
-/** L'import d'images demande l'application installée (dialogue natif + copie par Rust). */
-export function canImportImages(): boolean {
-  return isTauri();
-}
 
 /**
  * Ouvre le dialogue de fichier natif puis copie l'image choisie dans le dossier de données.
@@ -22,7 +17,7 @@ export function canImportImages(): boolean {
  * est demandée aussitôt, en arrière-plan.
  */
 export async function pickAndImportImage(): Promise<string | null> {
-  if (!canImportImages()) throw new Error('Import d\'images disponible uniquement dans l\'application installée.');
+  if (!IS_TAURI) throw new Error(INSTALLED_ONLY);
   const selected = await open({
     title: 'Choisir une image',
     multiple: false,

@@ -13,7 +13,7 @@ import type { UpdaterBinding } from '../../features/updates/types';
 export interface SettingsSectionProps {
   settings: Settings;
   onChange: (patch: SettingsPatch) => void;
-  /** Moteur de mise à jour (issue n°5) ; `UPDATER_NOT_AVAILABLE` tant qu'il n'existe pas. */
+  /** Moteur de mise à jour (issue n°5) ; indisponible hors de l'application installée. */
   updater: UpdaterBinding;
   /** Dictionnaire global d'alias de recherche (issue n°10) et son enregistrement. */
   aliases: AliasesBinding;

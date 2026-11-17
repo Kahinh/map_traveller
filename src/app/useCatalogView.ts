@@ -1,0 +1,49 @@
+import { useDeferredValue, useMemo, useState } from 'react';
+import { VIEWS } from '../components/CategoryTabs';
+import type { AliasDictionary } from '../features/aliases/aliases';
+import type { Destination } from '../features/catalog/schema';
+import { filterDestinations, type ViewFilter } from '../features/catalog/search';
+
+/**
+ * Vue de la grille : onglet, recherche, destinations visibles et nombre par onglet. Un seul
+ * moteur de recherche (`filterDestinations`) pour tout.
+ */
+export function useCatalogView(
+  destinations: readonly Destination[],
+  favorites: ReadonlySet<string>,
+  dictionary: AliasDictionary,
+  ready: boolean,
+) {
+  const [view, setView] = useState<ViewFilter>('all');
+  const [query, setQuery] = useState('');
+  // La saisie reste fluide sur un gros catalogue : le filtrage suit avec une priorité basse.
+  const deferredQuery = useDeferredValue(query);
+
+  const visible = useMemo(
+    () => filterDestinations(destinations, view, deferredQuery, favorites, dictionary),
+    [destinations, view, deferredQuery, favorites, dictionary],
+  );
+
+  // Nombre de destinations par onglet, hors recherche : même filtre que la grille, requête vide.
+  const counts = useMemo(
+    () =>
+      ready
+        ? (Object.fromEntries(
+            VIEWS.map((v) => [v.id, filterDestinations(destinations, v.id, '', favorites, dictionary).length]),
+          ) as Record<ViewFilter, number>)
+        : undefined,
+    [ready, destinations, favorites, dictionary],
+  );
+
+  /**
+   * Après un enregistrement : si la vue courante masque la destination, bascule sur sa
+   * catégorie et vide la recherche.
+   */
+  const showDestination = (d: Destination) => {
+    if (filterDestinations([d], view, query, favorites, dictionary).length > 0) return;
+    setView(d.category);
+    setQuery('');
+  };
+
+  return { view, setView, query, setQuery, deferredQuery, visible, counts, showDestination };
+}

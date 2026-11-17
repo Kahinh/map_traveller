@@ -16,14 +16,14 @@ import {
 import { parseOfficialState, type OfficialState, type OfficialStateResult } from '../../features/catalog/official';
 import { SCHEMA_VERSION, validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
 import { mergeSettings, parseSettings, type Settings } from '../../features/settings/settings';
-import { isTauri } from './env';
+import { IS_TAURI } from './env';
 
-export type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases' | 'official';
+type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases' | 'official';
 
 const LS_PREFIX = 'map-traveller:';
 
 async function readRaw(name: StoreName): Promise<string | null> {
-  if (isTauri()) return invoke<string | null>('load_store', { name });
+  if (IS_TAURI) return invoke<string | null>('load_store', { name });
   try {
     return localStorage.getItem(LS_PREFIX + name);
   } catch {
@@ -32,7 +32,7 @@ async function readRaw(name: StoreName): Promise<string | null> {
 }
 
 async function writeRaw(name: StoreName, json: string): Promise<void> {
-  if (isTauri()) return invoke('save_store', { name, json });
+  if (IS_TAURI) return invoke('save_store', { name, json });
   try {
     localStorage.setItem(LS_PREFIX + name, json);
   } catch {
@@ -75,9 +75,13 @@ export function parseCatalogText(raw: string | null, fallback: unknown = EMPTY_C
   return validateCatalog(data ?? fallback);
 }
 
-/** Charge et valide le catalogue utilisateur ; `seed` le remplace s'il n'existe pas encore. */
-export async function loadCatalog(seed: unknown): Promise<ValidationResult> {
-  return parseCatalogText(await readRaw('catalog'), seed);
+/**
+ * Charge et valide le catalogue utilisateur. `seed` n'est appelé que si le fichier n'existe pas
+ * encore (mode navigateur) : le catalogue livré reste hors du paquet initial.
+ */
+export async function loadCatalog(seed: () => Promise<unknown>): Promise<ValidationResult> {
+  const raw = await readRaw('catalog');
+  return parseCatalogText(raw, raw == null ? await seed() : undefined);
 }
 
 /** Entrées du catalogue livré déjà proposées (`official.json`). Ne lève jamais. */
@@ -98,11 +102,38 @@ export async function saveCatalog(catalog: Catalog): Promise<void> {
   await writeJson('catalog', check.catalog);
 }
 
-/** Favoris par identifiant stable. Un fichier absent ou illisible donne un ensemble vide. */
-export async function loadFavorites(): Promise<Set<string>> {
-  const data = await readJson('favorites').catch(() => undefined);
-  const ids = isRecord(data) && Array.isArray(data.ids) ? data.ids : [];
-  return new Set(ids.filter((x): x is string => typeof x === 'string'));
+/**
+ * Lecture d'un fichier que la fenêtre principale réécrit : `error` non nul si le fichier existe
+ * mais n'est pas lisible. L'appelant n'écrit alors plus rien par-dessus (`createWriteGate`).
+ */
+export interface StoreRead<T> {
+  value: T;
+  error: string | null;
+}
+
+/** Favoris lus du texte de `favorites.json` (`null` : fichier absent). Ne lève jamais. */
+export function parseFavoritesText(raw: string | null): StoreRead<ReadonlySet<string>> {
+  if (raw == null) return { value: new Set(), error: null };
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return { value: new Set(), error: 'favorites.json illisible (JSON invalide)' };
+  }
+  if (!isRecord(data) || !Array.isArray(data.ids)) {
+    return { value: new Set(), error: 'favorites.json illisible (forme inattendue)' };
+  }
+  return { value: new Set(data.ids.filter((x): x is string => typeof x === 'string')), error: null };
+}
+
+/** Favoris de la fenêtre principale. Rejette si la lecture elle-même échoue. */
+export async function readFavorites(): Promise<StoreRead<ReadonlySet<string>>> {
+  return parseFavoritesText(await readRaw('favorites'));
+}
+
+/** Favoris pour la palette, qui n'écrit jamais : tout problème donne un ensemble vide. */
+export async function loadFavorites(): Promise<ReadonlySet<string>> {
+  return (await readFavorites().catch(() => parseFavoritesText(null))).value;
 }
 
 export function saveFavorites(ids: ReadonlySet<string>): Promise<void> {
@@ -112,7 +143,7 @@ export function saveFavorites(ids: ReadonlySet<string>): Promise<void> {
 /** Alias de recherche livrés avec l'application (lecture seule, embarqués dans le paquet). */
 export const DEFAULT_ALIASES = parseDefaultAliases(defaultAliases);
 
-export interface LoadedAliases {
+interface LoadedAliases {
   user: UserAliases;
   /** Fichier présent mais illisible : rien n'est écrit par-dessus tant qu'il l'est. */
   error: string | null;
@@ -157,11 +188,28 @@ export async function saveAliases(user: UserAliases): Promise<void> {
   await writeJson('aliases', mergeUserAliases(raw, user));
 }
 
-export { DEFAULT_SETTINGS, type Settings } from '../../features/settings/settings';
+/** Réglages lus du texte de `settings.json` (`null` : fichier absent). Ne lève jamais. */
+export function parseSettingsText(raw: string | null): StoreRead<Settings> {
+  if (raw == null) return { value: parseSettings(undefined), error: null };
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return { value: parseSettings(undefined), error: 'settings.json illisible (JSON invalide)' };
+  }
+  // Racine d'une autre forme : `mergeSettings` la remplacerait, et Rust y perdrait `shortcuts`.
+  if (!isRecord(data)) return { value: parseSettings(undefined), error: 'settings.json illisible (forme inattendue)' };
+  return { value: parseSettings(data), error: null };
+}
 
-/** Réglages ; un fichier absent ou illisible donne les valeurs par défaut. */
+/** Réglages de la fenêtre principale. Rejette si la lecture elle-même échoue. */
+export async function readSettings(): Promise<StoreRead<Settings>> {
+  return parseSettingsText(await readRaw('settings'));
+}
+
+/** Réglages pour la palette, qui n'écrit jamais : tout problème donne les valeurs par défaut. */
 export async function loadSettings(): Promise<Settings> {
-  return parseSettings(await readJson('settings').catch(() => undefined));
+  return (await readSettings().catch(() => parseSettingsText(null))).value;
 }
 
 /**
@@ -171,8 +219,12 @@ export async function loadSettings(): Promise<Settings> {
  * inconnus de `updates`, sont réécrites telles quelles (`mergeSettings`).
  * Dans l'application, Rust reprend de toute façon `shortcuts` du disque sous verrou
  * (`save_store`) : l'interface ne peut jamais remettre un raccourci périmé.
+ * Lève, sans rien écrire, si le fichier est devenu illisible.
  */
 export async function saveSettings(settings: Settings): Promise<void> {
-  const raw = await readJson('settings').catch(() => undefined);
-  await writeJson('settings', mergeSettings(raw, settings));
+  const raw = await readRaw('settings');
+  // Devenu illisible depuis le chargement (modifié à la main) : ne pas l'écraser.
+  const { error } = parseSettingsText(raw);
+  if (error !== null) throw new Error(error);
+  await writeJson('settings', mergeSettings(raw == null ? undefined : JSON.parse(raw), settings));
 }

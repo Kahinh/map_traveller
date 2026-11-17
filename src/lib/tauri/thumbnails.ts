@@ -9,7 +9,7 @@
  */
 import { invoke } from '@tauri-apps/api/core';
 import { centerCrop, thumbPath } from '../../features/catalog/thumbnails';
-import { isTauri } from './env';
+import { IS_TAURI } from './env';
 import { setThumbnailMaker, thumbReady } from './images';
 
 /** Qualité WebP : invisible à 90 px, quelques dizaines de Ko. */
@@ -53,7 +53,7 @@ async function drain(): Promise<void> {
 
 /** Demande la vignette d'une image importée ; sans effet si elle est déjà demandée. */
 export function makeThumbnail(relative: string): void {
-  if (!isTauri() || thumbPath(relative) === null || requested.has(relative)) return;
+  if (!IS_TAURI || thumbPath(relative) === null || requested.has(relative)) return;
   requested.add(relative);
   queue.push(relative);
   if (!running) void drain();

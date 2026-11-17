@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import seed from '../../resources/catalog.seed.json';
 import { removeDestination, upsertDestination, type DestinationDraft } from '../features/catalog/editor';
 import { mergeOfficial } from '../features/catalog/official';
 import { SCHEMA_VERSION, validateCatalog, type Catalog, type Destination } from '../features/catalog/schema';
+import { errorText } from '../lib/errors';
 import { initImages } from '../lib/tauri/images';
 import { loadCatalog, loadOfficialState, saveCatalog, saveOfficialState } from '../lib/tauri/storage';
 
-/** Catalogue livré (seed), validé par `tests/officialCatalog.test.ts`. */
-const shipped = validateCatalog(seed);
-const OFFICIAL: readonly Destination[] = shipped.ok ? shipped.catalog.destinations : [];
+/**
+ * Catalogue livré (seed, ≈ 90 Ko), validé par `tests/officialCatalog.test.ts`. Importé à la
+ * demande : la fenêtre principale, recréée à chaque retour de la zone de notification, s'affiche
+ * sans l'attendre. Le module est mis en cache par le chargeur : un seul téléchargement.
+ */
+const loadSeed = async (): Promise<unknown> => (await import('../../resources/catalog.seed.json')).default;
+
+async function officialEntries(): Promise<readonly Destination[]> {
+  const shipped = validateCatalog(await loadSeed());
+  return shipped.ok ? shipped.catalog.destinations : [];
+}
 
 /**
  * Ajoute les entrées livrées jamais proposées (`mergeOfficial`) : catalogue écrit d'abord, puis
@@ -18,7 +26,9 @@ const OFFICIAL: readonly Destination[] = shipped.ok ? shipped.catalog.destinatio
 async function withOfficialEntries(catalog: Catalog): Promise<Catalog> {
   const state = await loadOfficialState();
   if (!state.ok) return catalog;
-  const merge = mergeOfficial(catalog, OFFICIAL, state.known);
+  const official = await officialEntries().catch(() => null);
+  if (official === null) return catalog;
+  const merge = mergeOfficial(catalog, official, state.known);
   try {
     if (merge.added.length > 0) await saveCatalog(merge.catalog);
   } catch {
@@ -45,7 +55,7 @@ export function useCatalog() {
 
   useEffect(() => {
     void (async () => {
-      const [cat] = await Promise.all([loadCatalog(seed), initImages()]);
+      const [cat] = await Promise.all([loadCatalog(loadSeed), initImages()]);
       if (!cat.ok) {
         setLoad({ status: 'error', message: cat.errors.map((e) => `${e.path} ${e.message}`.trim()).join(' · ') });
         return;
@@ -54,7 +64,7 @@ export function useCatalog() {
       catalogRef.current = catalog;
       setDestinations(catalog.destinations);
       setLoad({ status: 'ready' });
-    })().catch((e: unknown) => setLoad({ status: 'error', message: String(e) }));
+    })().catch((e: unknown) => setLoad({ status: 'error', message: errorText(e) }));
   }, []);
 
   const commit = useCallback(async (next: Catalog) => {
@@ -66,7 +76,7 @@ export function useCatalog() {
   /** Catalogue courant ; refuse toute écriture si le catalogue n'a pas été chargé correctement. */
   const current = useCallback((): Catalog => {
     // Écrire par-dessus un catalogue illisible l'effacerait : jamais.
-    if (catalogRef.current === null) throw new Error('Catalogue non chargé : aucune modification possible.');
+    if (catalogRef.current === null) throw new Error('Catalogue non chargé : aucune modification possible');
     return { schemaVersion: SCHEMA_VERSION, destinations: catalogRef.current.destinations };
   }, []);
 
@@ -75,7 +85,7 @@ export function useCatalog() {
     async (draft: DestinationDraft): Promise<Destination> => {
       const { catalog, id } = upsertDestination(current(), draft);
       const saved = catalog.destinations.find((d) => d.id === id);
-      if (!saved) throw new Error(`Destination introuvable après enregistrement : ${id}.`);
+      if (!saved) throw new Error(`Destination introuvable après enregistrement : ${id}`);
       await commit(catalog);
       return saved;
     },

@@ -16,20 +16,20 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { thumbPath } from '../../features/catalog/thumbnails';
 import { getDataDir } from './dataDir';
-import { isTauri } from './env';
+import { IS_TAURI } from './env';
 
 let dataDir: string | null = null;
 
 /** Mémorise le dossier de données. À attendre avant le premier rendu des cartes. */
 export async function initImages(): Promise<void> {
-  if (isTauri() && dataDir === null) dataDir = await getDataDir();
+  if (IS_TAURI && dataDir === null) dataDir = await getDataDir();
 }
 
 /** URL affichable pour une image relative, ou `null` (placeholder). */
 export function imageSrc(relative: string | null): string | null {
   if (!relative) return null;
   // Navigateur de développement : seules les images livrées existent, servies depuis le dépôt.
-  if (!isTauri()) return `/resources/${relative}`;
+  if (!IS_TAURI) return `/resources/${relative}`;
   if (dataDir === null) return null;
   return convertFileSrc(`${dataDir}\\${relative.replaceAll('/', '\\')}`);
 }
@@ -43,7 +43,7 @@ let thumbnailMaker: ((relative: string) => void) | null = null;
  * absente, ou navigateur de développement (les images n'y ont pas de vignette).
  */
 export function thumbSrc(relative: string | null): string | null {
-  if (!relative || !isTauri() || missingThumbs.has(relative)) return null;
+  if (!relative || !IS_TAURI || missingThumbs.has(relative)) return null;
   return imageSrc(thumbPath(relative));
 }
 

@@ -1,0 +1,5 @@
+# Même version que la CI (.github/workflows/windows.yml, étape rust-toolchain) : à changer ensemble.
+[toolchain]
+channel = "1.97.0"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

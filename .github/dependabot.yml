@@ -1,0 +1,27 @@
+# Mises à jour proposées chaque semaine, une PR groupée par écosystème. Rien n'est fusionné
+# automatiquement : chaque PR passe par le build Windows (.github/workflows/windows.yml).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ['*']

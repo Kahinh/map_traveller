@@ -1,370 +1,163 @@
 # Map Traveller
 
-Petite application Windows **flottante et compacte**, à garder au-dessus du jeu (mode fenêtré ou sans bordure). Elle affiche une bibliothèque de cartes illustrées : un clic copie la commande `/travel` voulue dans le presse-papiers, il ne reste qu'à la **coller soi-même** dans le chat du jeu.
+Petite fenêtre Windows à garder au-dessus de **Dofus** (mode fenêtré ou sans bordure) : un clic sur une carte copie la commande `/travel` voulue dans le presse-papiers, il ne reste qu'à la **coller soi-même** dans le chat du jeu.
 
-> L'application ne colle jamais rien dans le jeu. Elle ne lit pas sa mémoire, n'intercepte pas le réseau et n'automatise aucune action de jeu. Elle fonctionne hors ligne, sans compte ni télémétrie. Sa seule connexion possible est la recherche de mises à jour auprès de GitHub : par défaut (mode manuel), elle n'a lieu que lorsque vous cliquez sur « Rechercher des mises à jour ». Voir [Mises à jour](#mises-à-jour).
+> **Ce que l'application ne fait pas.** Elle ne colle ni ne tape jamais rien dans le jeu, ne lit pas sa mémoire, n'intercepte pas le réseau et n'automatise aucune action. Elle fonctionne hors ligne, sans compte ni télémétrie. Sa seule connexion possible est la recherche de mises à jour sur GitHub, et en mode manuel (par défaut) elle n'a lieu que si vous cliquez sur « Rechercher » (voir [Mises à jour](#mises-à-jour)).
 
-Spécification complète : [docs/cahier-des-charges.md](docs/cahier-des-charges.md).
+## Installer
 
----
+1. Sur la page **Releases** du dépôt, télécharger `MapTraveller_X.Y.Z_x64-setup.exe` (dernière version).
+2. Le lancer. L'installation se fait pour l'utilisateur courant, **sans droits administrateur**. Node.js et Rust ne sont pas nécessaires.
+3. **SmartScreen** : l'installateur n'est pas signé par un certificat Windows ; Windows peut afficher « Windows a protégé votre ordinateur ». Cliquer sur « Informations complémentaires », puis « Exécuter quand même ».
+4. **WebView2** (le moteur d'affichage de Windows) : déjà présent sur Windows 10 à jour et Windows 11 ; s'il manque, l'installateur le télécharge.
 
-## Utilisation
+**Désinstaller** : Paramètres Windows › Applications › Map Traveller › Désinstaller. Vos données sont dans `%APPDATA%\MapTraveller\`, un dossier distinct de celui que vise l'option de suppression des données du désinstalleur (`app.maptraveller`) : il devrait être conservé (à vérifier sur Windows). Pour tout effacer, supprimer ce dossier à la main.
 
-### Destinations classiques (PNJ, Donjons, Lieux-dits)
+## Premiers pas
 
-| Action | Copie |
+1. Lancer Map Traveller : la fenêtre s'ouvre au premier plan, avec le catalogue livré (donjons, PNJ, hôtels des ventes et ateliers).
+2. Taper quelques lettres (`bijou`, `temple`…) : la grille se filtre aussitôt.
+3. **Clic gauche** sur une carte : la commande sans le `/zaap` initial est copiée. **Clic droit** : la commande complète.
+4. Dans le jeu, coller (`Ctrl+V`) dans le chat et valider.
+5. Depuis le jeu, `Ctrl+Alt+Espace` ouvre la **palette de recherche** : taper, `Entrée`, la commande est copiée et la palette se referme.
+
+## Copier une commande
+
+| Action sur une carte | Copie |
 |---|---|
-| **Clic gauche** | la commande **sans le `/zaap` initial** |
-| **Clic droit** | la commande **complète**, Zaap compris |
-| **☆ / ★** | ajoute ou retire des favoris (aucune copie) |
+| Clic gauche | la commande **sans le `/zaap` initial** |
+| Clic droit | la commande **complète**, Zaap compris |
+| Étoile (coin de la carte) | ajoute ou retire des favoris, sans rien copier |
 
-Exemple (coordonnées fictives) : `/zaap 5 -18;/travel 1 1;/travel 2 2`
+Exemple (coordonnées fictives) : `/zaap 5 -18;/travel 1 1;/travel 2 2` donne `/travel 1 1;/travel 2 2` au clic gauche et la commande entière au clic droit. Seul le **premier** segment est retiré, et seulement s'il s'agit d'un `/zaap` ; le reste est copié exactement tel quel. Une commande vide ne copie rien et un message le signale.
 
-- clic gauche → `/travel 1 1;/travel 2 2`
-- clic droit → `/zaap 5 -18;/travel 1 1;/travel 2 2`
+**Cartes à deux étapes** (PNJ et Donjons). Pour un trajet qui demande un passage manuel (portail, PNJ, entrée d'une dimension), la carte est coupée en deux triangles par une diagonale : le triangle haut-gauche (repère « 1 ») copie le trajet jusqu'à l'accès, le triangle bas-droite (repère « 2 ») le trajet sur place. Chaque triangle suit les mêmes règles de clic. Franchir le passage reste à faire soi-même.
 
-Seul le **premier** segment est retiré, et seulement s'il s'agit d'un `/zaap`. Le reste est copié exactement tel quel.
+**Parcours Farm.** Un clic (gauche ou droit) sur une carte Farm ouvre le parcours : une petite carte par position (`1,1`, `2,2`…).
 
-### Trajet en deux étapes (PNJ, Donjons)
-
-Pour une destination qui demande un passage **manuel** par un portail ou un PNJ (par exemple l'entrée d'une dimension), une carte PNJ ou Donjon peut porter deux commandes. La carte garde une seule image, coupée par une diagonale du coin bas-gauche au coin haut-droit :
-
-| Zone | Repère | Commande |
-|---|---|---|
-| triangle **haut-gauche** | « 1 » | étape 1 : accès (`command`) |
-| triangle **bas-droite** | « 2 » | étape 2 : sur place (`command2`) |
-
-Chaque zone suit la même règle que les cartes classiques, appliquée à sa propre commande : **clic gauche** sans le `/zaap` initial, **clic droit** complet. La copie est immédiate et la coche n'apparaît que sur la zone cliquée.
-
-Exemple (coordonnées fictives) : étape 1 `/zaap 5 -18;/travel 1 1`, étape 2 `/travel 2 2;/travel 3 3`.
-
-1. Clic sur la zone 1, coller dans le chat du jeu : trajet jusqu'à l'accès.
-2. Franchir soi-même le portail ou parler au PNJ : l'application n'automatise pas ce passage.
-3. Clic sur la zone 2, coller dans le chat du jeu : trajet sur place.
-
-Ce que la commande `/travel` accepte de part et d'autre d'un passage est à vérifier en jeu. Le mode se règle dans le formulaire de la destination (case « Trajet en deux étapes », voir ci-dessous).
-
-### Parcours Farm
-
-Un clic sur une carte Farm ouvre le parcours : une petite carte par position (`1,1`, `2,2`…).
-
-- **▶ Début** : copie le parcours complet.
-- **Clic sur une position** : c'est la **dernière position atteinte**. La suite du parcours est copiée immédiatement, sans second clic.
+- **Début** : copie le parcours complet, Zaap initial compris.
+- **Clic sur une position** : c'est la **dernière position atteinte** ; la suite du parcours est copiée aussitôt, sans second clic.
 - **Dernière position** : rien n'est copié, un message signale la fin du parcours.
 
-La dernière position cliquée reste surlignée et les précédentes sont estompées, le temps de la session.
+La position cliquée reste surlignée et les précédentes estompées, le temps de la session. La reprise se fait par numéro d'étape : un parcours qui repasse par les mêmes coordonnées fonctionne.
 
-La reprise se fait par **numéro d'étape**. Un parcours qui repasse par les mêmes coordonnées fonctionne donc correctement.
+## Palette de recherche
 
-### Créer et gérer ses destinations
-
-- **`+`** (à droite des onglets) : ouvre le formulaire « Nouvelle destination ». Si un onglet de catégorie est actif, elle est présélectionnée.
-- **Crayon** (à côté du `+`) : active le **mode gestion**. Un crayon apparaît sur chaque carte et ouvre son formulaire. Les clics gauche et droit des cartes **copient toujours**, dans ce mode comme en dehors. `Échap` quitte le mode gestion.
-
-Le formulaire :
-
-| Champ | Remarque |
-|---|---|
-| **Nom** | obligatoire |
-| **Catégorie** | PNJ, Donjon, Lieu-dit ou Farm ; changer de catégorie n'efface rien |
-| **Image** | facultative ; sans image, la carte affiche l'icône de sa catégorie |
-| **Trajet en deux étapes** | PNJ et Donjons uniquement, décoché par défaut ; affiche « Commande 1 » et « Commande 2 » |
-| **Commande** | obligatoire, texte libre sur plusieurs lignes, **enregistré exactement tel que saisi** |
-| **Plus d'options** | zone, alias et tags (séparés par des virgules), ordre d'affichage (entier, vide = 0) |
-
-- L'**aperçu** sous la commande montre ce que copiera chaque clic (gauche / droit, et par étape pour une carte double). Pour un parcours Farm, il montre le nombre et l'ordre des positions reconnues, et signale tout segment non reconnu.
-- **Enregistrer** (`Ctrl+Entrée`) écrit aussitôt sur le disque ; la carte apparaît dans la grille sans redémarrage.
-- **Dupliquer** crée une copie (même image, mêmes commandes) ; **Supprimer** demande une confirmation. Supprimer une carte la retire aussi des favoris. Le fichier image n'est jamais supprimé.
-- `Échap` ou **Annuler** ferme le formulaire ; s'il y a des modifications non enregistrées, une confirmation est demandée.
-- Si l'enregistrement échoue, le formulaire reste ouvert avec le message d'erreur et rien n'est modifié.
-
-**Images** (application installée uniquement) : le bouton « Choisir… » ouvre le dialogue Windows (PNG, JPEG, WebP, 10 Mo maximum). Le fichier est **copié** dans `images/` sous un nom interne ; l'original peut ensuite être déplacé ou supprimé. Le format réel du fichier est contrôlé : un fichier refusé ne remplace pas l'image existante. « Retirer » enlève l'image de la carte sans supprimer de fichier. Dans `npm run dev` (navigateur), l'import d'images est désactivé.
-
-### Palette de recherche
-
-`Ctrl+Alt+Espace`, depuis n'importe quelle fenêtre, ouvre une petite palette au centre de l'écran principal. On tape, on valide, la commande est dans le presse-papiers et la palette se referme. Rien n'est collé ni tapé dans le jeu.
+`Ctrl+Alt+Espace` ouvre, depuis n'importe quelle fenêtre, une barre de recherche au centre de l'écran principal. Les résultats apparaissent dessous dès la première lettre (huit lignes visibles, puis défilement) ; la palette se referme après une copie ou quand on clique ailleurs.
 
 | Touche | Effet |
 |---|---|
-| `↑` / `↓` | changer de ligne |
-| `Entrée` ou clic | copier la **variante sélectionnée** |
-| `Ctrl+Entrée` ou clic droit | copier **l'autre variante** |
-| `←` / `→` | sur une ligne à deux variantes, passer de « sans Zaap » à « avec Zaap » |
+| `↑` `↓` | changer de ligne |
+| `Entrée` ou clic | copier la variante sélectionnée |
+| `Ctrl+Entrée` ou clic droit | copier l'autre variante |
+| `←` `→` | sur une ligne à deux cases, passer de « sans Zaap » à « avec Zaap » |
 | `Échap` | fermer sans copier |
 
-- **Compacte** : à l'ouverture, seule la barre de recherche est affichée. Les résultats apparaissent dessous dès la première lettre, et la fenêtre prend exactement leur hauteur (8 lignes visibles au plus, puis défilement). Sans résultat, elle se réduit à la barre, qui ne change jamais de place.
-- **Recherche** : par nom, alias, tag, zone ou catégorie (« donjon … », « farm … »). Elle ignore les accents, les majuscules, la ponctuation, les tirets, les mots de liaison (« de », « des », « du », « l' »… sauf s'ils sont seuls dans la recherche) et l'ordre des mots : `bijoutier bonta` et `bonta bijoutier` donnent le même résultat. Le meilleur résultat est présélectionné.
-- **Alias** : un acronyme du dictionnaire (`hdv` pour « hôtel des ventes ») trouve toutes les destinations concernées ; un mot de plus affine (`hdv bonta`). Voir [Paramètres](#paramètres).
-- **Fautes de frappe** : si rien ne correspond exactement, la recherche tolère une faute (deux à partir de 8 lettres) sur les mots de 4 lettres et plus. Un résultat approximatif n'apparaît jamais quand un résultat exact existe.
-- **Une ligne par étape** : une carte à deux étapes donne deux lignes, « — Étape 1 » (accès) et « — Étape 2 » (sur place), toujours l'une sous l'autre.
-- **Avec ou sans Zaap** : sur une ligne dont la commande commence par `/zaap`, deux cases apparaissent à droite, *sans Zaap* (icône de trajet : la suite sans le `/zaap` initial) et *avec Zaap* (icône de portail : la commande complète). La case en surbrillance est celle qu'`Entrée` copie ; un clic sur une case copie la sienne. Sur les autres lignes, ces mêmes icônes atténuées signalent un Zaap. Une ligne sans `/zaap`, ou réduite à un `/zaap`, n'a pas de case : elle se copie directement. Les parcours Farm n'en ont pas non plus.
-- **Parcours Farm** : le nom du parcours liste « parcours complet » puis chaque position. Le nom suivi d'une position reprend directement la suite : avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`. Si le parcours repasse par la même position, une ligne par passage est proposée.
-- **Zaap le plus proche** : `proche -20,-20` (ou `proche -20 -20`, `proche [-20,-20]`) liste les trois zaaps les plus proches de cette position, du plus proche au plus lointain, avec leurs coordonnées, leur zone et la distance. `Entrée` copie le **trajet complet** (`/zaap …;/travel -20 -20`, ou le zaap seul si la position est celle du zaap) ; `Ctrl+Entrée` copie **le zaap seul**. `proche incarnam 2,-4` cherche parmi les zaaps d'Incarnam, qui ont leurs propres coordonnées et ne sont jamais comparés au Monde des Douze. La distance est comptée **en cartes** (horizontal + vertical, distance de Manhattan), à vol d'oiseau : la mer, les obstacles et les accès ne sont pas pris en compte, le zaap le plus proche n'est donc pas toujours le trajet le plus court. Ex aequo : ordre alphabétique. « proche » suivi de mots sans chiffre reste une recherche normale.
-- **Limite** : la palette s'affiche devant le jeu en mode fenêtré ou sans bordure. En plein écran exclusif, Windows peut l'empêcher d'apparaître.
+- **Recherche tolérante** (aussi dans la fenêtre principale) : par nom, alias, tag, zone ou catégorie (`donjon …`, `farm …`). Elle ignore les accents, les majuscules, la ponctuation, les mots de liaison (« de », « du », « l' »…) et l'ordre des mots. Si rien ne correspond exactement, elle tolère une faute de frappe (deux à partir de 8 lettres) sur les mots de 4 lettres et plus.
+- **Alias** : un mot du dictionnaire remplace sa signification (`hdv` pour « hôtel des ventes ») ; un mot de plus affine (`hdv bonta`). Voir [Paramètres](#paramètres).
+- **Une ligne par étape** : une carte à deux étapes donne « — Étape 1 » et « — Étape 2 », l'une sous l'autre.
+- **Avec ou sans Zaap** : sur une ligne qui commence par `/zaap`, deux cases à droite, *sans Zaap* et *avec Zaap* ; la case en surbrillance est celle qu'`Entrée` copie, un clic sur une case copie la sienne. La case par défaut se règle dans Paramètres › Palette.
+- **Farm** : le nom du parcours donne « parcours complet » puis une ligne par position ; le nom suivi d'une position reprend la suite (avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`).
+- **Zaap le plus proche** : `proche -20,-20` (ou `proche -20 -20`) liste les trois zaaps les plus proches de cette position. `Entrée` copie le zaap puis le trajet vers la position, `Ctrl+Entrée` le zaap seul. `proche incarnam 2,-4` cherche parmi les zaaps d'Incarnam. La distance est comptée en cartes, à vol d'oiseau : la mer et les obstacles ne sont pas pris en compte.
 
-### Paramètres
+## Gérer ses destinations
+
+- **`+`** (à droite des onglets) : « Nouvelle destination ». La catégorie de l'onglet actif est présélectionnée.
+- **Crayon** (« Gérer les destinations ») : un crayon apparaît sur chaque carte et ouvre son formulaire. Les clics gauche et droit des cartes copient toujours. `Échap` quitte ce mode.
+- Formulaire : **Nom**, **Catégorie** (PNJ, Donjon, Lieu-dit, Farm), **Image** (facultative, « Choisir… » : PNG, JPEG ou WebP, 10 Mo au plus, copiée dans vos données), **Trajet en deux étapes** (PNJ et Donjons, affiche « Commande 1 » et « Commande 2 »), **Commande** (enregistrée exactement telle que saisie), **Plus d'options** (zone, alias, tags, ordre d'affichage). L'aperçu montre ce que copiera chaque clic, ou les positions reconnues d'un parcours Farm.
+- **Enregistrer** (`Ctrl+Entrée`) écrit aussitôt sur le disque. **Dupliquer** crée une copie ; **Supprimer** demande une confirmation et retire aussi la carte des favoris. **Annuler** ou `Échap` ferme le formulaire (confirmation s'il reste des modifications).
+- « Retirer » enlève l'image d'une carte sans supprimer le fichier : aucun fichier image n'est jamais supprimé automatiquement.
+
+## Paramètres
 
 L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enregistré dès qu'il change.
 
-- **Mises à jour** : la version installée, le mode, Manuel (par défaut : rien n'est contacté sans votre action) ou Automatique, et le bouton « Rechercher des mises à jour ». Détails dans [Mises à jour](#mises-à-jour).
-- **Données** : l'emplacement réel de vos données, avec « Ouvrir le dossier » et « Copier le chemin ». Pour sauvegarder vos données, copiez ce dossier. Fermez l'application avant de modifier ces fichiers à la main.
-- **Affichage** : toujours au premier plan (même réglage que l'épingle) ; **Réduire dans la zone de notification** (activé par défaut), voir ci-dessous.
-- **Palette** : la variante sélectionnée par défaut, *Sans Zaap* (comme avant) ou *Avec Zaap*. Elle fixe la première case et ce que copie `Entrée` ; `Ctrl+Entrée` copie l'autre. La palette relit ce réglage à chaque ouverture.
-- **Alias** : le dictionnaire de la recherche, commun à la fenêtre et à la palette. Un alias remplace un mot de la recherche par sa signification, pour toutes les destinations : il se saisit **une seule fois** ici, pas carte par carte. Les alias fournis avec l'application (`hdv`, `rdv`) peuvent être désactivés ou remplacés ; les vôtres s'ajoutent, se modifient et se suppriment. Chaque ligne indique combien de destinations l'alias trouve.
-- **Raccourcis** : les deux raccourcis globaux.
+1. **Mises à jour** : version installée, mode (Manuel ou Automatique), bouton « Rechercher ».
+2. **Données** : emplacement de vos données, boutons « Ouvrir » et « Copier le chemin », contenu du dossier.
+3. **Affichage** : « Toujours au premier plan » (même réglage que l'épingle de la barre de titre) et « Réduire dans la zone de notification ».
+4. **Palette** : variante par défaut, *Sans Zaap* ou *Avec Zaap* (ce que copie `Entrée`).
+5. **Alias** : le dictionnaire de la recherche, commun à la fenêtre et à la palette. Les alias fournis (`hdv`, `rdv`) se désactivent ou se remplacent ; les vôtres s'ajoutent, se modifient et se suppriment.
+6. **Raccourcis** : les deux raccourcis globaux. Cliquer sur le champ, puis appuyer sur la combinaison (Ctrl ou Alt, plus une lettre, un chiffre, F1 à F12 ou Espace) ; « Rétablir par défaut » revient à l'origine. Un raccourci déjà pris par une autre application est refusé et l'ancien est conservé.
 
-### Zone de notification
+## Raccourcis clavier
 
-Map Traveller a une icône dans la zone de notification (à droite de la barre des tâches, éventuellement parmi les icônes cachées).
+| Où | Touche | Effet |
+|---|---|---|
+| Partout (global, réglable dans Paramètres › Raccourcis) | `Ctrl+Alt+T` | afficher ou masquer la fenêtre |
+| Partout (global, réglable) | `Ctrl+Alt+Espace` | ouvrir ou fermer la palette |
+| Fenêtre | taper du texte | lance la recherche |
+| Fenêtre | `Ctrl+F` | place le curseur dans la recherche |
+| Fenêtre | `Échap` | ferme le panneau ouvert (parcours Farm, Paramètres), sinon efface la recherche, sinon quitte le mode gestion |
+| Formulaire | `Ctrl+Entrée` / `Échap` | enregistrer / annuler |
+| Palette | voir [Palette de recherche](#palette-de-recherche) | |
+
+## Zone de notification et fermeture
+
+Map Traveller a une icône dans la zone de notification (près de l'horloge, parfois parmi les icônes cachées sous la flèche `^`).
 
 - **Clic gauche** sur l'icône : afficher ou masquer la fenêtre. **Clic droit** : menu **Afficher**, **Ouvrir la palette**, **Quitter**.
-- Réglage **Réduire dans la zone de notification** activé (par défaut) : le bouton réduire et le raccourci « afficher / masquer » ferment la fenêtre et laissent l'application dans la zone de notification, sans entrée dans la barre des tâches. La fenêtre n'est alors plus chargée en mémoire ; elle revient à sa position par l'icône, le menu, son raccourci ou en relançant l'application, après un court chargement.
-- Réglage désactivé : réduire renvoie la fenêtre dans la barre des tâches et le raccourci la masque, comme avant.
-- Pendant la saisie d'une destination (formulaire ouvert), la fenêtre n'est jamais fermée : elle est seulement réduite ou masquée, la saisie est conservée.
-- Le bouton **fermer** quitte toujours l'application, tout comme **Quitter** dans le menu de l'icône.
-- La palette reste prête en permanence (créée dès le lancement, masquée) : son raccourci fonctionne aussi quand l'application est dans la zone de notification.
-- **Limites** : le retour de la fenêtre demande un court chargement (la page, la grille et les images sont rechargées). Windows range souvent une nouvelle icône parmi les icônes cachées (flèche ^) ; on peut la faire glisser dans la barre des tâches. Dans la grille, la touche Tab ne parcourt que les cartes affichées à l'écran.
+- Réglage « Réduire dans la zone de notification » actif (par défaut) : le bouton réduire et `Ctrl+Alt+T` ferment la fenêtre et laissent l'application dans la zone de notification ; elle revient à sa place après un court chargement. Réglage inactif : réduire envoie la fenêtre dans la barre des tâches.
+- Formulaire ouvert : la fenêtre est seulement réduite ou masquée, la saisie est conservée.
+- Le bouton **fermer** quitte l'application, comme **Quitter** dans le menu de l'icône. Relancer l'application réaffiche la fenêtre déjà ouverte (une seule instance).
+- La palette reste prête en permanence : son raccourci fonctionne aussi quand la fenêtre est dans la zone de notification.
 
-### Raccourcis
-
-- `Ctrl+Alt+T` : afficher ou masquer la fenêtre (raccourci global). Masquer envoie l'application dans la zone de notification si le réglage est activé.
-- `Ctrl+Alt+Espace` : ouvrir ou fermer la palette de recherche (raccourci global).
-- Les deux raccourcis globaux se règlent dans **Paramètres** (engrenage de la barre de titre) → Raccourcis : cliquer sur le champ, puis appuyer sur la combinaison voulue (Ctrl ou Alt, plus une lettre, un chiffre, F1 à F12 ou Espace). Si un raccourci est déjà pris par une autre application, l'ancien est conservé et un message l'indique.
-- Épingle : activer ou désactiver « toujours au premier plan ». Le réglage est mémorisé.
-- Taper directement du texte lance la recherche ; `Ctrl+F` y place le curseur.
-- `Échap` : fermer le parcours Farm ouvert, sinon effacer la recherche, sinon quitter le mode gestion.
-- Dans le formulaire : `Ctrl+Entrée` enregistre, `Échap` annule. La frappe directe vers la recherche est alors inactive.
-- Relancer l'application réaffiche la fenêtre déjà ouverte (une seule instance), ou la rouvre si elle est dans la zone de notification.
-
----
-
-## Installation (utilisateur)
-
-1. Ouvrir la page **Releases** du dépôt (dernière version) et télécharger `MapTraveller_x.y.z_x64-setup.exe`.
-   - Pour tester un build intermédiaire non publié, le `.exe` est aussi dans l'onglet **Actions** → run → *Artifacts*, mais zippé.
-2. Lancer l'installateur. L'installation se fait pour l'utilisateur courant, sans droits administrateur.
-
-Node.js et Rust ne sont pas nécessaires. Si WebView2 est absent, l'installateur le télécharge.
-
-L'exécutable n'est pas signé : Windows SmartScreen peut afficher un avertissement (« Informations complémentaires » → « Exécuter quand même »).
-
-### Mises à jour
-
-> **Versions 0.4.0 et antérieures** : elles ne savent pas se mettre à jour seules. Installez une dernière fois la nouvelle version à la main (voir « Mise à jour manuelle » ci-dessous) ; les suivantes pourront se mettre à jour depuis l'application.
-
-Le mode se choisit dans **Paramètres → Mises à jour** :
+## Mises à jour
 
 | Mode | Comportement |
 |---|---|
-| **Manuel** (par défaut) | Aucune connexion au lancement, aucune en arrière-plan : **rien ne part sans votre clic**. « Rechercher des mises à jour » indique si vous avez la dernière version ou propose la nouvelle avec « Installer et redémarrer » ; rien n'est téléchargé avant ce second clic. |
-| **Automatique** | Quelques secondes après chaque ouverture de la fenêtre (lancement, ou retour depuis la zone de notification, au plus une fois toutes les deux minutes), une vérification a lieu. Tant que l'application est dans la zone de notification, rien n'est vérifié. Si une nouvelle version existe, elle est téléchargée (indication discrète en bas de la fenêtre), puis installée, et l'application redémarre. Si un formulaire de destination est ouvert, l'installation attend sa fermeture. Sans réseau, ou si GitHub ne répond pas, rien ne s'affiche et l'application reste utilisable ; le résultat reste consultable dans les Paramètres. |
+| **Manuel** (par défaut) | Aucune connexion sans votre clic. « Rechercher » indique si vous avez la dernière version ou propose « Installer et redémarrer » ; rien n'est téléchargé avant ce second clic. |
+| **Automatique** | Quelques secondes après l'ouverture de la fenêtre (au plus une fois toutes les deux minutes), une vérification a lieu ; une nouvelle version est téléchargée, installée, puis l'application redémarre. Jamais pendant qu'un formulaire est ouvert, rien tant que l'application est dans la zone de notification, aucun message si le réseau manque. |
 
-- **Ce qui est envoyé à GitHub** : une vérification est une simple requête HTTPS vers la page des Releases du dépôt (`latest.json`), suivie, s'il y a une nouvelle version et que vous l'installez, du téléchargement de l'installateur. GitHub voit votre adresse IP et le fichier demandé (l'index, puis l'installateur de la version annoncée), comme pour tout téléchargement, ainsi que l'en-tête technique standard du composant de mise à jour (son nom et sa version, pas ceux de l'application ni les vôtres). Aucun identifiant, aucune statistique, aucune donnée de votre catalogue n'est envoyé ; il n'y a pas de télémétrie.
-- **Sécurité** : chaque installateur publié est signé. L'application vérifie cette signature avant d'installer et refuse un fichier non signé ou modifié ; rien n'est alors installé.
-- **Installation** : l'installateur s'exécute en mode passif (une barre de progression, aucune question), puis relance l'application. Après le redémarrage, le message « Mise à jour X.Y.Z installée » s'affiche une fois.
-- **Données** : le catalogue, les favoris, les images et les réglages sont conservés ; ils sont dans `%APPDATA%\MapTraveller\`, que l'installateur ne touche pas.
-- Le système de mise à jour ne revient jamais à une version antérieure.
-- L'installateur n'étant pas signé par un certificat Windows, SmartScreen ou l'antivirus peuvent réagir à son lancement.
+- **Ce qui est envoyé** : une requête HTTPS vers la page des Releases du dépôt (`latest.json`), puis, si vous installez, le téléchargement de l'installateur. GitHub voit votre adresse IP et le fichier demandé, comme pour tout téléchargement. Aucun identifiant, aucune statistique, rien de votre catalogue.
+- **Signature** : chaque installateur publié est signé ; l'application vérifie la signature avant d'installer et refuse un fichier non signé ou modifié.
+- L'installation est passive (une barre de progression), puis l'application redémarre et affiche « Mise à jour X.Y.Z installée ». Vos données ne sont pas touchées. Le système ne revient jamais à une version antérieure.
+- Les versions 0.4.0 et antérieures ne savent pas se mettre à jour : installer une fois la nouvelle version à la main (fermer Map Traveller, lancer le nouvel installateur, qui remplace l'ancien sur place).
 
-#### Mise à jour manuelle
+## Vos données
 
-Toujours possible, quel que soit le mode, et seule possible depuis la 0.4.0 ou une version antérieure :
-
-1. Télécharger le nouveau `.exe` depuis la dernière Release.
-2. Fermer Map Traveller, puis lancer l'installateur.
-
-L'installateur remplace l'ancienne version sur place, sans désinstallation préalable, et conserve vos données.
-
-## Données utilisateur
-
-Tout est stocké dans `%APPDATA%\MapTraveller\` :
+Tout est dans `%APPDATA%\MapTraveller\` (Paramètres › Données › « Ouvrir ») :
 
 | Fichier | Contenu |
 |---|---|
-| `catalog.json` | vos destinations (éditable) |
-| `catalog.json.bak` | version précédente, restaurable |
-| `favorites.json` | identifiants des favoris |
-| `settings.json` | préférences (premier plan, réduction dans la zone de notification `tray.minimizeToTray`, variante par défaut de la palette `palette.defaultVariant`, raccourcis, mode de mise à jour et date de la dernière vérification…) |
-| `aliases.json` | vos alias de recherche et les alias fournis que vous avez désactivés (créé à la première personnalisation). Ce que l'application ne comprend pas dans ce fichier est conservé tel quel ; un fichier illisible ou d'une version plus récente n'est jamais réécrit |
-| `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON), et leurs vignettes `img-….thumb.webp` |
+| `catalog.json` | vos destinations |
+| `favorites.json` | vos favoris |
+| `settings.json` | vos réglages (premier plan, zone de notification, palette, raccourcis, mode de mise à jour) |
+| `aliases.json` | vos alias et les alias fournis désactivés (créé à la première personnalisation) |
+| `official.json` | les destinations livrées déjà proposées : une destination livrée que vous supprimez ne revient pas |
+| `images/` | images importées (renommées `img-…`), leurs vignettes `img-….thumb.webp`, et les images du catalogue livré |
+| `*.bak` | la version précédente de chaque fichier, dont `catalog.json.bak` |
 
-- Windows contient aussi deux dossiers techniques nommés `app.maptraveller`, l'un dans `%APPDATA%` (position de la fenêtre), l'autre dans `%LOCALAPPDATA%` (cache de la vue web). Ils ne contiennent aucune donnée de l'utilisateur.
-- Au premier lancement, le catalogue livré (`resources/catalog.seed.json` : donjons, PNJ importants, hôtels de vente et ateliers) est copié dans ce dossier, avec ses images. Après une mise à jour, les nouvelles entrées livrées sont ajoutées au catalogue existant ; une entrée modifiée n'est jamais remplacée, une entrée supprimée ne revient pas (`official.json`).
-- Le catalogue est au **schéma 3**. Chaque destination peut porter `"twoStep": true` (PNJ et Donjons uniquement) et `"command2"` (commande de l'étape 2). Champs absents : `false` et `""`. `command2` est conservée même si `twoStep` vaut `false`. Un catalogue au schéma 2 est lu sans modification ; il est réécrit au schéma 3 à la prochaine sauvegarde.
-- Une version **0.1.x** refuse un `catalog.json` au schéma 3 (« version plus récente que l'application ») **sans le modifier**. Revenir à une version antérieure demande donc de restaurer une sauvegarde au schéma 2.
-- Les mises à jour **n'écrasent jamais** vos données. Les alias fournis avec l'application sont embarqués dans celle-ci et peuvent évoluer d'une version à l'autre ; vos alias personnalisés et vos désactivations, rangés dans `aliases.json`, ne sont jamais touchés.
-- Une image retirée d'une carte, ou importée dans un formulaire annulé, reste dans `images/` : aucun fichier n'est supprimé automatiquement.
-- **Vignettes** : la grille et la palette affichent une copie réduite de chaque image (carré central de 256 px, WebP de quelques Ko), `img-….thumb.webp`, à côté de l'original. Elle est fabriquée à l'import, ou au premier affichage pour une image importée avant la version 0.7.0. L'original n'est jamais modifié ; une vignette supprimée est simplement refaite.
-- Chaque écriture est atomique (fichier temporaire puis remplacement). La version précédente est gardée en `.bak`.
-- **Sauvegarde manuelle :** copier tout le dossier `%APPDATA%\MapTraveller\`.
-- **Restauration :** recopier ce dossier, application fermée.
+- Chaque écriture est atomique (fichier temporaire puis remplacement). Un fichier illisible n'est jamais réécrit : l'application passe en lecture seule pour ce fichier et le signale ; restaurer alors le `.bak` correspondant, application fermée.
+- **Sauvegarder** : copier tout le dossier. **Restaurer** : le recopier, application fermée. Fermer l'application avant de modifier ces fichiers à la main.
+- Le catalogue livré **s'ajoute** à vos données : au premier lancement il est copié, et après une mise à jour seules les entrées jamais proposées sont ajoutées. Une carte que vous avez modifiée n'est jamais remplacée.
+- Windows contient aussi deux dossiers techniques `app.maptraveller` (position de la fenêtre dans `%APPDATA%`, cache d'affichage dans `%LOCALAPPDATA%`), sans aucune de vos données.
 
-L'import/export ZIP intégré est prévu, voir la feuille de route.
+## Catalogue livré
 
-> Le catalogue livré ne contient que des **exemples fictifs**. Les vrais trajets sont à saisir vous-même.
->
-> Seule exception : le **référentiel des zaaps** de la recherche « proche » (`resources/zaaps.json`, 48 zaaps, embarqué dans l'application, lecture seule). Il est relevé sur [Teckium](https://teckium.fr/pnj-dofus-3/zaap/95-cite-d-astrub/) et **n'a pas été vérifié en jeu**. Les commandes suivent la convention de l'application (`/zaap X Y`).
+355 destinations réelles : 126 donjons, 32 PNJ (temples de classe, banques, Almanax…) et 197 hôtels des ventes et ateliers, avec 173 images. Elles sont **générées** depuis les données extraites du client du jeu (publication `v6.0_3.7.13.17` de [dofus-sqlite](https://github.com/ledouxm/dofus-sqlite)), jamais saisies à la main. La commande est celle du zaap le plus proche **à vol d'oiseau** (référentiel de 48 zaaps relevé sur [Teckium](https://teckium.fr/pnj-dofus-3/zaap/95-cite-d-astrub/)), puis `/travel` vers la cible ; un donjon d'un autre monde dont l'entrée est sur la carte du Monde des Douze devient une carte à deux étapes.
 
----
+**Ces commandes n'ont pas été testées en jeu.** Le zaap choisi peut être de l'autre côté de la mer ou d'un obstacle : corrigez la carte dans le formulaire si besoin, votre version sera conservée.
 
-## Développement
+## FAQ
 
-### Prérequis
+- **La palette n'apparaît pas devant le jeu.** En plein écran exclusif, Windows peut l'en empêcher : passer le jeu en mode fenêtré ou sans bordure.
+- **Je ne trouve pas l'icône.** Windows range souvent une nouvelle icône parmi les icônes cachées (flèche `^` de la barre des tâches) ; on peut la faire glisser à côté de l'horloge.
+- **SmartScreen bloque l'installation.** L'installateur n'est pas signé par un certificat Windows : « Informations complémentaires », puis « Exécuter quand même ».
+- **Le zaap « proche » est de l'autre côté de la mer.** La distance est comptée à vol d'oiseau, sans tenir compte du terrain : choisir un autre des trois zaaps proposés, ou corriger la carte.
+- **Revenir à une version antérieure.** Les mises à jour ne reviennent jamais en arrière. Sauvegarder d'abord `%APPDATA%\MapTraveller\`, puis installer à la main l'installateur de la version voulue depuis la page des Releases (comportement de l'installateur dans ce sens : à vérifier). Une version 0.1.x refuse un catalogue au schéma 3, sans le modifier.
 
-- Node.js LTS (≥ 20) et npm
-- [Rust stable](https://rustup.rs/) et les [prérequis Tauri pour Windows](https://tauri.app/start/prerequisites/) (MSVC Build Tools, WebView2) — uniquement pour lancer l'application native. L'UI et les tests fonctionnent sans Rust.
+## Confidentialité et droits
 
-### Commandes
+Map Traveller est un projet personnel, **sans affiliation avec Ankama**. Dofus et ses contenus (noms, positions, images du catalogue livré) appartiennent à leurs auteurs ; les données viennent de [dofus-sqlite](https://github.com/ledouxm/dofus-sqlite) (extraction du client) et les positions des zaaps de [Teckium](https://teckium.fr/pnj-dofus-3/zaap/95-cite-d-astrub/). L'ergonomie de l'application PNJ sert de référence, sans en reprendre de ressource. Aucune donnée ne quitte votre ordinateur, hormis la recherche de mises à jour décrite plus haut.
 
-```bash
-npm install          # dépendances
-npm run help         # menu complet des commandes du dépôt
-npm run check        # typecheck + lint + tests (check:full ajoute le build)
-npm run dev          # UI seule dans le navigateur (http://localhost:1420)
-npm run tauri dev    # application native complète (Rust requis)
-npm run typecheck    # TypeScript
-npm run lint         # ESLint
-npm test             # Vitest (règles de copie, Farm, catalogue, éditeur)
-npm run tauri build  # installateur NSIS local
-```
+Licence : à préciser.
 
-`npm run dev` remplace le presse-papiers Tauri par `navigator.clipboard` et le stockage par `localStorage`. C'est pratique pour itérer sur l'interface.
+## Après la 1.0
 
-### Architecture
+- Import / export ZIP de vos données (catalogue, images, favoris, réglages), et import JSON seul.
+- Nettoyage explicite des images orphelines.
+- Validation sur Windows 11 propre, mise à l'échelle 100 % et 150 %, plusieurs écrans (liste de contrôle : [docs/recette-v1.md](docs/recette-v1.md)).
 
-```
-src/
-  features/commands/   # PUR — clic gauche / clic droit, zones d'une carte (cardParts)
-  features/farm/       # PUR — parsing du parcours, reprise par indice
-  features/catalog/    # PUR — schéma, validation, éditeur (editor.ts), recherche : texte (searchText.ts), index et classement (searchIndex.ts), grille fenêtrée (gridWindow.ts)
-  features/aliases/    # PUR — dictionnaire global d'alias de recherche (livrés + personnalisés)
-  features/updates/    # PUR — machine à états des mises à jour, messages d'erreur, décisions au lancement
-  features/zaaps/      # PUR — référentiel des zaaps, recherche « proche X,Y » (distance de Manhattan)
-  lib/tauri/           # pont système : presse-papiers, stockage, fenêtre, images (vignettes : thumbnails.ts ; import : imageImport.ts), mises à jour (updater.ts)
-  components/          # React : WindowHeader, CategoryTabs, CompactCard, Panel, FarmPanel, DestinationForm
-  app/                 # App (état, câblage), useCatalog (chargement + enregistrement), useAliases, useCopyFeedback, useUpdater, useGridWindow (rangées visibles seulement)
-  styles/              # tokens.css (DA) + app.css
-src-tauri/
-  src/lib.rs           # plugins, raccourci global, instance unique, sorties explicites seulement
-  src/main_window.rs   # fenêtre principale : afficher, masquer, réduire dans la zone de notification (fenêtre détruite puis recréée)
-  src/tray.rs          # icône et menu de la zone de notification
-  src/palette.rs       # palette, créée masquée dès le lancement
-  src/storage.rs       # %APPDATA%\MapTraveller, écriture atomique + .bak
-  src/images.rs        # import d'images : taille, format réel, copie sous nom unique ; relecture et vignettes
-  capabilities/        # permissions minimales
-  tauri.conf.json
-  tauri.release.conf.json  # surcharge des builds de tag : fichiers de mise à jour signés
-resources/catalog.seed.json   # catalogue livré, généré par scripts/catalog/ (lecture seule)
-resources/images/             # images du catalogue livré
-resources/aliases.default.json # alias de recherche livrés (lecture seule, embarqués dans l'interface)
-resources/zaaps.json          # référentiel des 48 zaaps (source citée, non vérifié en jeu), embarqué dans la palette
-scripts/make-latest-json.mjs  # latest.json + contrôles avant et après publication
-tests/                        # Vitest
-.github/workflows/windows.yml # CI + installateur
-```
+## Contribuer
 
-La grille ne crée que les rangées de cartes visibles, plus deux au-dessus et au-dessous : le nombre d'éléments dans la page ne dépend pas de la taille du catalogue. La touche Tab ne parcourt donc que les cartes présentes à l'écran.
-
-Principe : les règles de découpe des commandes sont des **fonctions pures**, sans dépendance à Tauri ni React. ESLint l'impose et Vitest les teste. Le Rust ne gère que les fichiers et l'intégration Windows.
-
-**Stack :** Tauri 2 · Rust stable · React 19 · TypeScript · Vite · Vitest. JSON local uniquement : pas de SQLite, de serveur ni de cloud. Seul accès réseau : la recherche et le téléchargement des mises à jour sur les Releases GitHub (plugins `updater` et `process` de Tauri).
-
-### CI / publication
-
-`.github/workflows/windows.yml` s'exécute sur `windows-latest` : `npm ci` → typecheck → lint → tests → `cargo test` → `tauri build --bundles nsis`. L'installateur est publié en artefact.
-
-Le workflow tourne sur push et PR vers `main`, en manuel (`workflow_dispatch`) et sur tag `v*`.
-
-Un tag `vX.Y.Z` **publie en plus une Release GitHub** avec le `.exe` directement téléchargeable, sa signature `.sig`, l'index `latest.json` des mises à jour et des notes générées à partir des commits. Avant de construire, le workflow vérifie que le tag correspond à la version du code ; après publication, il contrôle la Release (voir « Mises à jour automatiques »).
-
-Pour publier une version :
-
-```bash
-npm run version:set -- 0.2.0     # écrit la version dans package.json, tauri.conf.json, Cargo.toml, package-lock.json
-git commit -am "Version 0.2.0"
-git tag v0.2.0
-git push origin main v0.2.0      # la CI construit et publie la Release (~15–20 min)
-```
-
-`npm run version:set` sans argument affiche la version de chaque fichier.
-
-### Mises à jour automatiques (mainteneur)
-
-**Un tag atteint désormais les installations existantes** : toute Release publiée est proposée (mode manuel) ou installée sans question (mode automatique) chez les utilisateurs. Ne jamais taguer un commit dont le build `main` n'est pas vert.
-
-**Clé de signature.** Les mises à jour sont signées par une clé propre à l'application (signature minisign de Tauri, gratuite, distincte d'un certificat Windows).
-
-- La **clé publique** est dans `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). Elle n'est pas secrète.
-- La **clé privée** et son **mot de passe** sont uniquement dans les secrets GitHub Actions du dépôt (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) et dans une copie hors dépôt (gestionnaire de mots de passe du propriétaire). Ils ne sont jamais commités, jamais écrits dans un fichier du dépôt, jamais affichés dans un journal.
-- **Clé perdue** : plus aucune mise à jour ne peut être signée pour les installations existantes. Il faut générer une nouvelle paire (`npx tauri signer generate`), mettre la nouvelle clé publique dans `tauri.conf.json`, publier, et prévenir les utilisateurs qu'une réinstallation manuelle est nécessaire. Il n'existe pas de rattrapage automatique.
-- **Clé divulguée** : un tiers pourrait signer une fausse mise à jour, mais il lui faudrait aussi pouvoir publier dans les Releases du dépôt. Remplacer immédiatement la paire de clés (même procédure que la perte), remplacer les secrets, vérifier les accès au dépôt. Les installations existantes font confiance à l'ancienne clé publique jusqu'à leur réinstallation manuelle.
-- Les builds de `main`, des pull requests et `workflow_dispatch` ne reçoivent pas les secrets et ne signent rien. Seul un tag `vX.Y.Z` lance le build signé (`--config src-tauri/tauri.release.conf.json`).
-
-**Une Release contient trois fichiers** :
-
-| Fichier | Rôle |
-|---|---|
-| `MapTraveller_X.Y.Z_x64-setup.exe` | l'installateur |
-| `MapTraveller_X.Y.Z_x64-setup.exe.sig` | sa signature |
-| `latest.json` | l'index lu par l'application, généré par `scripts/make-latest-json.mjs` |
-
-L'application interroge `https://github.com/Kahinh/map_traveller/releases/latest/download/latest.json`, que GitHub redirige vers la dernière Release **stable** (ni brouillon, ni pré-version). `latest.json` pointe vers l'installateur de la Release du tag exact.
-
-**Contrôles.** Avant publication, `make-latest-json.mjs prepare` vérifie la signature avec la clé publique de `tauri.conf.json` (comme l'application), le nom et la version de l'installateur, puis écrit `latest.json`. Après publication, `make-latest-json.mjs verify` relit `latest.json` depuis la Release du tag et depuis l'adresse de l'application, contrôle version, adresse et signature, et télécharge l'installateur publié pour revérifier sa signature. Si ce contrôle échoue, le run est rouge alors que la Release est publique : corriger aussitôt (voir ci-dessous).
-
-**En cas d'échec.**
-
-- *Signature absente ou refusée au build* (étape « Build Tauri signé » ou « Préparer ») : rien n'est publié. Vérifier que les deux secrets existent et correspondent à la clé publique, puis publier le numéro suivant (ne jamais déplacer un tag).
-- *Contrôle après publication en échec* : supprimer `latest.json` de la Release fautive (l'application ne propose alors rien et n'affiche aucune erreur en mode automatique), ou repasser la Release en brouillon, puis publier le numéro suivant.
-- Solution de secours toujours valable pour les utilisateurs : réinstaller à la main depuis la page des Releases.
-- Si le dépôt redevient privé, les mises à jour cessent sans message en mode automatique.
-
-**Protocole de test en deux versions** (machine Windows réelle ; rien de ceci n'est testable dans le navigateur) :
-
-1. Publier une version **N** contenant le mécanisme ; l'installer à la main.
-2. Mode manuel : « Rechercher » → « dernière version ». Vérifier qu'aucune requête ne part au lancement (Moniteur de ressources, ou lancement hors ligne).
-3. Publier une version **N+1** (un simple correctif suffit).
-4. Depuis N, en mode manuel : N+1 est proposée, l'installation aboutit, l'application redémarre en N+1 avec « Mise à jour N+1 installée » ; catalogue, images, favoris et réglages intacts.
-5. Réinstaller N, passer en automatique, relancer : la mise à jour se fait seule. Recommencer avec un formulaire ouvert pendant le téléchargement : l'installation attend sa fermeture.
-6. Erreurs : réseau coupé au lancement (aucun message, application utilisable) ; réseau coupé pendant le téléchargement (l'ancienne version reste en place) ; « Rechercher » hors ligne (message clair).
-7. Noter le comportement de SmartScreen et de l'antivirus.
-
-Ne présenter la fonction comme fiable qu'après l'étape 5.
-
-### Outillage Claude Code
-
-Le dossier `.claude/` contient le paramétrage du projet :
-
-- **hooks** : blocage de l'édition des fichiers générés, typecheck après édition TS, sync CodeGraph au démarrage ;
-- **skills** : `feature-delivery`, `bugfix-root-cause`, `copy-rules`, `catalog-storage`, `ui-da-pnj`, `ci-release-windows`, `codegraph-sync`, `commit-and-push-on-request`, `review-loop` ;
-- **agents** : `architecte`, `implementation`, `reviewer`, `tauri-rust`, `ui-da`.
-
-Les règles du projet sont dans [CLAUDE.md](CLAUDE.md). L'index [CodeGraph](https://www.npmjs.com/package/@colbymchenry/codegraph) (`.codegraph/`) est local à chaque machine (`codegraph init -i` pour le créer).
-
----
-
-## Feuille de route V1
-
-- [x] Règles de copie clic gauche / clic droit + tests
-- [x] Parcours Farm (parsing, reprise par indice, fin de parcours) + tests
-- [x] Schéma et validation du catalogue, recherche sans accents, tri, favoris
-- [x] Interface compacte : barre de titre, recherche, onglets, grille, panneau Farm
-- [x] Stockage Rust atomique + `.bak`, seed au premier lancement
-- [x] Toujours au premier plan, raccourci global, instance unique, mémorisation de la position
-- [x] Workflow GitHub Actions + installateur NSIS
-- [x] Éditeur intégré : créer / modifier / dupliquer / supprimer, aperçu clic gauche/droit et étapes Farm
-- [x] Import d'images (dialogue Windows, contrôle du format, copie dans `images/`)
-- [x] Vignettes réduites (256 px, WebP) pour la grille et la palette
-- [ ] Nettoyage explicite des images orphelines
-- [ ] Import / export ZIP complet, import JSON seul
-- [x] Palette de recherche globale (seconde fenêtre, reprise Farm par position, étapes 1 / 2)
-- [x] Raccourcis globaux configurables, panneau Paramètres
-- [x] Rubriques Paramètres : mises à jour (version, mode), dossier des données, affichage
-- [x] Recherche tolérante (ordre des mots, mots de liaison, fautes de frappe) et dictionnaire global d'alias
-- [x] Zaap le plus proche d'une position dans la palette (`proche X,Y`)
-- [ ] Mises à jour manuelles et automatiques depuis les Releases signées (livrées, à valider par le protocole en deux versions)
-- [ ] Validation sur Windows 11 propre, mise à l'échelle 100 % / 150 %, multi-écrans
-
-## Licence et droits
-
-Projet personnel. N'intègre aucune ressource propriétaire (images, icônes, styles, code) d'un jeu ou d'une application tierce : l'ergonomie de PNJ sert uniquement de référence.
+Développement, tests et outillage : [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). Publication d'une version : [docs/RELEASING.md](docs/RELEASING.md). Historique : [CHANGELOG.md](CHANGELOG.md).

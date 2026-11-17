@@ -1,14 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import type { Destination } from '../src/features/catalog/schema';
 import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../src/features/farm/farmRoute';
+import type { FarmRoute } from '../src/features/farm/farmRoute';
+import { MAX_COORDINATE } from '../src/features/shared/coordinates';
 import {
-  farmPositionEntries,
-  farmRouteEntries,
+  farmStartEntry,
   farmStepEntry,
   formatPosition,
   parsePaletteQuery,
   stepsAtPosition,
 } from '../src/features/palette/farmQuery';
+
+/** « Parcours complet », puis chaque position si `expand` (ordre de la palette). */
+const routeEntries = (d: Destination, route: FarmRoute, expand: boolean) => [
+  farmStartEntry(d, route, false),
+  ...(expand ? route.steps.map((s) => farmStepEntry(d, route, s.index, false)) : []),
+];
+/** Lignes de reprise de chaque occurrence d'une position. */
+const positionEntries = (d: Destination, route: FarmRoute, position: { x: number; y?: number }) =>
+  stepsAtPosition(route, position).map((s) => farmStepEntry(d, route, s.index, false));
 
 // Coordonnées fictives uniquement.
 function farm(partial: Partial<Destination> & { id: string; name: string; command: string }): Destination {
@@ -66,6 +76,18 @@ describe('parsePaletteQuery : position en fin de requête', () => {
     expect(parsePaletteQuery('tremble 1 2 3')).toEqual({ text: 'tremble 1', position: { x: 2, y: 3 } });
   });
 
+  it('nombre hors des bornes d\'une coordonnée : pas une position, la requête reste du texte', () => {
+    const over = MAX_COORDINATE + 1;
+    expect(parsePaletteQuery(`tremble ${MAX_COORDINATE} -${MAX_COORDINATE}`)).toEqual({
+      text: 'tremble',
+      position: { x: MAX_COORDINATE, y: -MAX_COORDINATE },
+    });
+    expect(parsePaletteQuery(`tremble 2 ${over}`)).toEqual({ text: `tremble 2 ${over}`, position: null });
+    expect(parsePaletteQuery(`tremble -${over} 2`)).toEqual({ text: `tremble -${over} 2`, position: null });
+    expect(parsePaletteQuery(`tremble ${over}`)).toEqual({ text: `tremble ${over}`, position: null });
+    expect(parsePaletteQuery('tremble 12345678901234567890 1')).toMatchObject({ position: null });
+  });
+
   it('formatPosition', () => {
     expect(formatPosition({ x: 2, y: -2 })).toBe('2,-2');
     expect(formatPosition({ x: 2 })).toBe('2');
@@ -81,7 +103,7 @@ describe('lignes Farm', () => {
   const route = parseFarmRoute(tremble.command);
 
   it('parcours complet puis chaque position, dans l\'ordre', () => {
-    const lines = farmRouteEntries(tremble, route, false, true);
+    const lines = routeEntries(tremble, route, true);
     expect(lines.map((l) => l.kind)).toEqual(['farm-start', ...Array(5).fill('farm-step')]);
     expect(lines.map((l) => l.subtitle)).toEqual([
       'Farm · parcours complet',
@@ -91,13 +113,13 @@ describe('lignes Farm', () => {
       'Farm · je suis en 4,4 (étape 4/5)',
       'Farm · je suis en 5,5 (étape 5/5) · fin de parcours',
     ]);
-    expect(farmRouteEntries(tremble, route, false, false)).toHaveLength(1);
+    expect(routeEntries(tremble, route, false)).toHaveLength(1);
   });
 
   it('parcours complet avec Zaap ; reprises sans Zaap ; textes exacts des fonctions Farm', () => {
-    const [start, first] = farmRouteEntries(tremble, route, false, true);
+    const [start, first] = routeEntries(tremble, route, true);
     expect(start!.variants).toEqual([
-      { kind: 'withoutZaap', text: farmStartCommand(route) },
+      { kind: 'route', text: farmStartCommand(route) },
     ]);
     expect(start!.variants[0]?.text).toBe(tremble.command);
     expect(first!.variants[0]?.text).toBe('/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5');
@@ -110,20 +132,20 @@ describe('lignes Farm', () => {
   });
 
   it('position : la commande est exactement farmResumeCommand(route, i)', () => {
-    const lines = farmPositionEntries(tremble, route, false, { x: 2, y: 2 });
+    const lines = positionEntries(tremble, route, { x: 2, y: 2 });
     expect(lines).toHaveLength(1);
     expect(lines[0]!.variants[0]?.text).toBe(farmResumeCommand(route, 1));
     expect(lines[0]!.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
   });
 
   it('position absente : aucune ligne', () => {
-    expect(farmPositionEntries(tremble, route, false, { x: 9, y: 9 })).toEqual([]);
+    expect(positionEntries(tremble, route, { x: 9, y: 9 })).toEqual([]);
   });
 
   it('position répétée : une ligne par occurrence, première en tête, commandes différentes', () => {
     const loop = farm({ id: 'boucle', name: 'Boucle', command: '/travel 1 1;/travel 2 2;/travel 1 1;/travel 3 3' });
     const r = parseFarmRoute(loop.command);
-    const lines = farmPositionEntries(loop, r, false, { x: 1, y: 1 });
+    const lines = positionEntries(loop, r, { x: 1, y: 1 });
     expect(lines.map((l) => l.subtitle)).toEqual([
       'Farm · je suis en 1,1 (étape 1/4)',
       'Farm · je suis en 1,1 (étape 3/4)',
@@ -140,7 +162,7 @@ describe('lignes Farm', () => {
   it('segments non reconnus : lignes conservées, sous-titre « parcours à vérifier »', () => {
     const bad = farm({ id: 'bad', name: 'Mal formé', command: '/travel 1 1;texte libre;/travel 2 2' });
     const r = parseFarmRoute(bad.command);
-    const lines = farmRouteEntries(bad, r, false, true);
+    const lines = routeEntries(bad, r, true);
     expect(lines).toHaveLength(3);
     expect(lines.every((l) => l.subtitle.endsWith('parcours à vérifier'))).toBe(true);
     expect(lines[1]!.variants[0]?.text).toBe(farmResumeCommand(r, 0));
@@ -149,7 +171,7 @@ describe('lignes Farm', () => {
   it('zone dans le sous-titre ; clés JSON distinctes', () => {
     const z = farm({ id: 'a"b', name: 'Tremble', zone: 'Bois fictif', command: '/travel 1 1;/travel 2 2' });
     const r = parseFarmRoute(z.command);
-    const lines = farmRouteEntries(z, r, false, true);
+    const lines = routeEntries(z, r, true);
     expect(lines[0]!.subtitle).toBe('Farm · Bois fictif · parcours complet');
     expect(lines.map((l) => JSON.parse(l.key))).toEqual([
       ['a"b', 'farm-start'],

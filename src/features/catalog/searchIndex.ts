@@ -21,7 +21,7 @@ import {
   type Category,
   type Destination,
 } from './schema';
-import { boundedPrefixDistance, isWordlessQuery, maxTypos, queryTokens, tokenize } from './searchText';
+import { boundedPrefixDistance, maxTypos, queryTokensOf, tokenize } from './searchText';
 
 /** Coût d'un mot de la requête pour une destination (plus petit = meilleur). */
 export const COST = {
@@ -41,7 +41,7 @@ export const COST = {
 
 /** Absence de correspondance dans un tableau de coûts. */
 const NO_MATCH = 255;
-/** Coûts mémorisés par index (un tableau d'octets de la taille du catalogue chacun). */
+/** Coûts mémorisés par index (un tableau d'octets de la taille du catalogue chacun), les moins récemment lus évincés. */
 const CACHE_LIMIT = 64;
 /** Un mot désigne une catégorie à partir de deux lettres (« on » ne doit rien ramener). */
 const CATEGORY_MIN_LENGTH = 2;
@@ -62,12 +62,22 @@ const Field = {
 type Field = (typeof Field)[keyof typeof Field];
 
 /** Clé d'un texte entier, indépendante de l'ordre des mots : mots distincts (mots de liaison compris), triés. */
-const wholeKey = (words: readonly string[]) => [...new Set(words)].sort().join(' ');
-
-interface Posting {
-  doc: number;
-  field: Field;
+function wholeKey(words: readonly string[]): string {
+  if (words.length < 2) return words[0] ?? '';
+  // Quelques mots seulement : `includes` coûte moins qu'un `Set` alloué pour chaque nom.
+  const distinct: string[] = [];
+  for (const w of words) if (!distinct.includes(w)) distinct.push(w);
+  return distinct.sort().join(' ');
 }
+
+/**
+ * Occurrence d'un mot : destination et champ réunis dans un seul entier (`doc << 3 | champ`).
+ * Un objet par occurrence chargeait le ramasse-miettes à chaque construction de l'index.
+ */
+type Posting = number;
+const posting = (doc: number, field: Field): Posting => (doc << 3) | field;
+const postingDoc = (p: Posting) => p >>> 3;
+const postingField = (p: Posting) => (p & 7) as Field;
 
 export interface SearchIndex {
   /** Destinations actives, dans l'ordre du catalogue. */
@@ -78,7 +88,7 @@ export interface SearchIndex {
   readonly postings: readonly (readonly Posting[])[];
   /** Destinations par catégorie. */
   readonly byCategory: Readonly<Record<Category, readonly number[]>>;
-  /** Rang de chaque destination selon `compareDestinations` (entier : tri sans collation). */
+  /** Rang de chaque destination dans l'ordre du catalogue (entier : tri sans collation). */
   readonly rank: Uint32Array;
   /** Destinations triées par rang. */
   readonly byRank: readonly number[];
@@ -88,13 +98,11 @@ export interface SearchIndex {
   readonly cache: Map<string, Uint8Array>;
 }
 
-/** Insensible à la casse et aux accents ; « Zone 2 » avant « Zone 10 ». */
+/**
+ * Ordre du catalogue : `sortOrder`, puis nom insensible à la casse et aux accents (« Zone 2 »
+ * avant « Zone 10 »). Un seul collateur pour toute l'application : en créer un coûte cher.
+ */
 const nameCollator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
-
-/** Comparateur : `sortOrder` puis nom. Le tri JS étant stable, l'ordre du catalogue départage les égalités. */
-export function compareDestinations(a: Destination, b: Destination): number {
-  return a.sortOrder - b.sortOrder || nameCollator.compare(a.name, b.name);
-}
 
 const KEYWORDS: Record<Category, { prefix: string[]; exact: string[] }> = Object.fromEntries(
   CATEGORIES.map((c) => [
@@ -127,8 +135,8 @@ export function buildSearchIndex(
 
   const add = (word: string, doc: number, field: Field) => {
     const list = vocabulary.get(word);
-    if (list) list.push({ doc, field });
-    else vocabulary.set(word, [{ doc, field }]);
+    if (list) list.push(posting(doc, field));
+    else vocabulary.set(word, [posting(doc, field)]);
   };
   const addWhole = (key: string, doc: number) => {
     if (key === '') return;
@@ -137,19 +145,40 @@ export function buildSearchIndex(
     else if (list[list.length - 1] !== doc) list.push(doc);
   };
 
+  // Zones et tags se répètent d'une destination à l'autre : chacun n'est découpé qu'une fois.
+  const sharedWords = new Map<string, string[]>();
+  const tokenizeShared = (text: string) => {
+    let words = sharedWords.get(text);
+    if (!words) sharedWords.set(text, (words = tokenize(text)));
+    return words;
+  };
+
   docs.forEach((d, doc) => {
     byCategory[d.category].push(doc);
-    tokenize(d.name).forEach((word, i) => add(word, doc, i === 0 ? Field.NameFirst : Field.NameOther));
-    addWhole(wholeKey(tokenize(d.name)), doc);
+    // Une seule découpe par texte : elle sert aux mots indexés et à la clé du texte entier.
+    const nameWords = tokenize(d.name);
+    nameWords.forEach((word, i) => add(word, doc, i === 0 ? Field.NameFirst : Field.NameOther));
+    addWhole(wholeKey(nameWords), doc);
     for (const alias of d.aliases) {
       const words = tokenize(alias);
-      for (const word of words) add(word, doc, words.length === 1 ? Field.AliasWhole : Field.AliasPart);
-      addWhole(wholeKey(tokenize(alias)), doc);
+      const field = words.length === 1 ? Field.AliasWhole : Field.AliasPart;
+      for (const word of words) add(word, doc, field);
+      addWhole(wholeKey(words), doc);
     }
-    for (const text of [...d.tags, d.zone]) for (const word of tokenize(text)) add(word, doc, Field.Other);
+    for (const word of tokenizeShared(d.zone)) add(word, doc, Field.Other);
+    for (const tag of d.tags) for (const word of tokenizeShared(tag)) add(word, doc, Field.Other);
   });
 
-  const byRank = docs.map((_, i) => i).sort((a, b) => compareDestinations(docs[a] as Destination, docs[b] as Destination));
+  // `sortOrder` puis nom, clés lues une fois. Le tri étant stable, l'ordre du catalogue départage les égalités.
+  const sortOrders = docs.map((d) => d.sortOrder);
+  const names = docs.map((d) => d.name);
+  const byRank = docs
+    .map((_, i) => i)
+    .sort(
+      (a, b) =>
+        (sortOrders[a] as number) - (sortOrders[b] as number) ||
+        nameCollator.compare(names[a] as string, names[b] as string),
+    );
   const rank = new Uint32Array(docs.length);
   byRank.forEach((doc, position) => {
     rank[doc] = position;
@@ -189,8 +218,22 @@ function insideCost(field: Field): number {
 
 type Mode = 'exact' | 'prefix' | 'typo';
 
+/** Coûts mémorisés sous `key`, marqués comme les plus récemment lus (éviction LRU). */
+function recall(index: SearchIndex, key: string): Uint8Array | undefined {
+  const costs = index.cache.get(key);
+  if (costs) {
+    // Une `Map` garde l'ordre d'insertion : réinsérer place la clé en dernier.
+    index.cache.delete(key);
+    index.cache.set(key, costs);
+  }
+  return costs;
+}
+
 function remember(index: SearchIndex, key: string, costs: Uint8Array): Uint8Array {
-  if (index.cache.size >= CACHE_LIMIT) index.cache.clear();
+  if (index.cache.size >= CACHE_LIMIT) {
+    const oldest = index.cache.keys().next();
+    if (!oldest.done) index.cache.delete(oldest.value);
+  }
   index.cache.set(key, costs);
   return costs;
 }
@@ -203,7 +246,7 @@ function remember(index: SearchIndex, key: string, costs: Uint8Array): Uint8Arra
  */
 function vocabularyCosts(index: SearchIndex, word: string, mode: Mode): Uint8Array {
   const key = `${mode}:${word}`;
-  const cached = index.cache.get(key);
+  const cached = recall(index, key);
   if (cached) return cached;
 
   const costs = new Uint8Array(index.docs.length).fill(NO_MATCH);
@@ -216,14 +259,14 @@ function vocabularyCosts(index: SearchIndex, word: string, mode: Mode): Uint8Arr
     const postings = index.postings[w] ?? [];
     if (candidate.startsWith(word)) {
       const exact = candidate.length === word.length;
-      for (const p of postings) lower(p.doc, prefixCost(p.field, exact));
+      for (const p of postings) lower(postingDoc(p), prefixCost(postingField(p), exact));
     } else if (mode !== 'prefix' && candidate.includes(word)) {
-      for (const p of postings) lower(p.doc, insideCost(p.field));
+      for (const p of postings) lower(postingDoc(p), insideCost(postingField(p)));
     } else if (typos > 0 && candidate.charCodeAt(0) === word.charCodeAt(0)) {
       // Calculé seulement s'il existe un mot du nom ou d'un alias à rapprocher.
-      if (postings.every((p) => p.field === Field.Other)) return;
+      if (postings.every((p) => postingField(p) === Field.Other)) return;
       if (boundedPrefixDistance(word, candidate, typos) > typos) return;
-      for (const p of postings) if (p.field !== Field.Other) lower(p.doc, COST.typo);
+      for (const p of postings) if (postingField(p) !== Field.Other) lower(postingDoc(p), COST.typo);
     }
   });
 
@@ -244,7 +287,7 @@ function wordCosts(index: SearchIndex, word: string, typo: boolean): Uint8Array 
   if (!expansions) return direct;
 
   const key = `${typo ? 'typo' : 'exact'}+alias:${word}`;
-  const cached = index.cache.get(key);
+  const cached = recall(index, key);
   if (cached) return cached;
 
   const costs = Uint8Array.from(direct);
@@ -301,6 +344,21 @@ function score(index: SearchIndex, words: readonly string[], accept?: Accept, ty
   return scoreAll(index, words, true, accept);
 }
 
+/** Requête découpée une seule fois, pour toutes les étapes de la recherche. */
+interface PreparedQuery {
+  /** Mots utiles (`queryTokens`). */
+  words: string[];
+  /** Du texte, mais aucun mot (ponctuation seule) : rien ne correspond. */
+  wordless: boolean;
+  /** Clé du texte entier (`wholeKey`), mots de liaison compris. */
+  whole: string;
+}
+
+function prepareQuery(query: string): PreparedQuery {
+  const tokens = tokenize(query);
+  return { words: queryTokensOf(tokens), wordless: tokens.length === 0 && query.trim() !== '', whole: wholeKey(tokens) };
+}
+
 /**
  * Destinations correspondant à la requête, de la plus pertinente à la moins pertinente.
  * Requête vide : toutes les destinations actives, favoris d'abord. Requête sans aucun mot
@@ -314,9 +372,9 @@ export function searchIndexRank(
 ): Destination[] {
   const { docs, rank } = index;
   const isFavorite = (doc: number) => favorites.has((docs[doc] as Destination).id);
-  const words = queryTokens(query);
+  const { words, wordless, whole } = prepareQuery(query);
+  if (wordless) return [];
   if (words.length === 0) {
-    if (isWordlessQuery(query)) return [];
     const accepted = accept ? index.byRank.filter((doc) => accept(docs[doc] as Destination)) : index.byRank;
     const favs = accepted.filter(isFavorite);
     const others = accepted.filter((doc) => !isFavorite(doc));
@@ -325,10 +383,10 @@ export function searchIndexRank(
 
   const scored = score(index, words, accept);
   // Requête faite exactement des mots du nom entier ou d'un alias entier : en tête.
-  const whole = new Set(index.wholeKeys.get(wholeKey(tokenize(query))) ?? []);
+  const wholeDocs = new Set(index.wholeKeys.get(whole) ?? []);
   const sortable = scored.map((s) => ({
     doc: s.doc,
-    cost: whole.has(s.doc) ? -1 : s.cost,
+    cost: wholeDocs.has(s.doc) ? -1 : s.cost,
     fav: isFavorite(s.doc) ? 0 : 1,
   }));
   sortable.sort((a, b) => a.cost - b.cost || a.fav - b.fav || (rank[a.doc] ?? 0) - (rank[b.doc] ?? 0));
@@ -336,17 +394,20 @@ export function searchIndexRank(
 }
 
 /**
- * Destinations correspondant à la requête, sans classement. Requête vide : toutes ; requête
- * sans aucun mot : aucune. `typos: false` s'en tient à la recherche exacte (compteur des alias).
+ * Destinations correspondant à la requête, sans classement, ou `null` pour une requête vide
+ * (tout correspond). Requête sans aucun mot : ensemble vide. `accept` restreint la recherche
+ * AVANT la seconde passe tolérante : une correspondance exacte écartée par le filtre ne la
+ * bloque pas. `typos: false` s'en tient à la recherche exacte (compteur des alias).
  */
 export function searchIndexMatch(
   index: SearchIndex,
   query: string,
-  options: { typos?: boolean } = {},
-): ReadonlySet<Destination> {
-  const words = queryTokens(query);
-  if (words.length === 0) return new Set(isWordlessQuery(query) ? [] : index.docs);
-  return new Set(score(index, words, undefined, options.typos ?? true).map((s) => index.docs[s.doc] as Destination));
+  options: { typos?: boolean; accept?: Accept } = {},
+): ReadonlySet<Destination> | null {
+  const { words, wordless } = prepareQuery(query);
+  if (wordless) return new Set();
+  if (words.length === 0) return null;
+  return new Set(score(index, words, options.accept, options.typos ?? true).map((s) => index.docs[s.doc] as Destination));
 }
 
 /** Dernier index construit pour un tableau de destinations (jamais muté : invariant 10). */

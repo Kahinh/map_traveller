@@ -16,13 +16,16 @@
  * - `shortcuts` appartient à Rust (`set_shortcut`) : l'interface le lit mais ne l'écrit jamais ;
  *   `mergeSettings` le reprend tel quel du fichier, et Rust le protège de son côté (`save_store`).
  */
-import { VARIANT_KINDS, type VariantKind } from '../commands/cardParts';
 import { DEFAULT_SHORTCUTS, normalizeAccelerator, type ShortcutAction } from './accelerator';
+import { DEFAULT_PALETTE_SETTINGS, parsePaletteSettings, type PaletteSettings } from './paletteSettings';
+import { isRecord } from '../shared/json';
+
+export type { PaletteSettings } from './paletteSettings';
 
 /** Manuel : rien n'est contacté sans action de l'utilisateur. Automatique : vérification au lancement. */
 export type UpdateMode = 'manual' | 'auto';
 
-export const UPDATE_MODES: readonly UpdateMode[] = ['manual', 'auto'];
+const UPDATE_MODES: readonly UpdateMode[] = ['manual', 'auto'];
 
 export interface UpdateSettings {
   mode: UpdateMode;
@@ -38,12 +41,6 @@ export interface UpdateSettings {
 export interface TraySettings {
   /** Réduire et le raccourci « afficher / masquer » envoient l'application dans la zone de notification. */
   minimizeToTray: boolean;
-}
-
-/** Palette de recherche (issue n°11). */
-export interface PaletteSettings {
-  /** Variante sélectionnée par défaut sur une ligne qui a un `/zaap` initial (première case). */
-  defaultVariant: VariantKind;
 }
 
 export interface Settings {
@@ -69,21 +66,12 @@ export const DEFAULT_SETTINGS: Settings = {
   updates: { mode: 'manual' },
   // Activé par défaut (décision 6 de l'issue n°14) : le bouton fermer, lui, quitte toujours.
   tray: { minimizeToTray: true },
-  // Sans Zaap : ce que faisait Entrée avant l'issue n°11, rien ne change pour une installation existante.
-  palette: { defaultVariant: 'withoutZaap' },
+  palette: DEFAULT_PALETTE_SETTINGS,
   shortcuts: { ...DEFAULT_SHORTCUTS },
 };
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
 export function isUpdateMode(v: unknown): v is UpdateMode {
   return UPDATE_MODES.includes(v as UpdateMode);
-}
-
-export function isVariantKind(v: unknown): v is VariantKind {
-  return VARIANT_KINDS.includes(v as VariantKind);
 }
 
 /** Horodatage plausible : entier positif ou nul ; sinon `undefined`. */
@@ -132,7 +120,6 @@ export function parseSettings(input: unknown): Settings {
   }
   const updates = isRecord(data.updates) ? data.updates : {};
   const tray = isRecord(data.tray) ? data.tray : {};
-  const palette = isRecord(data.palette) ? data.palette : {};
   return {
     // Comportement historique : seul `false` désactive le premier plan.
     alwaysOnTop: data.alwaysOnTop !== false,
@@ -142,11 +129,7 @@ export function parseSettings(input: unknown): Settings {
       minimizeToTray:
         typeof tray.minimizeToTray === 'boolean' ? tray.minimizeToTray : DEFAULT_SETTINGS.tray.minimizeToTray,
     },
-    palette: {
-      defaultVariant: isVariantKind(palette.defaultVariant)
-        ? palette.defaultVariant
-        : DEFAULT_SETTINGS.palette.defaultVariant,
-    },
+    palette: parsePaletteSettings(data),
     shortcuts: { toggleMain, palette: paletteShortcut },
   };
 }

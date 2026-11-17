@@ -17,12 +17,13 @@
  * n'est pas un objet, n'est jamais réécrit (`aliasesFileProblem`).
  */
 import { contentTokens, STOP_WORDS, tokenize } from '../catalog/searchText';
+import { isRecord, newerSchemaVersion } from '../shared/json';
 
-export const ALIASES_SCHEMA_VERSION = 1;
+const ALIASES_SCHEMA_VERSION = 1;
 
 export const ALIAS_TERM_MAX = 20;
-export const ALIAS_EXPANSIONS_MAX = 8;
-export const ALIAS_EXPANSION_MAX = 60;
+const ALIAS_EXPANSIONS_MAX = 8;
+const ALIAS_EXPANSION_MAX = 60;
 
 export interface AliasEntry {
   /** Mot tapé dans la recherche, tel que saisi (« HDV »). Comparé une fois normalisé. */
@@ -46,10 +47,6 @@ export const EMPTY_USER_ALIASES: UserAliases = { custom: [], disabledDefaults: [
 export type AliasDictionary = ReadonlyMap<string, readonly (readonly string[])[]>;
 
 export const EMPTY_DICTIONARY: AliasDictionary = new Map();
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 /** Terme normalisé (« HDV » → « hdv »), ou `null` s'il ne fait pas exactement un mot. */
 export function normalizeTerm(term: string): string | null {
@@ -119,8 +116,8 @@ export function parseUserAliases(input: unknown): UserAliases {
 export function aliasesFileProblem(input: unknown): string | null {
   if (input === undefined) return null;
   if (!isRecord(input)) return 'aliases.json ne contient pas un objet JSON.';
-  const version = input.schemaVersion;
-  if (typeof version === 'number' && version > ALIASES_SCHEMA_VERSION) {
+  const version = newerSchemaVersion(input, ALIASES_SCHEMA_VERSION);
+  if (version !== null) {
     return `aliases.json est d'une version plus récente (${version}) que l'application (${ALIASES_SCHEMA_VERSION}).`;
   }
   return null;

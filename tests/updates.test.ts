@@ -3,7 +3,6 @@ import {
   canCheckForUpdate,
   canInstallUpdate,
   describeUpdateState,
-  UPDATER_NOT_AVAILABLE,
   type UpdateState,
 } from '../src/features/updates/types';
 
@@ -17,15 +16,6 @@ const STATES: UpdateState[] = [
   { status: 'installing', version: '9.0.0' },
   { status: 'error', message: 'Hors ligne.', retryable: true },
 ];
-
-describe('UPDATER_NOT_AVAILABLE', () => {
-  it('indisponible par défaut, avec la mention attendue', () => {
-    expect(UPDATER_NOT_AVAILABLE.available).toBe(false);
-    if (!UPDATER_NOT_AVAILABLE.available) {
-      expect(UPDATER_NOT_AVAILABLE.reason.toLowerCase()).toContain('disponible dans une prochaine version');
-    }
-  });
-});
 
 describe('canCheckForUpdate / canInstallUpdate', () => {
   it('recherche impossible pendant une opération en cours', () => {

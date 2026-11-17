@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { truncateMiddle } from '../../features/settings/path';
 import { copyText } from '../../lib/tauri/clipboard';
-import { BROWSER_DATA_DIR_MESSAGE, canAccessDataDir, getDataDir, openDataDir } from '../../lib/tauri/dataDir';
-import { SettingRow } from '../controls';
-
-const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+import { errorText } from '../../lib/errors';
+import { getDataDir, openDataDir } from '../../lib/tauri/dataDir';
+import { IS_TAURI } from '../../lib/tauri/env';
+import { InstalledOnly, SettingRow } from '../controls';
 
 /** Au-delà, le chemin affiché est raccourci par le milieu (complet en infobulle et à la copie). */
 const PATH_MAX_CHARS = 48;
@@ -19,7 +19,7 @@ const APP_IDENTIFIER = 'app.maptraveller';
  * Sans props : les réglages en mémoire ne servent pas ici.
  */
 export function DataSection() {
-  const available = canAccessDataDir();
+  const available = IS_TAURI;
   /** `undefined` : lecture en cours ; `null` : indisponible (navigateur ou erreur). */
   const [dir, setDir] = useState<string | null | undefined>(available ? undefined : null);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function DataSection() {
                 '—'
               )
             ) : (
-              <span className="settings__notice">{BROWSER_DATA_DIR_MESSAGE}</span>
+              <InstalledOnly />
             )
           }
         >
@@ -122,6 +122,10 @@ export function DataSection() {
           </li>
           <li>
             <code>aliases.json</code> : vos alias de recherche (créé à la première personnalisation)
+          </li>
+          <li>
+            <code>official.json</code> : les destinations livrées déjà proposées (une destination livrée que
+            vous supprimez ne revient pas)
           </li>
           <li>
             <code>images</code> : les images importées

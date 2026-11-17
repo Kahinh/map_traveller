@@ -7,7 +7,7 @@
  * une mise à jour que si elle est plus récente) : elle n'est pas réécrite ici.
  */
 import type { UpdateMode } from '../settings/settings';
-import type { UpdateState } from './types';
+import { canCheckForUpdate, type UpdateState } from './types';
 
 export type UpdateEvent =
   /** Une recherche commence. */
@@ -47,12 +47,7 @@ export function updateReducer(state: UpdateState, event: UpdateEvent): UpdateSta
   switch (event.type) {
     case 'check-started':
       // Une seule opération à la fois : pas de recherche pendant un téléchargement ou une installation.
-      return state.status === 'idle' ||
-        state.status === 'up-to-date' ||
-        state.status === 'available' ||
-        state.status === 'error'
-        ? { status: 'checking' }
-        : state;
+      return canCheckForUpdate(state) ? { status: 'checking' } : state;
     case 'check-found':
       return state.status === 'checking' ? { status: 'available', version: event.version, notes: event.notes } : state;
     case 'check-none':

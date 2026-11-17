@@ -2,13 +2,17 @@
  * Contrôles dessinés (issue n°13, E1 à E3) : aucun contrôle natif teinté. Rendu et clavier
  * uniquement ; la valeur appartient au parent.
  */
-import { useRef, type KeyboardEvent, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { INSTALLED_ONLY } from '../lib/tauri/env';
+import { useRovingFocus } from './useRovingFocus';
 
 interface SwitchProps {
   id?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  /** Écriture en cours : reste focalisable (`aria-disabled`) mais ne bascule pas. */
+  busy?: boolean;
   /** Nom accessible, si aucun `<label htmlFor>` ni `labelledBy` ne le donne. */
   label?: string;
   labelledBy?: string;
@@ -20,7 +24,7 @@ interface SwitchProps {
  * Interrupteur : bouton `role="switch"`. Espace et Entrée le basculent (comportement natif du
  * bouton) ; un `<label htmlFor>` qui le vise le bascule aussi au clic.
  */
-export function Switch({ id, checked, onChange, disabled, label, labelledBy, describedBy, title }: SwitchProps) {
+export function Switch({ id, checked, onChange, disabled, busy, label, labelledBy, describedBy, title }: SwitchProps) {
   return (
     <button
       id={id}
@@ -33,7 +37,10 @@ export function Switch({ id, checked, onChange, disabled, label, labelledBy, des
       aria-describedby={describedBy}
       title={title}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      aria-disabled={busy || undefined}
+      onClick={() => {
+        if (!busy) onChange(!checked);
+      }}
     >
       <span className="switch__thumb" aria-hidden />
     </button>
@@ -68,30 +75,19 @@ export function Segmented<T extends string>({
   describedBy,
   disabled,
 }: SegmentedProps<T>) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const current = Math.max(
     0,
     options.findIndex((o) => o.value === value),
   );
-
-  const select = (i: number) => {
-    const option = options[i];
-    if (!option) return;
-    onChange(option.value);
-    refs.current[i]?.focus();
-  };
-
-  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-    const last = options.length - 1;
-    let next: number | null = null;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = current === last ? 0 : current + 1;
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = current === 0 ? last : current - 1;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = last;
-    if (next === null) return;
-    e.preventDefault();
-    select(next);
-  };
+  const itemProps = useRovingFocus(
+    options.length,
+    current,
+    (i) => {
+      const option = options[i];
+      if (option) onChange(option.value);
+    },
+    'both',
+  );
 
   return (
     <div className="segmented" role="radiogroup" aria-labelledby={labelledBy} aria-describedby={describedBy}>
@@ -100,18 +96,14 @@ export function Segmented<T extends string>({
         return (
           <button
             key={o.value}
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
+            {...itemProps(i)}
             type="button"
             role="radio"
             aria-checked={checked}
-            tabIndex={checked ? 0 : -1}
             className={`segmented__item${checked ? ' is-active' : ''}`}
             title={o.title}
             disabled={disabled}
             onClick={() => onChange(o.value)}
-            onKeyDown={onKeyDown}
           >
             {o.label}
           </button>
@@ -156,5 +148,14 @@ export function SettingRow({ label, htmlFor, labelId, description, descriptionId
       </div>
       {children && <div className="setting__control">{children}</div>}
     </div>
+  );
+}
+
+/** Mention unique d'une fonction absente du mode navigateur (`npm run dev`), même style partout. */
+export function InstalledOnly({ block = false }: { block?: boolean }) {
+  return block ? (
+    <p className="form__hint installed-only">{INSTALLED_ONLY}</p>
+  ) : (
+    <span className="installed-only">{INSTALLED_ONLY}</span>
   );
 }

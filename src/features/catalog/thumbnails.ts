@@ -1,16 +1,21 @@
 /**
  * Vignettes d'images (issue n°14, A4). Fonctions pures.
  *
- * Une image importée `images/<nom>.<png|jpg|webp>` a une vignette `images/<nom>.thumb.webp`,
+ * Une image importée `images/img-….<png|jpg|webp>` a une vignette `images/img-….thumb.webp`,
  * carrée, de `THUMB_SIZE` px de côté : le centre de l'image, comme l'affichent les cartes
  * (`object-fit: cover`). La grille et la palette n'affichent qu'elle ; l'original reste intact.
- * Même règle de nom que `images.rs` (`imported_name`) : tout autre chemin n'a pas de vignette.
+ *
+ * Seuls les noms produits par l'import (`img-<horodatage>-<processus>-<compteur>`, voir
+ * `unique_stem` dans `images.rs`) ont une vignette. Les images du catalogue livré
+ * (`images/banque.webp`…) sont déjà en 256 px : leur fabriquer une vignette serait inutile, et
+ * la palette, qui n'en fabrique pas, demanderait un fichier absent.
  */
 
 /** Côté de la vignette, en pixels (une carte fait 90 px, 180 px à 200 %). */
 export const THUMB_SIZE = 256;
 
-const IMPORTED = /^images\/([a-z0-9-]{1,128})\.(?:png|jpg|webp)$/;
+/** Nom d'import, borné comme dans `imported_name` (`images.rs`) : 128 caractères au plus. */
+const IMPORTED = /^images\/(img-[a-z0-9-]{1,124})\.(?:png|jpg|webp)$/;
 
 /** Chemin relatif de la vignette d'une image importée, ou `null`. */
 export function thumbPath(relative: string | null): string | null {

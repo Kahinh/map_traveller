@@ -10,8 +10,9 @@
  * - idempotent : relancé sur son propre résultat, n'ajoute rien.
  */
 import type { Catalog, Destination } from './schema';
+import { isRecord, newerSchemaVersion } from '../shared/json';
 
-export const OFFICIAL_STATE_VERSION = 1;
+const OFFICIAL_STATE_VERSION = 1;
 
 /** Contenu de `official.json`. */
 export interface OfficialState {
@@ -25,15 +26,13 @@ export type OfficialStateResult =
   /** Fichier illisible, d'une version plus récente ou d'une forme inattendue : ne rien ajouter ni écrire. */
   | { ok: false; message: string };
 
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
-
 /** Lit `official.json` (`undefined` : fichier absent, rien n'a encore été proposé). */
 export function parseOfficialState(raw: unknown): OfficialStateResult {
   if (raw === undefined) return { ok: true, known: new Set() };
   if (!isRecord(raw) || !Array.isArray(raw.known) || typeof raw.schemaVersion !== 'number') {
     return { ok: false, message: 'official.json : forme inattendue.' };
   }
-  if (raw.schemaVersion > OFFICIAL_STATE_VERSION) {
+  if (newerSchemaVersion(raw, OFFICIAL_STATE_VERSION) !== null) {
     return { ok: false, message: 'official.json : version plus récente que cette application.' };
   }
   return { ok: true, known: new Set(raw.known.filter((x): x is string => typeof x === 'string')) };

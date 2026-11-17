@@ -12,10 +12,9 @@ import {
   type UserAliases,
 } from '../../features/aliases/aliases';
 import { getSearchIndex, searchIndexMatch } from '../../features/catalog/searchIndex';
-import { Switch } from '../controls';
+import { errorText } from '../../lib/errors';
+import { AliasRowItem } from './AliasRowItem';
 import type { SettingsSectionProps } from './types';
-
-const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 /** Saisie en cours ; `previous` = terme de l'alias personnalisé en cours de modification. */
 interface Draft {
@@ -25,11 +24,6 @@ interface Draft {
 }
 
 const EMPTY_DRAFT: Draft = { term: '', meaning: '', previous: null };
-
-function countLabel(count: number): string {
-  if (count === 0) return 'aucune destination';
-  return count === 1 ? '1 destination' : `${count} destinations`;
-}
 
 /**
  * Rubrique « Alias » : dictionnaire GLOBAL de la recherche. Un alias se saisit une fois ici et
@@ -57,14 +51,20 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
   const counts = useMemo(() => {
     const index = getSearchIndex(destinations, dictionary);
     return new Map(
-      rows.filter((r) => r.enabled).map((r) => [r.key, searchIndexMatch(index, r.key, { typos: false }).size]),
+      rows.filter((r) => r.enabled).map((r) => [r.key, searchIndexMatch(index, r.key, { typos: false })?.size ?? index.docs.length]),
     );
   }, [destinations, dictionary, rows]);
 
-  const locked = !aliases.loaded || aliases.error !== null || busy;
+  /** Modification impossible (chargement, fichier illisible) : contrôles désactivés. */
+  const blocked = !aliases.loaded || aliases.error !== null;
+  // Pendant une écriture, les contrôles restent focalisables (`readOnly`, `aria-disabled`) : le
+  // focus ne retombe pas sur la page après « Ajouter » ou une bascule au clavier.
+  const locked = blocked || busy;
+  const busyAttr = busy || undefined;
 
   /** Enregistre `next` ; en cas d'échec, l'état ne change pas et le message est affiché. */
   const apply = async (next: UserAliases): Promise<boolean> => {
+    if (locked) return false;
     setBusy(true);
     setError(null);
     try {
@@ -102,6 +102,7 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
 
   /** Préremplit la saisie : modification d'un alias personnalisé, ou remplacement d'un alias fourni. */
   const edit = (row: AliasRow) => {
+    if (locked) return;
     setDraft({ term: row.term, meaning: row.expansions.join(', '), previous: row.origin === 'custom' ? row.term : null });
     setError(null);
     setConfirming(null);
@@ -114,6 +115,7 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
     if (!(await apply(removeAlias(user, row.term)))) return;
     setConfirming(null);
     if (editingThis) setDraft(EMPTY_DRAFT);
+    termRef.current?.focus(); // la ligne a disparu
   };
 
   const editing = draft.previous !== null;
@@ -143,7 +145,9 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
           aria-invalid={error?.field === 'term' || undefined}
           aria-describedby={error?.field === 'term' ? errorId : undefined}
           maxLength={ALIAS_TERM_MAX + 10}
-          disabled={locked}
+          disabled={blocked}
+          readOnly={busy}
+          aria-disabled={busyAttr}
           spellCheck={false}
           autoComplete="off"
         />
@@ -156,15 +160,17 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
           aria-label="Signification, plusieurs séparées par des virgules"
           aria-invalid={error?.field === 'expansions' || undefined}
           aria-describedby={error?.field === 'expansions' ? errorId : undefined}
-          disabled={locked}
+          disabled={blocked}
+          readOnly={busy}
+          aria-disabled={busyAttr}
           spellCheck={false}
           autoComplete="off"
         />
-        <button type="submit" className="btn btn--primary" disabled={locked}>
+        <button type="submit" className="btn btn--primary" disabled={blocked} aria-disabled={busyAttr}>
           {editing ? 'Enregistrer' : 'Ajouter'}
         </button>
         {(editing || draft.term !== '' || draft.meaning !== '') && (
-          <button type="button" className="btn" disabled={busy} onClick={reset}>
+          <button type="button" className="btn" aria-disabled={busyAttr} onClick={() => !busy && reset()}>
             Annuler
           </button>
         )}
@@ -176,75 +182,21 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
       )}
 
       <ul className="aliases__list" aria-label="Alias de recherche">
-        {rows.map((row) => {
-          const count = counts.get(row.key);
-          const origin = row.origin === 'default' ? 'fourni' : row.overridesDefault ? 'personnalisé, remplace l\'alias fourni' : 'personnalisé';
-          return (
-            <li key={row.key} className={`setting aliases__row${row.enabled ? '' : ' is-off'}`}>
-              <span className="setting__text">
-                <span className="aliases__head">
-                  <span className="aliases__name">{row.term}</span>
-                  <span className="aliases__meanings">{row.expansions.join(' · ')}</span>
-                </span>
-                <span className="setting__description">
-                  {origin}
-                  {' · '}
-                  {row.enabled && count !== undefined ? countLabel(count) : 'désactivé'}
-                </span>
-              </span>
-              <span className="setting__control">
-                {row.origin === 'custom' ? (
-                  confirming === row.key ? (
-                    <>
-                      <button type="button" className="btn btn--danger" disabled={locked} onClick={() => void onRemove(row)}>
-                        Confirmer
-                      </button>
-                      <button type="button" className="btn" disabled={busy} onClick={() => setConfirming(null)}>
-                        Annuler
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button type="button" className="btn" disabled={locked} onClick={() => edit(row)}>
-                        Modifier
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--danger-ghost"
-                        disabled={locked}
-                        aria-label={`Supprimer l'alias ${row.term}`}
-                        onClick={() => setConfirming(row.key)}
-                      >
-                        Supprimer
-                      </button>
-                    </>
-                  )
-                ) : (
-                  <>
-                    {row.enabled && (
-                      <button
-                        type="button"
-                        className="btn"
-                        disabled={locked}
-                        aria-label={`Personnaliser l'alias ${row.term}`}
-                        onClick={() => edit(row)}
-                      >
-                        Personnaliser
-                      </button>
-                    )}
-                    <Switch
-                      checked={row.enabled}
-                      disabled={locked}
-                      label={`Alias ${row.term} actif`}
-                      title={row.enabled ? 'Désactiver' : 'Réactiver'}
-                      onChange={(enabled) => void apply(setDefaultEnabled(user, row.term, enabled))}
-                    />
-                  </>
-                )}
-              </span>
-            </li>
-          );
-        })}
+        {rows.map((row) => (
+          <AliasRowItem
+            key={row.key}
+            row={row}
+            count={counts.get(row.key)}
+            confirming={confirming === row.key}
+            blocked={blocked}
+            busy={busy}
+            onEdit={() => edit(row)}
+            onAskRemove={() => !locked && setConfirming(row.key)}
+            onRemove={() => void onRemove(row)}
+            onCancelRemove={() => setConfirming(null)}
+            onToggle={(enabled) => void apply(setDefaultEnabled(user, row.term, enabled))}
+          />
+        ))}
       </ul>
       {aliases.loaded && rows.length === 0 && <p className="form__hint">Aucun alias pour l'instant</p>}
       <p className="form__hint">

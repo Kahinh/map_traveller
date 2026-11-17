@@ -19,7 +19,7 @@ Tu appliques le plan validé, étape par étape, avec le plus petit changement c
 
 ## Avant de rendre la main
 
-1. `npm run typecheck && npm run lint && npm test`.
-2. Si du Rust a changé et que `cargo` n'est pas disponible en local : le dire explicitement (la CI le vérifiera).
+1. `npm run check` (puis `npm run check:full` avant de rendre la main).
+2. Si du Rust a changé : `cargo test` et `cargo clippy --all-targets -- -D warnings` dans `src-tauri/` (sous Linux, après installation des bibliothèques GTK : voir `docs/CONTRIBUTING.md`). Le code `cfg(windows)` n'est vérifié que par la CI : le dire explicitement.
 3. Lister ce qui n'a pas pu être vérifié et les tests manuels recommandés.
 4. Recommander l'agent `reviewer` pour toute tâche moyenne ou complexe.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   buildDictionary,
   EMPTY_USER_ALIASES,
@@ -6,9 +6,9 @@ import {
   type AliasEntry,
   type UserAliases,
 } from '../features/aliases/aliases';
+import { errorText } from '../lib/errors';
 import { DEFAULT_ALIASES, loadAliases, saveAliases } from '../lib/tauri/storage';
-
-const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+import { createWriteGate } from '../lib/writeGate';
 
 /** Ce que la rubrique « Alias » des Paramètres reçoit. */
 export interface AliasesBinding {
@@ -31,40 +31,41 @@ export interface AliasesBinding {
  * `commit(next)` pour chaque modification.
  *
  * Même règle que `useCatalog` : le disque d'abord, l'état ensuite. Si l'écriture échoue,
- * l'affichage ne diverge pas du fichier et l'erreur remonte à l'appelant. `commit` est stable.
+ * l'affichage ne diverge pas du fichier et l'erreur remonte à l'appelant. Garde et file
+ * d'écriture communes aux fichiers réécrits (`createWriteGate`). `commit` est stable.
  */
 export function useAliases(): { dictionary: AliasDictionary; binding: AliasesBinding } {
   const [user, setUser] = useState<UserAliases>(EMPTY_USER_ALIASES);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const loadedRef = useRef(false);
+  const [gate] = useState(() => createWriteGate('Alias non chargés : aucune modification possible'));
 
   useEffect(() => {
     let alive = true;
     loadAliases()
+      .catch((e: unknown) => ({ user: EMPTY_USER_ALIASES, error: `Alias non chargés : ${errorText(e)}` }))
       .then((result) => {
         if (!alive) return;
+        // Écrire par-dessus un fichier illisible effacerait des alias.
+        if (result.error === null) gate.open();
+        else gate.refuse(result.error);
         setUser(result.user);
         setError(result.error);
-        loadedRef.current = result.error === null;
-        setLoaded(true);
-      })
-      .catch((e: unknown) => {
-        if (!alive) return;
-        setError(`Alias non chargés : ${errorText(e)}`);
         setLoaded(true);
       });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [gate]);
 
-  const commit = useCallback(async (next: UserAliases) => {
-    // Écrire avant la fin du chargement, ou par-dessus un fichier illisible, effacerait des alias.
-    if (!loadedRef.current) throw new Error('Alias non chargés : aucune modification possible.');
-    await saveAliases(next);
-    setUser(next);
-  }, []);
+  const commit = useCallback(
+    (next: UserAliases) =>
+      gate.run(async () => {
+        await saveAliases(next);
+        setUser(next);
+      }),
+    [gate],
+  );
 
   const dictionary = useMemo(() => buildDictionary(DEFAULT_ALIASES, user), [user]);
   const binding = useMemo<AliasesBinding>(

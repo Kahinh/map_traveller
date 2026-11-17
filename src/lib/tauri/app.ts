@@ -3,9 +3,9 @@
  * (`core:app:default` → `allow-version`) : aucune permission à ajouter.
  */
 import { getVersion } from '@tauri-apps/api/app';
-import { isTauri } from './env';
+import { IS_TAURI } from './env';
 
 /** Version installée (celle de `tauri.conf.json` au build) ; `null` dans le navigateur. */
 export async function getAppVersion(): Promise<string | null> {
-  return isTauri() ? getVersion() : null;
+  return IS_TAURI ? getVersion() : null;
 }

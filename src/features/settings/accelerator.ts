@@ -5,6 +5,7 @@
  * seul juge : modificateurs `Ctrl`, `Alt`, `Shift` (au moins `Ctrl` ou `Alt`) puis UNE touche
  * parmi `A`–`Z`, `0`–`9`, `F1`–`F12`, `Space`. Forme normalisée : `Ctrl+Alt+Shift+Touche`.
  */
+import { isRecord } from '../shared/json';
 
 export type ShortcutAction = 'toggleMain' | 'palette';
 
@@ -139,16 +140,14 @@ export function captureAccelerator(e: KeyLike): CaptureResult {
 
 const DISPLAY_NAMES: Record<string, string> = { Shift: 'Maj', Space: 'Espace' };
 
-/** Affichage en français : `Ctrl+Shift+Space` → `Ctrl + Maj + Espace`. */
-export function formatAccelerator(accelerator: string): string {
-  return accelerator
-    .split('+')
-    .map((part) => DISPLAY_NAMES[part] ?? part)
-    .join(' + ');
+/** Touches affichées en français, une par capsule : `Ctrl+Shift+Space` → `Ctrl`, `Maj`, `Espace`. */
+export function acceleratorKeys(accelerator: string): string[] {
+  return accelerator.split('+').map((part) => DISPLAY_NAMES[part] ?? part);
 }
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
+/** Affichage en texte : `Ctrl+Shift+Space` → `Ctrl + Maj + Espace`. */
+export function formatAccelerator(accelerator: string): string {
+  return acceleratorKeys(accelerator).join(' + ');
 }
 
 /** Valide la réponse de Rust (`get_shortcuts`, `set_shortcut`, `reset_shortcuts`) ; `null` si inattendue. */

@@ -1,3 +1,5 @@
+> **Document historique (v0.x).** Pour le comportement actuel : [CLAUDE.md](../../CLAUDE.md) (invariants), [skills](../../.claude/skills/) et [README](../../README.md).
+
 # Map Traveller — Cahier des charges fonctionnel et technique V1.1
 
 **Date :** 14 novembre 2026  

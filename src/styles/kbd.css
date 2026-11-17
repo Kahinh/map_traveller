@@ -1,0 +1,56 @@
+/* Touche affichée, commune à la fenêtre principale et à la palette (rappel de la recherche,
+   pied de la palette, rubriques Palette et Raccourcis). Les flèches sont l'icône `ArrowIcon`,
+   orientée ici. Couleurs : tokens.css uniquement. */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--mt-chip-sm);
+  height: var(--mt-chip-sm);
+  padding: 0 var(--mt-space-1);
+  border: 1px solid var(--mt-card-border);
+  border-radius: var(--mt-radius-xs);
+  background: var(--mt-card-bg);
+  color: var(--mt-text);
+  font: inherit;
+  font-size: var(--mt-font-size-xs);
+  font-weight: var(--mt-font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Une flèche remplit sa touche : pas de marge intérieure. */
+.kbd:has(.kbd__arrow) {
+  padding: 0;
+}
+
+/* Suite de touches (« Ctrl » « Entrée ») : alignées sur la ligne de texte, sans décalage. */
+.kbd-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mt-space-half);
+  vertical-align: middle;
+}
+
+.kbd__arrow {
+  width: var(--mt-icon-sm);
+  height: var(--mt-icon-sm);
+}
+
+.kbd__arrow--down {
+  transform: rotate(180deg);
+}
+
+.kbd__arrow--left {
+  transform: rotate(-90deg);
+}
+
+.kbd__arrow--right {
+  transform: rotate(90deg);
+}
+
+/* « + » entre deux touches : boîte serrée sur le glyphe pour qu'il soit centré sur les capsules. */
+.kbd-plus {
+  color: var(--mt-text-muted);
+  line-height: 1;
+}

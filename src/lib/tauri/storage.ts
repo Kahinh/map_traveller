@@ -1,38 +1,32 @@
 /**
- * Pont de persistance. Dans Tauri, délègue aux commandes Rust (`src-tauri/src/storage.rs`)
- * qui écrivent de façon atomique dans `%APPDATA%\MapTraveller\`. Dans le navigateur
- * (`npm run dev`), retombe sur localStorage + seed pour itérer sur l'UI.
+ * Pont de persistance de la fenêtre principale. Dans Tauri, délègue aux commandes Rust
+ * (`src-tauri/src/storage.rs`) qui écrivent de façon atomique dans `%APPDATA%\MapTraveller\`.
+ * Dans le navigateur (`npm run dev`), retombe sur localStorage + seed pour itérer sur l'UI.
+ * La lecture et l'analyse des fichiers, partagées avec la palette, sont dans `storeRead.ts` ;
+ * ici, ce que seule la fenêtre principale lit (catalogue livré, réglages complets) et écrit.
  */
 import { invoke } from '@tauri-apps/api/core';
-import defaultAliases from '../../../resources/aliases.default.json';
-import {
-  aliasesFileProblem,
-  EMPTY_USER_ALIASES,
-  mergeUserAliases,
-  parseDefaultAliases,
-  parseUserAliases,
-  type UserAliases,
-} from '../../features/aliases/aliases';
+import { aliasesFileProblem, mergeUserAliases, type UserAliases } from '../../features/aliases/aliases';
 import { parseOfficialState, type OfficialState, type OfficialStateResult } from '../../features/catalog/official';
-import { SCHEMA_VERSION, validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
+import { validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
 import { mergeSettings, parseSettings, type Settings } from '../../features/settings/settings';
-import { isTauri } from './env';
+import { isRecord } from '../../features/shared/json';
+import { IS_TAURI } from './env';
+import {
+  LS_PREFIX,
+  parseAliasesText,
+  parseCatalogText,
+  parseFavoritesText,
+  readStoreText as readRaw,
+  type LoadedAliases,
+  type StoreName,
+  type StoreRead,
+} from './storeRead';
 
-export type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases' | 'official';
-
-const LS_PREFIX = 'map-traveller:';
-
-async function readRaw(name: StoreName): Promise<string | null> {
-  if (isTauri()) return invoke<string | null>('load_store', { name });
-  try {
-    return localStorage.getItem(LS_PREFIX + name);
-  } catch {
-    return null;
-  }
-}
+export { DEFAULT_ALIASES, parseFavoritesText, type StoreRead } from './storeRead';
 
 async function writeRaw(name: StoreName, json: string): Promise<void> {
-  if (isTauri()) return invoke('save_store', { name, json });
+  if (IS_TAURI) return invoke('save_store', { name, json });
   try {
     localStorage.setItem(LS_PREFIX + name, json);
   } catch {
@@ -48,36 +42,13 @@ async function readJson(name: StoreName): Promise<unknown> {
 
 const writeJson = (name: StoreName, data: unknown) => writeRaw(name, JSON.stringify(data, null, 2));
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
 /**
- * Texte brut d'un stockage, ou `null` s'il n'existe pas encore. La palette s'en sert pour ne
- * rien recharger quand le fichier n'a pas changé depuis son dernier affichage.
+ * Charge et valide le catalogue utilisateur. `seed` n'est appelé que si le fichier n'existe pas
+ * encore (mode navigateur) : le catalogue livré reste hors du paquet initial.
  */
-export const readStoreText = (name: StoreName): Promise<string | null> => readRaw(name);
-
-const EMPTY_CATALOG: Catalog = { schemaVersion: SCHEMA_VERSION, destinations: [] };
-
-/**
- * Valide le texte de `catalog.json`. Ne lève jamais. Fichier absent (`null`) : `fallback`. Dans
- * l'application, Rust copie le seed avant l'ouverture des fenêtres : le fichier existe toujours.
- * La palette garde le catalogue vide par défaut, pour ne pas embarquer le catalogue livré.
- */
-export function parseCatalogText(raw: string | null, fallback: unknown = EMPTY_CATALOG): ValidationResult {
-  let data: unknown;
-  try {
-    data = raw == null ? undefined : JSON.parse(raw);
-  } catch {
-    return { ok: false, errors: [{ path: '', message: 'catalog.json illisible (JSON invalide).' }] };
-  }
-  return validateCatalog(data ?? fallback);
-}
-
-/** Charge et valide le catalogue utilisateur ; `seed` le remplace s'il n'existe pas encore. */
-export async function loadCatalog(seed: unknown): Promise<ValidationResult> {
-  return parseCatalogText(await readRaw('catalog'), seed);
+export async function loadCatalog(seed: () => Promise<unknown>): Promise<ValidationResult> {
+  const raw = await readRaw('catalog');
+  return parseCatalogText(raw, raw == null ? await seed() : undefined);
 }
 
 /** Entrées du catalogue livré déjà proposées (`official.json`). Ne lève jamais. */
@@ -98,38 +69,13 @@ export async function saveCatalog(catalog: Catalog): Promise<void> {
   await writeJson('catalog', check.catalog);
 }
 
-/** Favoris par identifiant stable. Un fichier absent ou illisible donne un ensemble vide. */
-export async function loadFavorites(): Promise<Set<string>> {
-  const data = await readJson('favorites').catch(() => undefined);
-  const ids = isRecord(data) && Array.isArray(data.ids) ? data.ids : [];
-  return new Set(ids.filter((x): x is string => typeof x === 'string'));
+/** Favoris de la fenêtre principale. Rejette si la lecture elle-même échoue. */
+export async function readFavorites(): Promise<StoreRead<ReadonlySet<string>>> {
+  return parseFavoritesText(await readRaw('favorites'));
 }
 
 export function saveFavorites(ids: ReadonlySet<string>): Promise<void> {
   return writeJson('favorites', { ids: [...ids].sort() });
-}
-
-/** Alias de recherche livrés avec l'application (lecture seule, embarqués dans le paquet). */
-export const DEFAULT_ALIASES = parseDefaultAliases(defaultAliases);
-
-export interface LoadedAliases {
-  user: UserAliases;
-  /** Fichier présent mais illisible : rien n'est écrit par-dessus tant qu'il l'est. */
-  error: string | null;
-}
-
-/** Personnalisations lues du texte de `aliases.json` (`null` : fichier absent). Ne lève jamais. */
-export function parseAliasesText(raw: string | null): LoadedAliases {
-  if (raw == null) return { user: EMPTY_USER_ALIASES, error: null };
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return { user: EMPTY_USER_ALIASES, error: 'aliases.json illisible (JSON invalide) : les alias fournis sont utilisés.' };
-  }
-  // Version plus récente ou forme inattendue : lu au mieux pour la recherche, jamais réécrit.
-  const problem = aliasesFileProblem(data);
-  return { user: parseUserAliases(data), error: problem === null ? null : `${problem} Il n'est pas modifiable ici.` };
 }
 
 /** Alias personnalisés. Un fichier absent donne une liste vide ; un fichier illisible, une erreur. */
@@ -157,11 +103,23 @@ export async function saveAliases(user: UserAliases): Promise<void> {
   await writeJson('aliases', mergeUserAliases(raw, user));
 }
 
-export { DEFAULT_SETTINGS, type Settings } from '../../features/settings/settings';
+/** Réglages lus du texte de `settings.json` (`null` : fichier absent). Ne lève jamais. */
+export function parseSettingsText(raw: string | null): StoreRead<Settings> {
+  if (raw == null) return { value: parseSettings(undefined), error: null };
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return { value: parseSettings(undefined), error: 'settings.json illisible (JSON invalide)' };
+  }
+  // Racine d'une autre forme : `mergeSettings` la remplacerait, et Rust y perdrait `shortcuts`.
+  if (!isRecord(data)) return { value: parseSettings(undefined), error: 'settings.json illisible (forme inattendue)' };
+  return { value: parseSettings(data), error: null };
+}
 
-/** Réglages ; un fichier absent ou illisible donne les valeurs par défaut. */
-export async function loadSettings(): Promise<Settings> {
-  return parseSettings(await readJson('settings').catch(() => undefined));
+/** Réglages de la fenêtre principale. Rejette si la lecture elle-même échoue. */
+export async function readSettings(): Promise<StoreRead<Settings>> {
+  return parseSettingsText(await readRaw('settings'));
 }
 
 /**
@@ -171,8 +129,12 @@ export async function loadSettings(): Promise<Settings> {
  * inconnus de `updates`, sont réécrites telles quelles (`mergeSettings`).
  * Dans l'application, Rust reprend de toute façon `shortcuts` du disque sous verrou
  * (`save_store`) : l'interface ne peut jamais remettre un raccourci périmé.
+ * Lève, sans rien écrire, si le fichier est devenu illisible.
  */
 export async function saveSettings(settings: Settings): Promise<void> {
-  const raw = await readJson('settings').catch(() => undefined);
-  await writeJson('settings', mergeSettings(raw, settings));
+  const raw = await readRaw('settings');
+  // Devenu illisible depuis le chargement (modifié à la main) : ne pas l'écraser.
+  const { error } = parseSettingsText(raw);
+  if (error !== null) throw new Error(error);
+  await writeJson('settings', mergeSettings(raw == null ? undefined : JSON.parse(raw), settings));
 }

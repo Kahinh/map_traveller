@@ -16,22 +16,10 @@ import {
 import { SCHEMA_VERSION, validateCatalog, type Catalog, type Destination } from '../src/features/catalog/schema';
 import { leftClickCommand, rightClickCommand } from '../src/features/commands/copyRules';
 import { parseFarmRoute } from '../src/features/farm/farmRoute';
+import { makeDestination } from './helpers/destination';
 
-function dest(partial: Partial<Destination> & { id: string; name: string }): Destination {
-  return {
-    category: 'npc',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/zaap 5 -18;/travel 1 1',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-    ...partial,
-  };
-}
+const dest = (partial: Partial<Destination> & { id: string; name: string }): Destination =>
+  makeDestination({ category: 'npc', command: '/zaap 5 -18;/travel 1 1', ...partial });
 
 function catalog(...destinations: Destination[]): Catalog {
   return { schemaVersion: SCHEMA_VERSION, destinations };

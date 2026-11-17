@@ -5,7 +5,7 @@
  * Point d'entrée unique « quelles commandes porte cette carte », indépendant de l'affichage.
  * Chaque zone applique les règles de copie existantes (`copyRules.ts`), sans les dupliquer.
  */
-import { TWO_STEP_CATEGORIES, type Destination } from '../catalog/schema';
+import { allowsTwoStep, type Destination } from '../catalog/schema';
 import { leftClickCommand, rightClickCommand } from './copyRules';
 
 export type PartIndex = 1 | 2;
@@ -17,13 +17,16 @@ export interface CardPart {
   command: string;
 }
 
-/** Vrai si la carte s'affiche en deux zones. Toujours faux hors PNJ et Donjons. */
-export function isTwoStep(d: Destination): boolean {
-  return d.twoStep && TWO_STEP_CATEGORIES.includes(d.category);
+/** Ce dont dépendent les zones d'une carte : une destination, ou un brouillon de l'éditeur. */
+type CardShape = Pick<Destination, 'category' | 'twoStep' | 'command' | 'command2'>;
+
+/** Vrai si la carte s'affiche en deux zones : case cochée ET catégorie PNJ ou Donjons. */
+export function isTwoStep(d: Pick<Destination, 'category' | 'twoStep'>): boolean {
+  return d.twoStep && allowsTwoStep(d.category);
 }
 
 /** 1 partie pour une carte classique, 2 pour une carte à deux étapes. Textes non modifiés. */
-export function cardParts(d: Destination): CardPart[] {
+export function cardParts(d: CardShape): CardPart[] {
   if (!isTwoStep(d)) return [{ index: 1, command: d.command }];
   return [
     { index: 1, command: d.command },

@@ -5,7 +5,15 @@
  *
  * Schéma 3 : ajout de `twoStep` et `command2` (trajet en deux étapes). Un catalogue v2
  * est accepté tel quel : les champs absents prennent leur valeur par défaut.
+ *
+ * Corrections SILENCIEUSES de `validateCatalog` (champs secondaires, jamais une commande) :
+ * `zone` absente ou non textuelle → `''` ; `sortOrder` absent ou non fini → `0` ; `enabled`
+ * vaut `true` sauf s'il est exactement `false` ; `aliases` / `tags` absents → `[]` ; `image`
+ * vide → `null` ; `id` et `name` débarrassés de leurs blancs. Tout le reste est signalé.
  */
+
+import { normalizeText } from './searchText';
+import { isRecord, newerSchemaVersion } from '../shared/json';
 
 export const SCHEMA_VERSION = 3;
 
@@ -44,7 +52,12 @@ export const CATEGORY_EXACT_KEYWORDS: Record<Category, string> = {
 };
 
 /** Catégories qui peuvent porter un trajet en deux étapes. */
-export const TWO_STEP_CATEGORIES: readonly Category[] = ['npc', 'dungeon'];
+const TWO_STEP_CATEGORIES: readonly Category[] = ['npc', 'dungeon'];
+
+/** Vrai si la catégorie peut porter un trajet en deux étapes (PNJ et Donjons). Seul endroit de la règle. */
+export function allowsTwoStep(category: Category): boolean {
+  return TWO_STEP_CATEGORIES.includes(category);
+}
 
 export interface Destination {
   id: string;
@@ -79,10 +92,6 @@ export type ValidationResult =
   | { ok: true; catalog: Catalog }
   | { ok: false; errors: ValidationError[] };
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
 function stringArray(v: unknown): string[] | null {
   if (v === undefined) return [];
   if (!Array.isArray(v) || !v.every((s) => typeof s === 'string')) return null;
@@ -105,7 +114,7 @@ export function validateCatalog(input: unknown): ValidationResult {
   const version = input.schemaVersion;
   if (typeof version !== 'number' || !Number.isInteger(version)) {
     errors.push({ path: 'schemaVersion', message: 'schemaVersion manquant ou invalide.' });
-  } else if (version > SCHEMA_VERSION) {
+  } else if (newerSchemaVersion(input, SCHEMA_VERSION) !== null) {
     errors.push({ path: 'schemaVersion', message: `Version ${version} plus récente que l'application (${SCHEMA_VERSION}).` });
   }
 
@@ -141,7 +150,7 @@ export function validateCatalog(input: unknown): ValidationResult {
       errors.push({ path: at('twoStep'), message: 'twoStep doit valoir true ou false.' });
     }
     const twoStep = raw.twoStep === true;
-    if (twoStep && CATEGORIES.includes(category as Category) && !TWO_STEP_CATEGORIES.includes(category as Category)) {
+    if (twoStep && CATEGORIES.includes(category as Category) && !allowsTwoStep(category as Category)) {
       errors.push({ path: at('twoStep'), message: 'Le trajet en deux étapes est réservé aux PNJ et aux Donjons.' });
     }
     if (raw.command2 !== undefined && typeof raw.command2 !== 'string') {
@@ -180,13 +189,14 @@ export function validateCatalog(input: unknown): ValidationResult {
   return { ok: true, catalog: { schemaVersion: SCHEMA_VERSION, destinations } };
 }
 
-/** Génère un identifiant stable et lisible à partir d'un nom, unique dans `existing`. */
+/**
+ * Génère un identifiant stable et lisible à partir d'un nom, unique dans `existing`. Même
+ * normalisation que la recherche (ligatures dépliées : « Cœur » → `coeur`). Appelé à la
+ * création seulement : un identifiant existant ne change jamais.
+ */
 export function makeDestinationId(name: string, existing: Iterable<string>): string {
   const base =
-    name
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase()
+    normalizeText(name)
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'destination';
   const taken = new Set(existing);

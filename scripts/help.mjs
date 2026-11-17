@@ -3,20 +3,21 @@
 const MENU = [
   ['Vérifier', [
     ['npm run check', 'pendant le travail : typecheck + lint + tests (rapide)'],
-    ['npm run check:full', "avant de rendre la main : check + build des deux pages"],
+    ['npm run check:full', "avant de rendre la main : check + build des deux pages + budget JS de chaque page"],
     ['npm test -- tests/<fichier>.test.ts', "un seul fichier de test"],
-    ['npm run ci:watch', "attendre le build GitHub du commit courant et résumer ses erreurs (seul moyen de compiler le Rust sans cargo)"],
+    ['npm run ci:watch', "attendre le build GitHub du commit courant et résumer ses erreurs (Rust compilé sous Windows)"],
   ]],
   ['Développer', [
     ['npm run dev', 'interface dans le navigateur, http://localhost:1420 (palette : /palette.html)'],
     ['npm run dev:stop', 'arrêter le serveur de développement resté ouvert sur le port 1420'],
     ['npm run tauri dev', 'application native (Rust requis)'],
+    ['npm run tauri build', 'installateur NSIS non signé, en local (Rust requis ; normalement fait par la CI)'],
     ['npm run context -- <mots>', 'contexte ciblé avant une tâche : fichiers récents, occurrences, tests liés'],
   ]],
   ['Publier', [
     ['npm run version:set', 'afficher la version de chaque fichier'],
     ['npm run version:set -- X.Y.Z', 'écrire la version partout (puis commit, tag vX.Y.Z, push)'],
-    ['node scripts/make-latest-json.mjs --help', "index de mise à jour ; lancé par la CI, pas à la main"],
+    ['node scripts/make-latest-json.mjs prepare|verify --tag vX.Y.Z', "index de mise à jour (détail en tête du script) ; lancé par la CI, pas à la main"],
   ]],
 ];
 

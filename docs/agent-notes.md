@@ -6,14 +6,15 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 - **Avant une tâche** : lire « Principes » et les notes de la zone concernée.
 - **En fin de tâche** : ajouter une note pour chaque friction réelle (une correction demandée par l'utilisateur, une erreur découverte en revue, un outil qui a menti). Ne pas noter le bruit : ce qui existait avant et n'a pas été causé par la tâche n'a pas sa place ici.
-- **Format d'une note** : date, étiquette, ce qui s'est passé, le garde-fou mis en place (ou « aucun, à surveiller »).
-- **Étiquettes** : `violation-principe`, `duplication`, `test-fragile`, `correction-humaine`, `outil-trompeur`, `non-vérifié`.
+- **Format d'une note** : date, étiquette, ce qui s'est passé, le garde-fou mis en place (ou « aucun, à surveiller »). Notes de la plus récente à la plus ancienne.
+- **Étiquettes** (liste fermée) : `violation-principe`, `duplication`, `test-fragile`, `correction-humaine`, `outil-trompeur`, `non-vérifié`.
+- Ce qui reste à contrôler à la main sur Windows ne s'accumule pas ici : l'ajouter à [recette-v1.md](recette-v1.md), et ne garder ici que la note qui l'explique.
 - Les « Principes » ne se modifient pas : on en ajoute. Un principe n'entre ici qu'après accord de l'utilisateur.
 
 ## Principes
 
 1. **Ce qui n'a pas été observé n'est pas vérifié.** Un build vert prouve que le code compile, pas qu'il fonctionne. Tout rapport sépare « vérifié » de « non vérifié » et dit comment vérifier le reste.
-2. **Le Rust se valide par la CI.** Sans `cargo` en local : pousser `main` sans tag, attendre le build (`npm run ci:watch`), corriger, et seulement ensuite taguer.
+2. **Le code Windows se valide par la CI.** `cargo test` et `cargo clippy` passent en local sous Linux (voir CLAUDE.md), mais le code `cfg(windows)` n'est compilé que par la CI : fusionner dans `main` sans tag, attendre le build (`npm run ci:watch`), corriger, et seulement ensuite taguer. *(Reformulé le 17/11/2026 : la version d'origine, « sans `cargo` en local », supposait le Rust impossible à compiler hors CI ; voir la note du 17/11 « cargo ne compile pas en local ».)*
 3. **Un tag atteint les utilisateurs.** Depuis les mises à jour automatiques, taguer revient à déployer. Jamais sur un build non vérifié.
 4. **Une règle de copie n'existe qu'à un seul endroit.** Toute nouvelle surface (carte, palette, aperçu) appelle les fonctions pures existantes.
 5. **Le texte d'une commande ne se touche pas.** Ni `trim`, ni normalisation, ni reconstruction.
@@ -21,23 +22,102 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
-### 2026-11-17 — `non-vérifié` — Palette : étapes en lignes et variantes avec / sans Zaap (issue n°11)
-Vérifié dans Chrome (`palette.html`, catalogue de contrôle) : « temple » donne deux lignes, cases sur la ligne sélectionnée avec Zaap seulement, ←/→ changent l'aperçu et le pied, Entrée et Ctrl+Entrée copient les bonnes variantes (presse-papiers du navigateur), réglage « Avec Zaap » enregistré puis relu par la palette, nom long tronqué avec « — Étape N » visible.
-Non vérifié : palette devant le jeu, réglage changé dans la fenêtre principale puis palette rouverte dans l'application installée (lecture de `settings.json` par la palette).
-**Garde-fou :** liste dans le commentaire de clôture de l'issue n°11.
+### 2026-11-17 — `violation-principe` — Revue V1.0 : cinq défauts que les tests ne voyaient pas
+Une revue en six volets avant la 1.0 (lots A à F) a trouvé, entre autres :
+- **Favoris écrasables** : un `favorites.json` illisible était lu comme vide, et le premier clic sur une étoile le remplaçait. **Règle :** tout fichier réécrit par l'interface passe par `createWriteGate` (`src/lib/writeGate.ts`) : rien avant la fin de la lecture, rien si elle a échoué, disque avant l'état ; `storeRead.ts` distingue « absent » de « lecture échouée ». Tests dans `tests/persistence.test.ts`.
+- **Écriture non durable** : le fichier temporaire était renommé sans `sync_all`, et le `.bak` copié par un autre chemin ; une coupure de courant pouvait laisser un fichier vide. **Règle :** une seule fonction d'écriture en Rust (`replace_file` / `write_atomic`, `storage.rs`) : temporaire, `sync_all`, renommage réessayé sous Windows ; lecture stricte avant fusion (`read_json_object_for_write`).
+- **Palette remise à zéro trop tard** : à la réouverture, la première image montrait l'ancienne requête et une hauteur parasite partait vers Rust. **Règle :** remise à zéro sur `palette:hidden` (fenêtre cachée), décision de hauteur pure et testée (`src/features/palette/windowHeight.ts`).
+- **Recherche qui construisait toutes les lignes** : la palette fabriquait jusqu'à 6 000 lignes pour en garder 50. **Règle :** `searchPalette` s'arrête au plafond ; un test compte les appels à `cardParts` (`tests/palettePerf.test.ts`).
+- **Reprise Farm qui perdait des segments** : `farmResumeCommand` recollait les seuls `/travel`, un segment non reconnu entre deux étapes disparaissait (invariant 1). **Règle :** la reprise découpe le texte brut à la fin du segment (`FarmStep.end`) ; tests de segment inconnu, d'espaces et de `;` final dans `tests/farmRoute.test.ts`.
+Contrôles manuels restants : [recette-v1.md](recette-v1.md).
+
+### 2026-11-17 — `outil-trompeur` — Les hooks Claude Code ne tournaient pas
+En relisant `.claude/hooks/` (lot F de la revue V1.0) : les hooks sont écrits en CommonJS (`require`) alors que le dépôt est en `"type": "module"`. Node refusait de les charger et sortait en erreur non bloquante : le blocage des fichiers générés, le typecheck après édition et la synchronisation CodeGraph n'ont jamais fonctionné, sans que rien ne le signale.
+**Garde-fou :** `.claude/package.json` (`"type": "commonjs"`) ; tester un hook en lui passant une entrée à la main (`echo '{"tool_input":{"file_path":"/x/resources/catalog.seed.json"}}' | node .claude/hooks/guard-generated.js`, code de sortie 2 attendu).
+
+### 2026-11-17 — `violation-principe` — Champ « Alias » de 210 px au lieu de 88 (lot E de la revue V1.0)
+Contrôle dans le navigateur : `.aliases__term` avait `flex: 0 0 88px` mais mesurait 210 px, ce qui tronquait l'indication du champ voisin (« …séparées par des vi »). Cause : un `input` élément flexible garde sa largeur intrinsèque comme minimum (`min-width: auto`).
+**Garde-fou :** tout champ de saisie à base flexible reçoit `min-width: 0` ; mesurer la largeur réelle (`getBoundingClientRect`), pas seulement le style déclaré.
+
+### 2026-11-17 — `non-vérifié` — Catalogue livré : images et ajout aux catalogues existants (issue n°8)
+Le navigateur de développement lit les images dans `resources/` : il ne prouve ni la copie au lancement (`copy_missing_images`), ni le protocole `asset:`. Les commandes générées ne sont pas testées en jeu : le zaap le plus proche « à vol d'oiseau » peut être de l'autre côté de la mer (ex. Château Ensablé, zaap de Pandala).
+**Garde-fou :** section « Installation et données » de [recette-v1.md](recette-v1.md) ; avertissement dans le README.
+
+### 2026-11-17 — `violation-principe` — Noms de cartes coupés avant le lieu (issue n°8)
+Contrôle dans le navigateur : « Atelier des alchimistes · Bonta » tronqué sur deux lignes, le lieu disparaissait et vingt cartes semblaient identiques. Corrigé dans le générateur : le métier puis le lieu (« Alchimiste · Bonta »), le nom complet en alias.
+**Garde-fou :** pour un nom fabriqué, mettre ce qui distingue au début.
+
+### 2026-11-17 — `test-fragile` — `palettePerf.test.ts`, troisième occurrence
+Issue n°8 (catalogue livré, aucun code de recherche touché) : `npm run check:full` a échoué sur « requête «  » < 50 ms » (53 ms) ; lancé seul, le fichier passe.
+**Garde-fou :** depuis la revue V1.0 (lot C), les tests de performance comptent des appels (déterministes) au lieu de se fier au seul temps. Si un seuil de temps échoue encore, mesurer une médiane sur plusieurs passes.
 
 ### 2026-11-17 — `outil-trompeur` — « cargo ne compile pas en local » n'était pas une fatalité
-Les notes précédentes concluaient que le Rust ne pouvait pas être compilé dans le conteneur (bibliothèques système absentes). Il suffit de les installer : `apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev`, puis `cargo test` et `cargo clippy` passent dans `src-tauri/` (sous Linux : le code `cfg(windows)` reste vérifié par la CI seulement).
-**Garde-fou :** cette note. Tenter l'installation avant de déclarer le Rust « non compilé ».
+Les notes précédentes concluaient que le Rust ne pouvait pas être compilé dans le conteneur (bibliothèques système absentes). Il suffit de les installer (liste dans [CONTRIBUTING.md](CONTRIBUTING.md)), puis `cargo test` et `cargo clippy` passent dans `src-tauri/` (sous Linux : le code `cfg(windows)` reste vérifié par la CI seulement).
+**Garde-fou :** règle unique dans CLAUDE.md (« Commandes ») et principe 2. Tenter l'installation avant de déclarer le Rust « non compilé ».
+
+### 2026-11-17 — `non-vérifié` — Palette : étapes en lignes et variantes avec / sans Zaap (issue n°11)
+Vérifié dans Chrome (`palette.html`, catalogue de contrôle) : « temple » donne deux lignes, cases sur la ligne sélectionnée avec Zaap seulement, ←/→ changent l'aperçu et le pied, Entrée et Ctrl+Entrée copient les bonnes variantes, réglage « Avec Zaap » enregistré puis relu par la palette, nom long tronqué avec « — Étape N » visible.
+**Garde-fou :** le reste (palette devant le jeu, réglage relu par la palette installée) est dans [recette-v1.md](recette-v1.md).
 
 ### 2026-11-17 — `non-vérifié` — Zaap le plus proche (n°7) et vignettes (n°14, A4)
 Vérifié : tests Vitest et Rust ; palette dans Chrome (`proche -20,-20`, saisie incomplète ou invalide dans la barre, hauteur 48 / 204 px, pied d'aide) ; chaîne `createImageBitmap` → `OffscreenCanvas` → WebP 256 × 256 dans Chrome.
-Non vérifié : coordonnées et syntaxe `/zaap X Y` des 48 zaaps en jeu ; fabrication réelle des vignettes sous WebView2 (`read_image` en `ArrayBuffer`, `save_thumbnail` en corps brut avec l'en-tête `x-image`), affichage par le protocole `asset:`, retour à l'original quand la vignette manque.
-**Garde-fou :** listes dans les commentaires de clôture des issues n°7 et n°14.
+**Garde-fou :** coordonnées des 48 zaaps non vérifiées en jeu (source citée dans `resources/zaaps.json`) ; vignettes sous WebView2 dans [recette-v1.md](recette-v1.md).
 
 ### 2026-11-16 — `correction-humaine` — Refonte lancée dans une direction déjà refusée
 Une refonte « surfaces neutres sombres », dictée par un skill de design appliqué à la lettre, contredisait la décision de l'auteur (palette violette conservée, écrite dans l'issue n°13). Elle a été arrêtée et jetée.
-**Garde-fou :** section « Fondations » de `ui-da-pnj` ; avant tout travail de design, lire l'issue de design en cours et faire `git fetch` : une autre session livre des PR en parallèle.
+**Garde-fou :** section « Fondations » de `ui-da-pnj` et note d'usage de `unslop` (`SOURCE.md`) ; avant tout travail de design, lire l'issue de design en cours et faire `git fetch` : une autre session livre des PR en parallèle.
+
+### 2026-11-16 — `outil-trompeur` — `dev:stop` ne voyait pas le serveur
+`npm run dev:stop` répondait « Aucun serveur sur le port 1420 » alors que Vite tournait : il interrogeait `netstat -p TCP`, qui ne liste que l'IPv4, et Vite écoute en IPv6 (`[::1]:1420`). Découvert parce qu'un dossier restait verrouillé par ce serveur oublié.
+**Garde-fou :** `listeningPids` lit IPv4 et IPv6, et reconnaît l'écoute à l'adresse distante nulle plutôt qu'au mot « LISTENING » ; testé dans `tests/devStop.test.ts`, et vérifié sur un vrai serveur.
+
+### 2026-11-16 — `test-fragile` — Seuils de `palettePerf.test.ts`, deuxième occurrence
+Lot 2 de l'issue n°13 (apparence et textes seulement) : `npm run check:full` a échoué trois fois de suite sur « requête « vilel123 » < 50 ms » (53 à 69 ms) et une fois sur « construction de l'index < 300 ms » (334 ms). Lancé seul, le fichier passe ; toute la suite passe avec `vitest run --no-file-parallelism`. Cause : fichiers testés en parallèle avec d'autres worktrees actifs.
+**Garde-fou :** voir la troisième occurrence (17/11).
+
+### 2026-11-16 — `non-vérifié` — Palette à hauteur dynamique (issue n°19)
+La hauteur du contenu est vérifiée dans le navigateur (48 px pour la barre seule, 124 px pour une ligne, 404 px pour une liste pleine, un seul changement par variation réelle). Le redimensionnement de la FENÊTRE (`set_palette_height`) ne s'observe que sur l'application installée.
+**Garde-fou :** `clamp_height` testé en Rust ; si `set_size` est refusé, l'erreur est journalisée et la fenêtre garde sa taille ; contrôles dans [recette-v1.md](recette-v1.md).
+
+### 2026-11-15 — `correction-humaine` — Recherche par catégorie trop large
+Les mots de catégorie avaient été ajoutés au texte indexé : « on » ramenait tous les donjons, dans la palette et dans la fenêtre principale.
+**Garde-fou :** `categoriesForWord` (début de mot-clé, 2 lettres au moins) et tests dans `tests/searchIndex.test.ts`.
+
+### 2026-11-15 — `outil-trompeur` — Script en ligne cassé par les guillemets
+Une longue commande avec un script Node en ligne et du texte français (apostrophes, accents graves) a échoué à l'analyse du shell.
+**Garde-fou :** écrire le script dans un fichier temporaire, puis l'exécuter. Pas de script de plus de quelques lignes en ligne de commande.
+
+### 2026-11-15 — `test-fragile` — Seuil de 50 ms de `palettePerf.test.ts` sous charge
+Pendant l'issue n°12 (CSS seul), un `npm run check` a échoué une fois sur ce test, puis neuf passages consécutifs ont réussi. Cause : machine chargée par plusieurs worktrees, pas le code.
+**Garde-fou :** voir la troisième occurrence (17/11).
+
+### 2026-11-15 — `outil-trompeur` — Worktrees parallèles : ports et cache Vite partagés
+Le port choisi pour un second serveur Vite était déjà pris par une autre tâche, et Vite annonce « Re-optimizing dependencies because vite config has changed » : `node_modules` est un lien vers le même dossier, donc le cache `node_modules/.vite` est commun à tous les worktrees.
+**Garde-fou :** aucun, à surveiller. Un port par tâche, fixé dans la consigne, avec `--strictPort`.
+
+### 2026-11-15 — `violation-principe` — Réécriture d'un fichier que l'on ne comprend qu'en partie
+Première version du dictionnaire d'alias (issue n°10) : `aliases.json` était relu de façon tolérante puis réécrit en entier. Une entrée illisible, une clé inconnue ou une `schemaVersion` plus récente disparaissaient donc sans message à la première action. Trouvé en revue.
+**Garde-fou :** `mergeUserAliases` conserve ce qu'il ne comprend pas, `aliasesFileProblem` interdit toute écriture sur un fichier d'une version plus récente ou d'une forme inattendue ; tests dans `tests/aliases.test.ts`. Règle pour tout nouveau fichier de données : lecture tolérante ne veut pas dire réécriture destructive.
+
+### 2026-11-15 — `test-fragile` — Filtrer après avoir cherché annule la seconde passe
+La reprise Farm par position cherchait dans tout le catalogue puis ne gardait que les parcours. La tolérance aux fautes ne se déclenchant que si la recherche exacte ne trouve rien, un PNJ au nom proche suffisait à l'empêcher. Trouvé en revue ; la même erreur est revenue dans le filtre des onglets (revue V1.0, lot B).
+**Garde-fou :** `searchIndexRank` et `searchIndexMatch` reçoivent le filtre (`accept`) et l'appliquent AVANT de décider de la seconde passe ; tests dans `tests/searchIndex.test.ts` et `tests/paletteEntries.test.ts`.
+
+### 2026-11-15 — `test-fragile` — Bandeau d'erreur jamais effacé quand on saute un rechargement
+En ne revalidant plus le catalogue quand son texte n'a pas changé, la palette n'effaçait plus une erreur de chargement passagère. Trouvé en revue.
+**Garde-fou :** deux états distincts dans `Palette.tsx` (erreur de lecture, effacée à chaque succès ; catalogue invalide, liée au contenu du fichier). Aucun test : à contrôler sur l'application installée.
+
+### 2026-11-15 — `outil-trompeur` — Chrome sans affichage se déclare `hover: none`
+Toutes les règles `@media (hover: hover)` étaient ignorées : l'étoile apparaissait « toujours visible » alors que le CSS était correct. `Emulation.setEmulatedMedia` ne sait pas émuler `hover`, et `page.setViewport` de puppeteer réinitialise le type de survol en cours de script.
+**Garde-fou :** lancer Chrome avec `--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4`, vérifier `matchMedia('(hover: hover)')` avant chaque mesure, et changer d'échelle par `Emulation.setDeviceMetricsOverride` plutôt que `setViewport`. Survol d'un élément : `CSS.forcePseudoState`.
+
+### 2026-11-15 — `violation-principe` — Captures AVANT écrasées
+Le script de captures relancé avec l'étiquette `avant` après les modifications a remplacé l'état de référence. Rattrapé en remisant (`git stash`) le travail le temps de refaire les captures.
+**Garde-fou :** aucun, à surveiller ; faire les captures AVANT dans un dossier à part et ne plus y écrire ensuite.
+
+### 2026-11-15 — `non-vérifié` — Zone de notification et palette préchargée (issue n°14)
+`main_window.rs`, `tray.rs`, `palette.rs` et `lib.rs` ont été écrits sans pouvoir être exécutés ; ils sont depuis compilés et testés (CI, et `cargo test` sous Linux), mais leur comportement réel ne se voit que sous Windows.
+**Garde-fou :** section « Zone de notification » de [recette-v1.md](recette-v1.md).
 
 ### 2026-11-14 — `outil-trompeur` — Le survol simulé ne déclenche pas `:hover`
 L'outil de navigateur a déplacé le pointeur sans que la page voie un survol : les captures montraient un état normal. La surbrillance de l'issue n°2 a été contrôlée en forçant l'état par une feuille de style de test.
@@ -49,100 +129,16 @@ Interrogé avant la fin de la mise en page, il a renvoyé le conteneur de la car
 
 ### 2026-11-14 — `outil-trompeur` — Captures rognées avec une taille de fenêtre émulée
 Les captures ne montraient que le coin supérieur gauche de la page.
-**Garde-fou :** ne pas émuler la taille ; fixer la taille de `#root` (510 × 300, ou 560 × 380 pour la palette). Voir `CLAUDE.md`.
+**Garde-fou :** ne pas émuler la taille ; fixer la taille de `#root` (510 × 300 ; palette : largeur 560). Voir `CLAUDE.md`.
 
 ### 2026-11-14 — `outil-trompeur` — Serveur de développement resté en vie
 Arrêter la tâche qui a lancé Vite laisse le processus Node ouvert sous Windows ; le lancement suivant échoue sur le port 1420.
 **Garde-fou :** `npm run dev:stop`.
 
-### 2026-11-16 — `outil-trompeur` — `dev:stop` ne voyait pas le serveur
-`npm run dev:stop` répondait « Aucun serveur sur le port 1420 » alors que Vite tournait : il interrogeait `netstat -p TCP`, qui ne liste que l'IPv4, et Vite écoute en IPv6 (`[::1]:1420`). Découvert parce qu'un dossier restait verrouillé par ce serveur oublié.
-**Garde-fou :** `listeningPids` lit IPv4 et IPv6, et reconnaît l'écoute à l'adresse distante nulle plutôt qu'au mot « LISTENING » ; testé dans `tests/devStop.test.ts`, et vérifié sur un vrai serveur.
-
-### 2026-11-15 — `correction-humaine` — Recherche par catégorie trop large
-Les mots de catégorie avaient été ajoutés au texte indexé : « on » ramenait tous les donjons, dans la palette et dans la fenêtre principale.
-**Garde-fou :** `matchesCategory` (début de mot-clé, 2 lettres au moins) et tests dans `tests/searchRank.test.ts`.
-
 ### 2026-11-14 — `violation-principe` — Coche de copie superposée au repère de zone
 Sur une carte à deux étapes, la coche recouvrait le « 1 » ou le « 2 ». Vu seulement à l'écran, aucun test ne pouvait le détecter.
 **Garde-fou :** aucun test possible ; contrôle visuel obligatoire de tout changement de carte (voir `ui-da-pnj`).
 
-### 2026-11-15 — `outil-trompeur` — Script en ligne cassé par les guillemets
-Une longue commande avec un script Node en ligne et du texte français (apostrophes, accents graves) a échoué à l'analyse du shell.
-**Garde-fou :** écrire le script dans un fichier temporaire, puis l'exécuter. Pas de script de plus de quelques lignes en ligne de commande.
-
-### 2026-11-15 — `test-fragile` — Seuil de 50 ms de `palettePerf.test.ts` sous charge
-Pendant l'issue n°12 (CSS seul), un `npm run check` a échoué une fois sur ce test (« requête … < 50 ms »), puis neuf passages consécutifs ont réussi. Cause : machine chargée par plusieurs worktrees qui testaient en parallèle, pas le code.
-**Garde-fou :** aucun, à surveiller. Si cela se reproduit, mesurer une médiane sur plusieurs passes plutôt qu'un passage unique.
-
-### 2026-11-15 — `outil-trompeur` — Worktrees parallèles : ports et cache Vite partagés
-Le port choisi pour un second serveur Vite était déjà pris par une autre tâche, et Vite annonce « Re-optimizing dependencies because vite config has changed » : `node_modules` est un lien vers le même dossier, donc le cache `node_modules/.vite` est commun à tous les worktrees.
-**Garde-fou :** aucun, à surveiller. Un port par tâche, fixé dans la consigne, avec `--strictPort`.
-
 ### 2026-11-14 — `non-vérifié` — Partie native jamais lancée
 La palette, les raccourcis configurables, l'import d'images, l'ouverture du dossier de données et les mises à jour ont été écrits sans pouvoir être exécutés. La CI prouve qu'ils compilent.
-**Garde-fou :** listes de tests manuels dans les commentaires de clôture des issues n°3, n°4, n°5 et n°6. À retirer d'ici quand l'utilisateur les aura déroulées.
-
-### 2026-11-15 — `violation-principe` — Réécriture d'un fichier que l'on ne comprend qu'en partie
-Première version du dictionnaire d'alias (issue n°10) : `aliases.json` était relu de façon tolérante puis réécrit en entier. Une entrée illisible par cette version, une clé inconnue dans une entrée ou une `schemaVersion` plus récente disparaissaient donc sans message à la première action. Trouvé en revue.
-**Garde-fou :** `mergeUserAliases` conserve ce qu'il ne comprend pas, `aliasesFileProblem` interdit toute écriture sur un fichier d'une version plus récente ou d'une forme inattendue ; tests dans `tests/aliases.test.ts`. Règle à retenir pour tout nouveau fichier de données : lecture tolérante ne veut pas dire réécriture destructive.
-
-### 2026-11-15 — `test-fragile` — Filtrer après avoir cherché annule la seconde passe
-La reprise Farm par position cherchait dans tout le catalogue puis ne gardait que les parcours. La tolérance aux fautes ne se déclenchant que si la recherche exacte ne trouve rien, un PNJ au nom proche suffisait à l'empêcher. Trouvé en revue.
-**Garde-fou :** `searchIndexRank` reçoit le filtre (`accept`) et l'applique AVANT de décider de la seconde passe ; tests dans `tests/searchIndex.test.ts` et `tests/paletteEntries.test.ts`.
-
-### 2026-11-15 — `test-fragile` — Bandeau d'erreur jamais effacé quand on saute un rechargement
-En ne revalidant plus le catalogue quand son texte n'a pas changé, la palette n'effaçait plus une erreur de chargement passagère. Trouvé en revue.
-**Garde-fou :** deux états distincts dans `Palette.tsx` (erreur de lecture, effacée à chaque succès ; catalogue invalide, liée au texte du fichier). Aucun test : à contrôler sur l'application installée.
-
-### 2026-11-15 — `non-vérifié` — Issue n°10 sur l'application installée
-Le Rust (`store_file("aliases")`) n'a pas été compilé en local (bibliothèques système absentes) : validé par la CI. Non exécutés : écriture réelle de `aliases.json` et de son `.bak`, survie des alias à une mise à jour installée, palette devant le jeu avec un alias, rubrique « Alias » sous WebView2 et à 150 %.
-**Garde-fou :** liste de tests manuels dans la description de la PR.
-
-### 2026-11-15 — `outil-trompeur` — Chrome sans affichage se déclare `hover: none`
-Toutes les règles `@media (hover: hover)` étaient ignorées : l'étoile apparaissait « toujours visible » alors que le CSS était correct. `Emulation.setEmulatedMedia` ne sait pas émuler `hover`. Pire, `page.setViewport` de puppeteer réinitialise le type de survol en cours de script.
-**Garde-fou :** lancer Chrome avec `--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4`, vérifier `matchMedia('(hover: hover)')` avant chaque mesure, et changer d'échelle par `Emulation.setDeviceMetricsOverride` plutôt que `setViewport`. Survol d'un élément : `CSS.forcePseudoState`.
-
-### 2026-11-15 — `violation-principe` — Captures AVANT écrasées
-Le script de captures relancé avec l'étiquette `avant` après les modifications a remplacé l'état de référence. Rattrapé en remisant (`git stash`) le travail le temps de refaire les captures.
-**Garde-fou :** aucun, à surveiller ; faire les captures AVANT dans un dossier à part et ne plus y écrire ensuite.
-
-### 2026-11-15 — `violation-principe` — « Amener la carte à l'écran » ne fonctionnait pas
-Après un enregistrement, la grille était déjà rendue avec la nouvelle destination quand `revealRef` était posé : l'effet qui fait défiler ne se relançait plus, la carte créée restait hors de l'écran (constaté sur `main` à 6 500 destinations, issue n°14). Aucun test ne le voyait.
-**Garde-fou :** compteur `revealTick` qui relance l'effet ; le défilement est calculé (`scrollTopToReveal`, `tests/gridWindow.test.ts`) car la carte n'est plus forcément dans le DOM. Contrôle navigateur : `/home/claude/scratch/t14/create.mjs` (hors dépôt), à refaire dans tout changement de la grille.
-
-### 2026-11-15 — `non-vérifié` — Zone de notification et palette préchargée (issue n°14)
-Tout le Rust (`main_window.rs`, `tray.rs`, `palette.rs`, `lib.rs`, fonctionnalité `tray-icon`) a été écrit sans être compilé ni exécuté : `cargo` n'a pas pu construire le projet en local (bibliothèques système absentes). Signatures relues dans les sources de Tauri 2.12.5, syntaxe contrôlée par `rustfmt`, rien de plus. La CI Windows doit d'abord compiler et passer `cargo test`.
-À dérouler sur l'application installée :
-1. Icône présente dans la zone de notification, infobulle « Map Traveller », icône de l'application (pas un carré vide).
-2. Clic gauche : masque / affiche la fenêtre ; clic droit : menu Afficher, Ouvrir la palette, Quitter ; aucun menu au clic gauche.
-3. Réduire (réglage actif) : fenêtre disparue, absente de la barre des tâches ; le Gestionnaire des tâches montre moins de processus `msedgewebview2.exe` (seule la palette reste chargée).
-4. Retour par l'icône, par « Afficher », par `Ctrl+Alt+T`, par un second lancement : la fenêtre revient à sa position et à sa taille d'avant, épingle et catalogue corrects.
-5. `Ctrl+Alt+T` fenêtre visible : zone de notification (réglage actif) ; réglage désactivé : simple masquage, et réduire va dans la barre des tâches.
-6. Formulaire ouvert avec une saisie : réduire et `Ctrl+Alt+T` ne détruisent pas la fenêtre ; la saisie est intacte au retour.
-7. Fermer (croix) et « Quitter » terminent le processus (plus aucun `MapTraveller.exe`). Fenêtre détruite : le processus reste vivant (icône, raccourcis).
-8. Palette : première ouverture immédiate après le lancement ; fonctionne fenêtre principale détruite ; « Ouvrir la palette » du menu l'affiche et lui donne le focus.
-9. Mise à jour (mode automatique) : la relance après installation fonctionne toujours (sortie avec code, non bloquée).
-10. Appuis très rapides (réduire puis `Ctrl+Alt+T` immédiatement) : pas d'erreur, pas de deux fenêtres.
-**Garde-fou :** cette liste, à reporter dans le commentaire de clôture de l'issue n°14 ; à retirer d'ici quand l'utilisateur l'aura déroulée.
-
-### 2026-11-16 — `non-vérifié` — Palette à hauteur dynamique (issue n°19)
-La hauteur du contenu est vérifiée dans le navigateur (48 px pour la barre seule, 124 px pour une ligne, 404 px pour une liste pleine, un seul changement par variation réelle). Le redimensionnement de la FENÊTRE (`set_palette_height`, `set_size` sur une fenêtre `resizable: false`) n'a jamais été exécuté : pas de `cargo` utilisable en local, la CI prouve seulement qu'il compile et que le bornage est testé.
-**À contrôler sur l'application installée :** la fenêtre s'ouvre réduite à la barre ; elle grandit et se rétracte à la frappe sans clignotement ; la barre ne bouge pas ; un clic juste sous la barre atteint bien la fenêtre du dessous ; mise à l'échelle 150 % ; second écran.
-**Garde-fou :** `clamp_height` testé en Rust ; si `set_size` est refusé, l'erreur est journalisée et la fenêtre garde sa taille.
-
-
-### 2026-11-16 — `test-fragile` — Seuils de `palettePerf.test.ts`, deuxième occurrence
-Lot 2 de l'issue n°13 (apparence et textes seulement, aucun code de recherche touché) : `npm run check:full` a échoué trois fois de suite sur « requête « vilel123 » < 50 ms » (53 à 69 ms) et une fois sur « construction de l'index < 300 ms » (334 ms). Lancé seul, le fichier passe 4 fois sur 4 ; toute la suite passe avec `vitest run --no-file-parallelism` (377 tests). Cause : 21 fichiers testés en parallèle sur 8 cœurs, avec d'autres worktrees actifs.
-**Garde-fou :** aucun encore. Vue deux fois, l'erreur doit devenir un garde-fou : mesurer une médiane sur plusieurs passes, ou isoler ce fichier (`poolMatchGlobs` / projet Vitest séparé sans parallélisme). À décider avec l'utilisateur.
-
-### 2026-11-17 — `test-fragile` — `palettePerf.test.ts`, troisième occurrence
-Issue n°8 (catalogue livré, aucun code de recherche touché) : `npm run check:full` a échoué sur « requête «  » < 50 ms » (53 ms) ; lancé seul, le fichier passe. **Garde-fou :** toujours aucun ; à décider avec l'utilisateur (médiane sur plusieurs passes, ou fichier isolé sans parallélisme).
-
-### 2026-11-17 — `revue` — Noms de cartes coupés avant le lieu (issue n°8)
-Contrôle dans le navigateur : « Atelier des alchimistes · Bonta » tronqué sur deux lignes, le lieu disparaissait et vingt cartes semblaient identiques. Corrigé dans le générateur : le métier puis le lieu (« Alchimiste · Bonta »), le nom complet en alias. **Garde-fou :** pour un nom fabriqué, mettre ce qui distingue au début.
-
-### 2026-11-17 — `non-vérifié` — Catalogue livré : images et ajout aux catalogues existants (issue n°8)
-Rust non compilé en local : `copy_missing_images` et la ressource `resources/images/` (`tauri.conf.json`) ne sont prouvés que par la CI. Le navigateur de développement lit les images dans `resources/` : il ne prouve ni la copie, ni le protocole `asset:`.
-**À contrôler sur l'application installée :** installation neuve → 355 cartes avec images ; mise à jour depuis 0.8.0 → les entrées livrées s'ajoutent aux cartes existantes, sans toucher aux cartes de l'utilisateur ; supprimer une carte livrée puis relancer → elle ne revient pas ; dossier `images/` complété sans remplacer un fichier présent.
-Commandes non testées en jeu : le zaap le plus proche « à vol d'oiseau » peut être de l'autre côté de la mer (ex. Château Ensablé, zaap de Pandala).
+**Garde-fou :** [recette-v1.md](recette-v1.md), à dérouler avant la 1.0.

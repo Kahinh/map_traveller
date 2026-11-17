@@ -7,15 +7,20 @@
 //!   existant y sont ajoutées par l'interface (`src/features/catalog/official.ts`).
 //! - Images du catalogue livré (`resources/images/`) : copiées dans `images/` à chaque lancement
 //!   quand elles y manquent ; un fichier déjà présent n'est jamais remplacé.
-//! - Écriture atomique : `*.tmp` puis renommage ; copie `*.bak` de la version précédente.
+//! - Écriture atomique et durable (`replace_file`) : `*.tmp` écrit puis synchronisé sur le disque,
+//!   puis renommé ; copie `*.bak` de la version précédente par le même chemin (`write_atomic`).
+//! - Lecture avant réécriture (`read_json_object_for_write`) : une erreur d'E/S autre que
+//!   « fichier absent » n'écrit rien, pour ne jamais remplacer un fichier qu'on n'a pas pu lire.
 //! - Le contenu est validé comme JSON avant écriture ; la validation métier est faite côté TS.
 //! - `settings.json` a deux auteurs : l'interface (`save_store`) et Rust (`shortcuts::set_shortcut`).
 //!   Les deux écritures passent par le même verrou, et la clé `shortcuts` n'appartient qu'à Rust :
 //!   `save_store` la reprend toujours du fichier sur disque, jamais du contenu envoyé par l'interface.
 
-use std::fs;
+use std::fs::{self, File};
+use std::io::{self, ErrorKind, Write};
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
+use std::time::Duration;
 
 use serde_json::{Map, Value};
 use tauri::path::BaseDirectory;
@@ -39,16 +44,35 @@ pub fn lock_settings() -> MutexGuard<'static, ()> {
     SETTINGS_LOCK.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// Objet JSON contenu dans `path`. Fichier absent, illisible ou qui n'est pas un objet :
-/// objet vide (lecture tolérante, jamais d'erreur).
-pub fn read_json_object(path: &Path) -> Map<String, Value> {
-    let text = match fs::read_to_string(path) {
-        Ok(text) => text,
-        Err(_) => return Map::new(),
-    };
-    match serde_json::from_str::<Value>(&text) {
+/// Objet JSON contenu dans `bytes` ; objet vide si ce n'est pas du JSON ou pas un objet.
+pub fn parse_json_object(bytes: &[u8]) -> Map<String, Value> {
+    match serde_json::from_slice::<Value>(bytes) {
         Ok(Value::Object(map)) => map,
         _ => Map::new(),
+    }
+}
+
+/// Objet JSON contenu dans `path`. Fichier absent, illisible ou qui n'est pas un objet :
+/// objet vide (lecture tolérante, jamais d'erreur). Pour LIRE un réglage seulement : avant
+/// une réécriture, utiliser `read_json_object_for_write`.
+pub fn read_json_object(path: &Path) -> Map<String, Value> {
+    fs::read(path)
+        .map(|bytes| parse_json_object(&bytes))
+        .unwrap_or_default()
+}
+
+/// Objet JSON contenu dans `path`, à fusionner puis réécrire. Fichier absent : objet vide.
+/// Autre erreur d'E/S (fichier verrouillé, droits) : erreur, et l'appelant n'écrit rien ; sinon
+/// une lecture ratée effacerait toutes les clés du fichier. Contenu invalide : objet vide (la
+/// version précédente reste dans le `.bak`).
+pub fn read_json_object_for_write(path: &Path) -> Result<Map<String, Value>, String> {
+    match fs::read(path) {
+        Ok(bytes) => Ok(parse_json_object(&bytes)),
+        Err(e) if e.kind() == ErrorKind::NotFound => Ok(Map::new()),
+        Err(e) => Err(format!(
+            "Lecture de {} impossible, rien n'a été écrit : {e}",
+            path.display()
+        )),
     }
 }
 
@@ -81,35 +105,92 @@ fn store_file(name: &str) -> Result<&'static str, String> {
     }
 }
 
-/// `%APPDATA%\MapTraveller` (créé si besoin, avec `images/`).
+/// Chemin du dossier de données, résolu une fois puis gardé en mémoire.
+static DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
+
+/// `%APPDATA%\MapTraveller`, avec `images/`. Le chemin est mis en cache, mais le dossier est
+/// recréé à chaque appel (coût négligeable) : s'il a été supprimé pendant que l'application
+/// tourne, les écritures suivantes réussissent sans redémarrage.
 pub fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    let dir = app
-        .path()
-        .data_dir()
-        .map_err(|e| format!("Dossier %APPDATA% introuvable : {e}"))?
-        .join(APP_DIR);
+    let dir = match DATA_DIR.get() {
+        Some(dir) => dir.clone(),
+        None => {
+            let dir = app
+                .path()
+                .data_dir()
+                .map_err(|e| format!("Dossier %APPDATA% introuvable : {e}"))?
+                .join(APP_DIR);
+            DATA_DIR.get_or_init(|| dir).clone()
+        }
+    };
     fs::create_dir_all(dir.join("images")).map_err(|e| format!("Création de {} impossible : {e}", dir.display()))?;
     Ok(dir)
 }
 
-/// Écrit `contents` dans `path` de façon atomique, en conservant l'ancienne version en `.bak`.
-pub fn write_atomic(path: &Path, contents: &str) -> Result<(), String> {
+/// Tentatives de renommage : sous Windows, un antivirus ou l'indexeur qui vient d'ouvrir le
+/// fichier fait échouer `rename` (accès refusé) pendant quelques millisecondes.
+const RENAME_ATTEMPTS: u32 = if cfg!(windows) { 5 } else { 1 };
+const RENAME_RETRY_DELAY: Duration = Duration::from_millis(50);
+
+/// `rename`, réessayé sur `PermissionDenied` (voir `RENAME_ATTEMPTS`). Sous Windows, `rename`
+/// remplace la cible existante (MoveFileEx + REPLACE_EXISTING).
+fn rename_with_retry(from: &Path, to: &Path) -> io::Result<()> {
+    let mut attempt = 1;
+    loop {
+        match fs::rename(from, to) {
+            Err(e) if e.kind() == ErrorKind::PermissionDenied && attempt < RENAME_ATTEMPTS => {
+                attempt += 1;
+                std::thread::sleep(RENAME_RETRY_DELAY);
+            }
+            result => return result,
+        }
+    }
+}
+
+/// `path` suivi de `suffix` (`catalog.json` → `catalog.json.tmp`).
+fn with_suffix(path: &Path, suffix: &str) -> Result<PathBuf, String> {
     let file_name = path
         .file_name()
         .and_then(|n| n.to_str())
         .ok_or_else(|| format!("Chemin invalide : {}", path.display()))?;
-    let tmp = path.with_file_name(format!("{file_name}.tmp"));
-    let bak = path.with_file_name(format!("{file_name}.bak"));
+    Ok(path.with_file_name(format!("{file_name}{suffix}")))
+}
 
-    fs::write(&tmp, contents).map_err(|e| format!("Écriture de {} impossible : {e}", tmp.display()))?;
-    if path.exists() {
-        fs::copy(path, &bak).map_err(|e| format!("Sauvegarde .bak impossible : {e}"))?;
+/// Remplace `path` par `contents` sans jamais laisser sous ce nom un fichier à moitié écrit :
+/// `*.tmp` écrit, synchronisé sur le disque (une coupure de courant après le renommage ne laisse
+/// pas un fichier vide) et fermé, puis renommé. Le `.tmp` est supprimé en cas d'échec.
+pub fn replace_file(path: &Path, contents: &[u8]) -> Result<(), String> {
+    let tmp = with_suffix(path, ".tmp")?;
+    // Le fichier est fermé à la fin de la fermeture : obligatoire avant `rename` sous Windows.
+    let written = File::create(&tmp).and_then(|mut out| {
+        out.write_all(contents)?;
+        out.sync_all()
+    });
+    if let Err(e) = written {
+        let _ = fs::remove_file(&tmp);
+        return Err(format!("Écriture de {} impossible : {e}", tmp.display()));
     }
-    // Sous Windows, `rename` remplace la cible existante (MoveFileEx + REPLACE_EXISTING).
-    fs::rename(&tmp, path).map_err(|e| {
+    rename_with_retry(&tmp, path).map_err(|e| {
         let _ = fs::remove_file(&tmp);
         format!("Remplacement de {} impossible : {e}", path.display())
     })
+}
+
+/// Écrit `contents` dans `path` (`replace_file`), en conservant l'ancienne version en `.bak`,
+/// écrite de la même façon.
+pub fn write_atomic(path: &Path, contents: &str) -> Result<(), String> {
+    match fs::read(path) {
+        Ok(previous) => replace_file(&with_suffix(path, ".bak")?, &previous)
+            .map_err(|e| format!("Sauvegarde .bak impossible : {e}"))?,
+        Err(e) if e.kind() == ErrorKind::NotFound => {}
+        Err(e) => {
+            return Err(format!(
+                "Lecture de {} impossible, rien n'a été écrit : {e}",
+                path.display()
+            ))
+        }
+    }
+    replace_file(path, contents.as_bytes())
 }
 
 /// Nom d'une image livrée : `<lettres, chiffres, ., _, ->.webp`, sans chemin.
@@ -117,7 +198,9 @@ fn is_bundled_image_name(name: &str) -> bool {
     name.len() > ".webp".len()
         && name.ends_with(".webp")
         && !name.starts_with('.')
-        && name.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
 }
 
 /// Copie dans `dest` les images de `src` qui y manquent. Ne remplace jamais un fichier présent.
@@ -135,13 +218,9 @@ fn copy_missing_images(src: &Path, dest: &Path) -> Result<usize, String> {
         if target.exists() {
             continue;
         }
-        // Copie sous un nom temporaire puis renommage : jamais d'image tronquée sous son vrai nom.
-        let tmp = dest.join(format!("{name}.tmp"));
-        fs::copy(entry.path(), &tmp).map_err(|e| format!("Copie de {name} impossible : {e}"))?;
-        fs::rename(&tmp, &target).map_err(|e| {
-            let _ = fs::remove_file(&tmp);
-            format!("Copie de {name} impossible : {e}")
-        })?;
+        // Jamais d'image tronquée sous son vrai nom (images livrées : quelques Ko chacune).
+        let data = fs::read(entry.path()).map_err(|e| format!("Copie de {name} impossible : {e}"))?;
+        replace_file(&target, &data).map_err(|e| format!("Copie de {name} impossible : {e}"))?;
         copied += 1;
     }
     Ok(copied)
@@ -180,12 +259,11 @@ pub fn ensure_initialized(app: &AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn load_store(app: AppHandle, name: String) -> Result<Option<String>, String> {
     let path = app_data_dir(&app)?.join(store_file(&name)?);
-    if !path.exists() {
-        return Ok(None);
+    match fs::read_to_string(&path) {
+        Ok(text) => Ok(Some(text)),
+        Err(e) if e.kind() == ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(format!("Lecture de {} impossible : {e}", path.display())),
     }
-    fs::read_to_string(&path)
-        .map(Some)
-        .map_err(|e| format!("Lecture de {} impossible : {e}", path.display()))
 }
 
 /// Enregistre un fichier de stockage après vérification que le contenu est du JSON valide.
@@ -197,7 +275,7 @@ pub fn save_store(app: AppHandle, name: String, json: String) -> Result<(), Stri
     let path = app_data_dir(&app)?.join(file);
     if file == SETTINGS_FILE {
         let _guard = lock_settings();
-        let merged = settings_from_ui(value, read_json_object(&path))?;
+        let merged = settings_from_ui(value, read_json_object_for_write(&path)?)?;
         return write_atomic(&path, &merged);
     }
     write_atomic(&path, &json)
@@ -261,6 +339,48 @@ mod tests {
         assert_eq!(fs::read_to_string(&file).unwrap(), "{\"v\":2}");
         assert_eq!(fs::read_to_string(dir.join("catalog.json.bak")).unwrap(), "{\"v\":1}");
         assert!(!dir.join("catalog.json.tmp").exists());
+        assert!(!dir.join("catalog.json.bak.tmp").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn replace_file_leaves_nothing_behind_on_failure() {
+        let dir = std::env::temp_dir().join(format!("map-traveller-replace-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("vignette.webp");
+        replace_file(&file, b"un").unwrap();
+        replace_file(&file, b"deux").unwrap();
+        assert_eq!(fs::read(&file).unwrap(), b"deux");
+        // Cible impossible à remplacer (un dossier non vide) : erreur, aucun `.tmp` restant.
+        let blocked = dir.join("bloque");
+        fs::create_dir_all(blocked.join("dedans")).unwrap();
+        assert!(replace_file(&blocked, b"x").is_err());
+        assert!(!dir.join("bloque.tmp").exists());
+        assert!(blocked.is_dir());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_for_write_refuses_unreadable_files() {
+        let dir = std::env::temp_dir().join(format!("map-traveller-for-write-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        assert_eq!(read_json_object_for_write(&dir.join("absent.json")), Ok(Map::new()));
+        let bad = dir.join("bad.json");
+        fs::write(&bad, "{ pas du json").unwrap();
+        assert_eq!(read_json_object_for_write(&bad), Ok(Map::new()));
+        let good = dir.join("good.json");
+        fs::write(&good, r#"{"a":1}"#).unwrap();
+        assert_eq!(
+            read_json_object_for_write(&good).unwrap().get("a"),
+            Some(&Value::from(1))
+        );
+        // Erreur d'E/S autre que « absent » (ici, un dossier) : rien ne doit être réécrit.
+        let unreadable = dir.join("dossier.json");
+        fs::create_dir_all(&unreadable).unwrap();
+        assert!(read_json_object_for_write(&unreadable).is_err());
+        assert!(read_json_object(&unreadable).is_empty());
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -321,7 +441,8 @@ mod tests {
 
     #[test]
     fn ui_shortcuts_are_dropped_when_file_has_none() {
-        let incoming: Value = serde_json::from_str(r#"{"alwaysOnTop":true,"shortcuts":{"palette":"Ctrl+Alt+P"}}"#).unwrap();
+        let incoming: Value =
+            serde_json::from_str(r#"{"alwaysOnTop":true,"shortcuts":{"palette":"Ctrl+Alt+P"}}"#).unwrap();
         let written: Value = serde_json::from_str(&settings_from_ui(incoming, Map::new()).unwrap()).unwrap();
         assert!(written.get(SHORTCUTS_KEY).is_none());
         assert_eq!(written["alwaysOnTop"], Value::Bool(true));

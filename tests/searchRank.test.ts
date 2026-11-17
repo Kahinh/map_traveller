@@ -1,26 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Destination } from '../src/features/catalog/schema';
-import { filterDestinations, rankDestinations } from '../src/features/catalog/search';
+import { filterDestinations } from '../src/features/catalog/search';
 import { buildSearchIndex, COST, searchIndexRank } from '../src/features/catalog/searchIndex';
+import { makeDestination } from './helpers/destination';
 
 // Coordonnées fictives uniquement.
-function dest(partial: Partial<Destination> & { id: string; name: string }): Destination {
-  return {
-    category: 'place',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/travel 0 0',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-    ...partial,
-  };
-}
+const dest = (partial: Partial<Destination> & { id: string; name: string }): Destination => makeDestination(partial);
 
 const ids = (list: Destination[]) => list.map((d) => d.id);
+const rankDestinations = (list: Destination[], query: string, favorites: ReadonlySet<string>) =>
+  searchIndexRank(buildSearchIndex(list), query, favorites);
 
 describe('classement de la recherche (palette §5.2)', () => {
   it('préfixe > début de mot > contenu > alias / tag / zone', () => {
@@ -104,6 +93,7 @@ describe('mots de catégorie cherchables', () => {
   it('« pnj » et « lieu » trouvent leur catégorie', () => {
     expect(ids(rankDestinations(list, 'pnj', new Set()))).toEqual(['garde']);
     expect(ids(rankDestinations(list, 'lieu', new Set()))).toEqual(['nom-donjon']);
+    expect(ids(rankDestinations(list, 'lieu tes', new Set()))).toEqual(['nom-donjon']);
   });
 
   it('s\'appliquent aussi à la recherche de la fenêtre principale', () => {
@@ -125,17 +115,7 @@ describe('mots de catégorie : début de mot-clé seulement', () => {
     expect(ids('donjons')).toEqual(['g']);
   });
 
-  it('une simple inclusion ne suffit pas : « on » ne ramène pas les donjons', () => {
-    expect(ids('on')).toEqual([]);
-    expect(ids('jon')).toEqual([]);
-  });
-
   it('une seule lettre ne désigne pas une catégorie', () => {
     expect(ids('f')).toEqual(['g']); // « fictive », pas la catégorie Farm
-  });
-
-  it('« farm tremble » trouve le parcours nommé « Tremble »', () => {
-    expect(ids('farm tremble')).toEqual(['t']);
-    expect(ids('lieu col')).toEqual(['c']);
   });
 });

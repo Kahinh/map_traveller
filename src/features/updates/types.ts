@@ -30,12 +30,6 @@ export type UpdaterBinding =
   | { available: false; reason: string }
   | { available: true; state: UpdateState; check: () => void; install: () => void };
 
-/** Valeur par défaut tant que le moteur de l'issue n°5 n'est pas livré. */
-export const UPDATER_NOT_AVAILABLE: UpdaterBinding = {
-  available: false,
-  reason: 'Disponible dans une prochaine version',
-};
-
 /** Vrai si une recherche peut être lancée depuis cet état (aucune opération en cours). */
 export function canCheckForUpdate(state: UpdateState): boolean {
   return state.status === 'idle' || state.status === 'up-to-date' || state.status === 'available' || state.status === 'error';

@@ -15,6 +15,12 @@ export default tseslint.config(
     },
   },
   {
+    // Scripts d'outillage (Node) : même socle de règles, globales de Node.
+    files: ['scripts/**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: globals.node },
+  },
+  {
     // Les fonctions pures ne doivent dépendre ni de Tauri ni de React.
     files: ['src/features/**/*.ts'],
     rules: {

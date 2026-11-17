@@ -1,5 +1,6 @@
-// Version unique de l'application, synchronisée dans les 3 fichiers qui la portent :
-// package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml.
+// Version unique de l'application, synchronisée dans les fichiers qui la portent :
+// package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml, src-tauri/Cargo.lock
+// (+ package-lock.json, réécrit mais non contrôlé).
 //
 //   node scripts/version.mjs              → affiche la version de chaque fichier
 //   node scripts/version.mjs 0.2.0        → écrit 0.2.0 partout
@@ -7,6 +8,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const root = new URL('../', import.meta.url);
+const CARGO_LOCK_PACKAGE = /^(\[\[package\]\]\r?\nname = "map-traveller"\r?\nversion = ")([^"]+)(")/m;
 const files = {
   'package.json': {
     read: (s) => JSON.parse(s).version,
@@ -20,6 +22,11 @@ const files = {
     // Première clé `version` = celle de [package].
     read: (s) => /^version\s*=\s*"([^"]+)"/m.exec(s)?.[1],
     write: (s, v) => s.replace(/^(version\s*=\s*")[^"]+(")/m, `$1${v}$2`),
+  },
+  'src-tauri/Cargo.lock': {
+    // Paquet de l'application : sans cela, `cargo build --locked` (CI) refuse un lock périmé.
+    read: (s) => CARGO_LOCK_PACKAGE.exec(s)?.[2],
+    write: (s, v) => s.replace(CARGO_LOCK_PACKAGE, `$1${v}$3`),
   },
 };
 
@@ -39,7 +46,7 @@ if (args.length === 0) {
     console.error('Lancer `npm run version:set -- <version>` puis committer avant de tagger.');
     process.exit(1);
   }
-  console.log(`Version ${expected} cohérente dans les 3 fichiers.`);
+  console.log(`Version ${expected} cohérente dans les ${Object.keys(files).length} fichiers.`);
 } else {
   const v = args[0];
   if (!SEMVER.test(v)) {

@@ -24,6 +24,7 @@ use tauri::{AppHandle, Manager, WebviewWindow, WebviewWindowBuilder, Window};
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 use crate::storage::{app_data_dir, read_json_object, SETTINGS_FILE};
+use crate::{spawn_logged, window_config};
 
 /// Libellé de la fenêtre principale (`tauri.conf.json`, `capabilities/default.json`).
 pub const MAIN_LABEL: &str = "main";
@@ -66,10 +67,7 @@ enum Fallback {
 
 /// Valeur de `tray.minimizeToTray` : seul un booléen est lu, `true` sinon (défaut).
 pub fn minimize_to_tray_enabled(settings: &Map<String, Value>) -> bool {
-    match settings
-        .get(TRAY_KEY)
-        .and_then(|tray| tray.get(MINIMIZE_TO_TRAY_KEY))
-    {
+    match settings.get(TRAY_KEY).and_then(|tray| tray.get(MINIMIZE_TO_TRAY_KEY)) {
         Some(Value::Bool(enabled)) => *enabled,
         _ => true,
     }
@@ -107,15 +105,12 @@ pub fn show(app: &AppHandle) {
 
 fn run(app: &AppHandle, request: Request) {
     let app = app.clone();
-    std::thread::spawn(move || {
+    spawn_logged(move || {
         let _guard = ACTION_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
-        let result = match request {
+        match request {
             Request::Toggle => toggle_now(&app),
             Request::Show => show_now(&app),
             Request::Minimize => minimize_now(&app),
-        };
-        if let Err(e) = result {
-            eprintln!("{e}");
         }
     });
 }
@@ -123,8 +118,7 @@ fn run(app: &AppHandle, request: Request) {
 fn toggle_now(app: &AppHandle) -> Result<(), String> {
     match app.get_webview_window(MAIN_LABEL) {
         Some(window) => {
-            let visible =
-                window.is_visible().unwrap_or(false) && !window.is_minimized().unwrap_or(false);
+            let visible = window.is_visible().unwrap_or(false) && !window.is_minimized().unwrap_or(false);
             if visible {
                 put_away(app, &window, Fallback::Hide)
             } else {
@@ -188,14 +182,7 @@ fn reveal(window: &WebviewWindow) -> Result<(), String> {
 /// Recrée la fenêtre à partir de `tauri.conf.json` (taille, sans décorations, premier plan…) ;
 /// le plugin window-state lui rend sa position et sa taille.
 fn create_and_show(app: &AppHandle) -> Result<(), String> {
-    let config = app
-        .config()
-        .app
-        .windows
-        .iter()
-        .find(|w| w.label == MAIN_LABEL)
-        .cloned()
-        .ok_or_else(|| "Fenêtre principale absente de tauri.conf.json.".to_string())?;
+    let config = window_config(app, MAIN_LABEL)?;
     // Nouvelle page : aucun formulaire ouvert.
     BUSY.store(false, Ordering::SeqCst);
     let window = WebviewWindowBuilder::from_config(app, &config)

@@ -1,9 +1,14 @@
 //! Icône de la zone de notification (issue n°14).
 //!
 //! - Icône par défaut de l'application, infobulle « Map Traveller ».
-//! - Clic gauche : afficher / masquer la fenêtre principale (même action que le raccourci).
+//! - Clic gauche : afficher / masquer la fenêtre principale (même action que le raccourci). Un
+//!   clic reçu moins de `CLICK_DEBOUNCE` après le précédent est ignoré : un double-clic (réflexe
+//!   courant sur une icône de notification) ne doit pas afficher puis aussitôt remasquer.
 //! - Clic droit : menu Afficher, Ouvrir la palette, Quitter.
 //! - Aucune permission côté interface : tout est géré ici, en Rust.
+
+use std::sync::{Mutex, PoisonError};
+use std::time::{Duration, Instant};
 
 use tauri::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
@@ -14,6 +19,12 @@ use crate::{main_window, palette};
 const TRAY_ID: &str = "map-traveller";
 const TOOLTIP: &str = "Map Traveller";
 
+/// Délai sous lequel un second clic gauche est ignoré (voir l'en-tête du module).
+const CLICK_DEBOUNCE: Duration = Duration::from_millis(500);
+
+/// Instant du dernier clic gauche reçu, pris en compte ou non.
+static LAST_CLICK: Mutex<Option<Instant>> = Mutex::new(None);
+
 const MENU_SHOW: &str = "tray-show";
 const MENU_PALETTE: &str = "tray-palette";
 const MENU_QUIT: &str = "tray-quit";
@@ -21,16 +32,12 @@ const MENU_QUIT: &str = "tray-quit";
 /// Crée l'icône et son menu. Appelée une fois, dans `setup`.
 pub fn init(app: &AppHandle) -> Result<(), String> {
     let menu_error = |e: tauri::Error| format!("Menu de la zone de notification impossible : {e}");
-    let show =
-        MenuItem::with_id(app, MENU_SHOW, "Afficher", true, None::<&str>).map_err(menu_error)?;
+    let show = MenuItem::with_id(app, MENU_SHOW, "Afficher", true, None::<&str>).map_err(menu_error)?;
     let open_palette =
-        MenuItem::with_id(app, MENU_PALETTE, "Ouvrir la palette", true, None::<&str>)
-            .map_err(menu_error)?;
+        MenuItem::with_id(app, MENU_PALETTE, "Ouvrir la palette", true, None::<&str>).map_err(menu_error)?;
     let separator = PredefinedMenuItem::separator(app).map_err(menu_error)?;
-    let quit =
-        MenuItem::with_id(app, MENU_QUIT, "Quitter", true, None::<&str>).map_err(menu_error)?;
-    let menu =
-        Menu::with_items(app, &[&show, &open_palette, &separator, &quit]).map_err(menu_error)?;
+    let quit = MenuItem::with_id(app, MENU_QUIT, "Quitter", true, None::<&str>).map_err(menu_error)?;
+    let menu = Menu::with_items(app, &[&show, &open_palette, &separator, &quit]).map_err(menu_error)?;
 
     let mut builder = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip(TOOLTIP)
@@ -65,6 +72,32 @@ fn on_tray_icon_event(tray: &TrayIcon, event: TrayIconEvent) {
         ..
     } = event
     {
-        main_window::toggle(tray.app_handle());
+        let mut last = LAST_CLICK.lock().unwrap_or_else(PoisonError::into_inner);
+        let now = Instant::now();
+        let accepted = accepts_click(*last, now);
+        *last = Some(now);
+        drop(last);
+        if accepted {
+            main_window::toggle(tray.app_handle());
+        }
+    }
+}
+
+/// Vrai si un clic à `now` doit agir, le précédent ayant eu lieu à `previous`.
+fn accepts_click(previous: Option<Instant>, now: Instant) -> bool {
+    previous.is_none_or(|at| now.saturating_duration_since(at) >= CLICK_DEBOUNCE)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quick_second_click_is_ignored() {
+        let start = Instant::now();
+        assert!(accepts_click(None, start));
+        assert!(!accepts_click(Some(start), start + Duration::from_millis(200)));
+        assert!(accepts_click(Some(start), start + CLICK_DEBOUNCE));
+        assert!(accepts_click(Some(start), start + Duration::from_secs(2)));
     }
 }

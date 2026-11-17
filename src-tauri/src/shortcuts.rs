@@ -21,7 +21,10 @@ use serde_json::{json, Map, Value};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
-use crate::storage::{app_data_dir, lock_settings, read_json_object, write_atomic, SETTINGS_FILE, SHORTCUTS_KEY};
+use crate::storage::{
+    app_data_dir, lock_settings, read_json_object, read_json_object_for_write, write_atomic, SETTINGS_FILE,
+    SHORTCUTS_KEY,
+};
 
 /// Défauts : `Ctrl+Alt+T` (fenêtre principale), `Ctrl+Alt+Space` (palette). Éviter `Alt+Espace`
 /// (menu système de Windows) et `Ctrl+Espace` (changement de méthode de saisie).
@@ -272,15 +275,15 @@ pub fn parse_accelerator(input: &str) -> Result<Accelerator, String> {
     let mut modifiers = Modifiers::empty();
     let mut parts: Vec<String> = Vec::new();
     if ctrl {
-        modifiers = modifiers | Modifiers::CONTROL;
+        modifiers |= Modifiers::CONTROL;
         parts.push("Ctrl".to_string());
     }
     if alt {
-        modifiers = modifiers | Modifiers::ALT;
+        modifiers |= Modifiers::ALT;
         parts.push("Alt".to_string());
     }
     if shift {
-        modifiers = modifiers | Modifiers::SHIFT;
+        modifiers |= Modifiers::SHIFT;
         parts.push("Shift".to_string());
     }
     parts.push(key_name);
@@ -292,7 +295,7 @@ pub fn parse_accelerator(input: &str) -> Result<Accelerator, String> {
 }
 
 /// Raccourci d'une action lu dans `settings.json` ; valeur par défaut si absent ou invalide.
-fn pick(settings: &Value, action: Action) -> Accelerator {
+fn pick(settings: &Map<String, Value>, action: Action) -> Accelerator {
     let text = settings
         .get(SHORTCUTS_KEY)
         .and_then(|shortcuts| shortcuts.get(action.key()))
@@ -303,9 +306,9 @@ fn pick(settings: &Value, action: Action) -> Accelerator {
     }
 }
 
-/// Raccourcis de démarrage d'après le contenu de `settings.json` (`Value::Null` si illisible).
+/// Raccourcis de démarrage d'après le contenu de `settings.json` (objet vide si illisible).
 /// Si les deux actions ont le même raccourci, les deux reviennent aux valeurs par défaut.
-pub fn resolve(settings: &Value) -> (Accelerator, Accelerator) {
+pub fn resolve(settings: &Map<String, Value>) -> (Accelerator, Accelerator) {
     let toggle_main = pick(settings, Action::ToggleMain);
     let palette = pick(settings, Action::Palette);
     if toggle_main.shortcut == palette.shortcut {
@@ -317,11 +320,6 @@ pub fn resolve(settings: &Value) -> (Accelerator, Accelerator) {
     (toggle_main, palette)
 }
 
-/// Contenu de `settings.json` lu de façon tolérante : `Value::Null` si absent ou illisible.
-pub fn parse_settings_text(text: &str) -> Value {
-    serde_json::from_str::<Value>(text).unwrap_or(Value::Null)
-}
-
 /// Réglages existants avec les deux raccourcis remplacés ; toutes les autres clés, y compris
 /// d'éventuelles sous-clés inconnues de `shortcuts`, sont conservées.
 pub fn merge_shortcuts(settings: Map<String, Value>, toggle_main: &str, palette: &str) -> Map<String, Value> {
@@ -330,7 +328,10 @@ pub fn merge_shortcuts(settings: Map<String, Value>, toggle_main: &str, palette:
         Some(Value::Object(map)) => map,
         _ => Map::new(),
     };
-    shortcuts.insert(Action::ToggleMain.key().to_string(), Value::String(toggle_main.to_string()));
+    shortcuts.insert(
+        Action::ToggleMain.key().to_string(),
+        Value::String(toggle_main.to_string()),
+    );
     shortcuts.insert(Action::Palette.key().to_string(), Value::String(palette.to_string()));
     settings.insert(SHORTCUTS_KEY.to_string(), Value::Object(shortcuts));
     settings
@@ -353,17 +354,6 @@ fn bindings_json(bindings: &Bindings) -> Value {
 // Intégration (état géré, plugin, disque)
 // ---------------------------------------------------------------------------------------------
 
-fn read_settings(app: &AppHandle) -> Value {
-    let path = match app_data_dir(app) {
-        Ok(dir) => dir.join(SETTINGS_FILE),
-        Err(_) => return Value::Null,
-    };
-    match std::fs::read_to_string(&path) {
-        Ok(text) => parse_settings_text(&text),
-        Err(_) => Value::Null,
-    }
-}
-
 /// Enregistre un raccourci de démarrage ; un échec est mémorisé, jamais propagé.
 fn register_at_startup(app: &AppHandle, accelerator: Accelerator) -> Binding {
     let registered = match app.global_shortcut().register(accelerator.shortcut) {
@@ -384,7 +374,10 @@ fn register_at_startup(app: &AppHandle, accelerator: Accelerator) -> Binding {
 /// Au démarrage (`setup`) : lit les réglages, enregistre les deux raccourcis, crée l'état.
 /// Ne renvoie jamais d'erreur.
 pub fn init(app: &AppHandle) {
-    let settings = read_settings(app);
+    // Lecture tolérante : un fichier absent ou illisible donne les raccourcis par défaut.
+    let settings = app_data_dir(app)
+        .map(|dir| read_json_object(&dir.join(SETTINGS_FILE)))
+        .unwrap_or_default();
     let (toggle_main, palette) = resolve(&settings);
     let toggle_main = register_at_startup(app, toggle_main);
     let palette = register_at_startup(app, palette);
@@ -397,14 +390,13 @@ pub fn init(app: &AppHandle) {
 pub fn action_for(app: &AppHandle, shortcut: &Shortcut) -> Option<Action> {
     let store = app.try_state::<ShortcutStore>()?;
     let bindings = store.bindings.lock().unwrap_or_else(PoisonError::into_inner);
-    let action = if bindings.toggle_main.shortcut == *shortcut {
+    if bindings.toggle_main.shortcut == *shortcut {
         Some(Action::ToggleMain)
     } else if bindings.palette.shortcut == *shortcut {
         Some(Action::Palette)
     } else {
         None
-    };
-    action
+    }
 }
 
 /// Copie de l'état courant.
@@ -432,7 +424,7 @@ fn persist(app: &AppHandle, bindings: &Bindings) -> Result<(), String> {
     let path = app_data_dir(app)?.join(SETTINGS_FILE);
     let _guard = lock_settings();
     let merged = merge_shortcuts(
-        read_json_object(&path),
+        read_json_object_for_write(&path)?,
         &bindings.toggle_main.accelerator,
         &bindings.palette.accelerator,
     );
@@ -485,7 +477,10 @@ pub fn set_shortcut(app: AppHandle, action: String, accelerator: String) -> Resu
         }
         if !same && current.registered {
             if let Err(e) = app.global_shortcut().unregister(current.shortcut) {
-                eprintln!("Libération de l'ancien raccourci {} impossible : {e}", current.accelerator);
+                eprintln!(
+                    "Libération de l'ancien raccourci {} impossible : {e}",
+                    current.accelerator
+                );
             }
         }
     }
@@ -555,6 +550,11 @@ pub fn reset_shortcuts(app: AppHandle) -> Result<Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::parse_json_object;
+
+    fn settings(text: &str) -> Map<String, Value> {
+        parse_json_object(text.as_bytes())
+    }
 
     fn ctrl_alt(code: Code) -> Shortcut {
         Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), code)
@@ -623,25 +623,25 @@ mod tests {
             Action::Palette.default_accelerator(),
         );
         // Fichier absent ou illisible.
-        assert_eq!(resolve(&Value::Null), defaults);
-        assert_eq!(resolve(&parse_settings_text("")), defaults);
-        assert_eq!(resolve(&parse_settings_text("{ corrompu")), defaults);
-        assert_eq!(resolve(&parse_settings_text("[1, 2]")), defaults);
+        assert_eq!(resolve(&Map::new()), defaults);
+        assert_eq!(resolve(&settings("")), defaults);
+        assert_eq!(resolve(&settings("{ corrompu")), defaults);
+        assert_eq!(resolve(&settings("[1, 2]")), defaults);
         // Ancien format, sans raccourcis.
-        assert_eq!(resolve(&parse_settings_text(r#"{"alwaysOnTop":true}"#)), defaults);
+        assert_eq!(resolve(&settings(r#"{"alwaysOnTop":true}"#)), defaults);
         // Valeurs de mauvais type ou invalides : défaut, clé par clé.
-        assert_eq!(resolve(&parse_settings_text(r#"{"shortcuts":"Ctrl+Alt+K"}"#)), defaults);
-        let partial = resolve(&parse_settings_text(r#"{"shortcuts":{"toggleMain":42,"palette":"ctrl+alt+k"}}"#));
+        assert_eq!(resolve(&settings(r#"{"shortcuts":"Ctrl+Alt+K"}"#)), defaults);
+        let partial = resolve(&settings(r#"{"shortcuts":{"toggleMain":42,"palette":"ctrl+alt+k"}}"#));
         assert_eq!(partial.0, Action::ToggleMain.default_accelerator());
         assert_eq!(partial.1.text, "Ctrl+Alt+K");
-        let invalid = resolve(&parse_settings_text(r#"{"shortcuts":{"toggleMain":"T","palette":"Ctrl+Alt+P"}}"#));
+        let invalid = resolve(&settings(r#"{"shortcuts":{"toggleMain":"T","palette":"Ctrl+Alt+P"}}"#));
         assert_eq!(invalid.0, Action::ToggleMain.default_accelerator());
         assert_eq!(invalid.1.text, "Ctrl+Alt+P");
     }
 
     #[test]
     fn resolve_refuses_duplicates() {
-        let both = resolve(&parse_settings_text(
+        let both = resolve(&settings(
             r#"{"shortcuts":{"toggleMain":"Ctrl+Alt+K","palette":"alt+ctrl+k"}}"#,
         ));
         assert_eq!(both.0, Action::ToggleMain.default_accelerator());
@@ -650,12 +650,8 @@ mod tests {
 
     #[test]
     fn merge_keeps_other_keys() {
-        let existing = match parse_settings_text(
-            r#"{"alwaysOnTop":false,"futur":{"a":1},"shortcuts":{"toggleMain":"Ctrl+Alt+T","autre":"x"}}"#,
-        ) {
-            Value::Object(map) => map,
-            other => panic!("objet attendu : {other}"),
-        };
+        let existing =
+            settings(r#"{"alwaysOnTop":false,"futur":{"a":1},"shortcuts":{"toggleMain":"Ctrl+Alt+T","autre":"x"}}"#);
         let merged = Value::Object(merge_shortcuts(existing, "Ctrl+Alt+M", "Ctrl+Alt+P"));
         assert_eq!(merged["alwaysOnTop"], Value::Bool(false));
         assert_eq!(merged["futur"]["a"], Value::from(1));

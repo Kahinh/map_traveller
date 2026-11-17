@@ -1,6 +1,7 @@
 // Attend un build GitHub Actions et résume son résultat : `npm run ci:watch [-- <id du run>]`.
-// Sans argument : le run le plus récent du commit courant. Le Rust n'étant pas compilable en
-// local (pas de cargo), c'est la boucle de validation du code natif.
+// Sans argument : le run le plus récent du commit courant. C'est la boucle de validation du code
+// natif sous Windows (code `cfg(windows)`, installateur), y compris quand cargo est installé en
+// local, et la seule quand il ne l'est pas.
 // Code de sortie : 0 si le build est vert, 1 sinon.
 import { execFileSync, spawnSync } from 'node:child_process';
 

@@ -5,9 +5,11 @@ description = "Map Traveller — copie de commandes /travel"
 edition = "2021"
 publish = false
 
+# Bibliothèque liée au binaire `MapTraveller` (et aux tests) ; application Windows seulement :
+# ni `staticlib` ni `cdylib`, qui ne servent qu'aux cibles mobiles.
 [lib]
 name = "map_traveller_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -17,8 +19,6 @@ tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
 serde_json = "1"
-
-[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-process = "2"
 tauri-plugin-single-instance = "2"

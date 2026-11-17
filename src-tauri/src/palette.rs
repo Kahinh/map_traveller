@@ -13,22 +13,32 @@
 //! - Affichage : placée sur l'écran principal (haut de fenêtre fixe, voir `center_on_primary`),
 //!   puis focus, puis événement `palette:shown`.
 //! - Perte de focus → masquée, sauf dans les `FOCUS_GRACE` qui suivent un affichage.
+//! - Masquage : un seul chemin (`hide`), quelle qu'en soit la cause (raccourci, perte de focus,
+//!   Échap ou copie par `hide_palette`, Alt+F4). Il masque la fenêtre, émet `palette:hidden` vers
+//!   la palette (qui se remet à zéro) et, sous Windows, met la WebView au repos
+//!   (`SetIsVisible(false)` : plus de rendu ni d'animation). Pas de suspension du processus :
+//!   la réouverture doit rester instantanée.
 //! - Le retour du focus à la fenêtre précédente est laissé au comportement natif de Windows.
 
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use tauri::{
-    App, AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, WebviewWindow,
-    WebviewWindowBuilder, Window, Wry,
+    App, AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, WebviewWindow, WebviewWindowBuilder, Window,
 };
+
+use crate::{spawn_logged, window_config};
 
 /// Libellé de la fenêtre : cible des capabilities (`capabilities/palette.json`) et exclue
 /// du plugin qui mémorise la position des fenêtres.
 pub const PALETTE_LABEL: &str = "palette";
 
 /// Événement émis vers la palette après chaque affichage (écouté par `src/lib/tauri/palette.ts`).
-const SHOWN_EVENT: &str = "palette:shown";
+pub const SHOWN_EVENT: &str = "palette:shown";
+
+/// Événement émis vers la palette après chaque masquage, quelle qu'en soit la cause : la page
+/// remet alors sa recherche à zéro, avant même la prochaine ouverture.
+pub const HIDDEN_EVENT: &str = "palette:hidden";
 
 /// Largeur logique de la palette ; doit rester égale à `width` de `tauri.conf.json`.
 const WIDTH: f64 = 560.0;
@@ -57,28 +67,72 @@ static SHOW_LOCK: Mutex<()> = Mutex::new(());
 pub fn toggle_palette(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(PALETTE_LABEL) {
         if window.is_visible().unwrap_or(false) {
-            let _ = window.hide();
+            if let Err(e) = hide(&window) {
+                eprintln!("{e}");
+            }
             return;
         }
     }
-    let app = app.clone();
-    std::thread::spawn(move || {
-        if let Err(e) = show_palette(&app) {
-            eprintln!("{e}");
-        }
-    });
+    open_palette(app);
 }
 
 /// Ouvre la palette (menu de la zone de notification) : comme `toggle_palette`, mais n'a jamais
 /// pour effet de la masquer.
 pub fn open_palette(app: &AppHandle) {
     let app = app.clone();
-    std::thread::spawn(move || {
-        if let Err(e) = show_palette(&app) {
-            eprintln!("{e}");
+    spawn_logged(move || show_palette(&app));
+}
+
+/// Masque la palette sans la détruire : seul chemin de masquage (voir l'en-tête du module).
+pub fn hide(window: &WebviewWindow) -> Result<(), String> {
+    // Déjà masquée : rien à faire. Chaque masquage fait perdre le focus, ce qui rappelle `hide` ;
+    // sans ce test, `palette:hidden` serait émis deux fois.
+    if !window.is_visible().unwrap_or(true) {
+        return Ok(());
+    }
+    window
+        .hide()
+        .map_err(|e| format!("Masquage de la palette impossible : {e}"))?;
+    let emitted = window
+        .emit_to(PALETTE_LABEL, HIDDEN_EVENT, ())
+        .map_err(|e| format!("Événement {HIDDEN_EVENT} non émis : {e}"));
+    set_webview_visible(window, false);
+    emitted
+}
+
+/// Masque la palette si elle existe (fenêtre reçue d'un événement : `Window`, pas `WebviewWindow`).
+fn hide_existing(app: &AppHandle) -> Result<(), String> {
+    match app.get_webview_window(PALETTE_LABEL) {
+        Some(window) => hide(&window),
+        None => Ok(()),
+    }
+}
+
+/// Alt+F4 sur la palette (`lib.rs`) : masquée, jamais détruite.
+pub fn on_close_requested(window: &Window) {
+    if let Err(e) = hide_existing(window.app_handle()) {
+        eprintln!("{e}");
+    }
+}
+
+/// Met la WebView au repos (ou la réveille) : WebView2 cesse de peindre et d'animer une page
+/// invisible. Sans objet hors Windows.
+#[cfg(windows)]
+fn set_webview_visible(window: &WebviewWindow, visible: bool) {
+    let result = window.with_webview(move |webview| {
+        // SAFETY : appel COM sur le contrôleur WebView2 de cette fenêtre, que Tauri exécute sur
+        // le fil de l'interface, propriétaire du contrôleur.
+        if let Err(e) = unsafe { webview.controller().SetIsVisible(visible) } {
+            eprintln!("Visibilité de la WebView de la palette non modifiée : {e}");
         }
     });
+    if let Err(e) = result {
+        eprintln!("WebView de la palette inaccessible : {e}");
+    }
 }
+
+#[cfg(not(windows))]
+fn set_webview_visible(_window: &WebviewWindow, _visible: bool) {}
 
 /// Crée la palette, masquée, si elle n'existe pas encore. Appelée dans `setup` (fil principal,
 /// avant la boucle d'événements). Un échec n'empêche pas le démarrage ; la palette sera alors
@@ -107,6 +161,8 @@ pub fn show_palette(app: &AppHandle) -> Result<(), String> {
     }
     center_on_primary(&window);
     mark_shown();
+    // Réveillée avant d'être montrée : jamais une fenêtre visible sur une WebView au repos.
+    set_webview_visible(&window, true);
     window
         .show()
         .map_err(|e| format!("Affichage de la palette impossible : {e}"))?;
@@ -114,19 +170,12 @@ pub fn show_palette(app: &AppHandle) -> Result<(), String> {
         eprintln!("Focus de la palette impossible : {e}");
     }
     app.emit_to(PALETTE_LABEL, SHOWN_EVENT, ())
-        .map_err(|e| format!("Événement {} non émis : {e}", SHOWN_EVENT))
+        .map_err(|e| format!("Événement {SHOWN_EVENT} non émis : {e}"))
 }
 
 /// Crée la fenêtre (invisible) à partir de sa déclaration dans `tauri.conf.json`.
-fn create_palette<M: Manager<Wry>>(app: &M) -> Result<WebviewWindow, String> {
-    let config = app
-        .config()
-        .app
-        .windows
-        .iter()
-        .find(|w| w.label == PALETTE_LABEL)
-        .cloned()
-        .ok_or_else(|| "Fenêtre palette absente de tauri.conf.json.".to_string())?;
+fn create_palette<M: Manager<tauri::Wry>>(app: &M) -> Result<WebviewWindow, String> {
+    let config = window_config(app, PALETTE_LABEL)?;
     let builder = WebviewWindowBuilder::from_config(app, &config)
         .map_err(|e| format!("Configuration de la palette invalide : {e}"))?;
     builder
@@ -180,18 +229,15 @@ pub fn on_focus_lost(window: &Window) {
     if window.label() != PALETTE_LABEL || shown_recently() {
         return;
     }
-    let _ = window.hide();
+    if let Err(e) = hide_existing(window.app_handle()) {
+        eprintln!("{e}");
+    }
 }
 
-/// Masque la palette sans la détruire. Sans effet si elle n'a jamais été créée.
+/// Masque la palette sans la détruire (`hide`). Sans effet si elle n'a jamais été créée.
 #[tauri::command]
 pub fn hide_palette(app: AppHandle) -> Result<(), String> {
-    match app.get_webview_window(PALETTE_LABEL) {
-        Some(window) => window
-            .hide()
-            .map_err(|e| format!("Masquage de la palette impossible : {e}")),
-        None => Ok(()),
-    }
+    hide_existing(&app)
 }
 
 /// Hauteur à appliquer pour une hauteur demandée par l'interface : bornée entre la barre seule

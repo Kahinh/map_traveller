@@ -17,9 +17,55 @@ mod storage;
 mod tray;
 
 use main_window::MAIN_LABEL;
-use tauri::{Manager, RunEvent, WindowEvent};
+use tauri::utils::config::WindowConfig;
+use tauri::{Manager, RunEvent, WindowEvent, Wry};
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Déclaration d'une fenêtre dans `tauri.conf.json` : les fenêtres recréées (palette, fenêtre
+/// principale après la zone de notification) reprennent exactement ses propriétés.
+pub(crate) fn window_config<M: Manager<Wry>>(app: &M, label: &str) -> Result<WindowConfig, String> {
+    app.config()
+        .app
+        .windows
+        .iter()
+        .find(|w| w.label == label)
+        .cloned()
+        .ok_or_else(|| format!("Fenêtre « {label} » absente de tauri.conf.json."))
+}
+
+/// Exécute `task` sur un fil dédié et journalise son erreur. Sous Windows, créer ou afficher une
+/// fenêtre web depuis un gestionnaire du fil principal (raccourci, icône, menu) peut bloquer
+/// l'application : ces actions partent toujours d'ici.
+pub(crate) fn spawn_logged(task: impl FnOnce() -> Result<(), String> + Send + 'static) {
+    std::thread::spawn(move || {
+        if let Err(e) = task() {
+            eprintln!("{e}");
+        }
+    });
+}
+
+/// Échec du démarrage (dossier de données inutilisable) : message d'erreur, puis sortie quand
+/// l'utilisateur le ferme. Sans cela, l'erreur serait invisible (aucune console en release) et
+/// l'application semblerait ne jamais s'ouvrir.
+///
+/// `setup` s'exécute sur le fil principal, dans la boucle d'événements : un dialogue bloquant y
+/// attendrait cette boucle indéfiniment, et une erreur renvoyée ferait paniquer Tauri avant tout
+/// affichage. D'où un dialogue non bloquant, la fenêtre principale masquée (elle n'a aucune
+/// donnée à montrer) et une sortie explicite, avec un code, que `RunEvent::ExitRequested` laisse
+/// passer.
+fn report_startup_failure(app: &tauri::AppHandle, error: &str) {
+    eprintln!("{error}");
+    if let Some(main) = app.get_webview_window(MAIN_LABEL) {
+        let _ = main.hide();
+    }
+    let handle = app.clone();
+    app.dialog()
+        .message(format!("Map Traveller ne peut pas démarrer.\n\n{error}"))
+        .title("Map Traveller")
+        .kind(MessageDialogKind::Error)
+        .show(move |_| handle.exit(1));
+}
+
 pub fn run() {
     use tauri_plugin_global_shortcut::ShortcutState;
 
@@ -66,14 +112,17 @@ pub fn run() {
                 } else if window.label() == palette::PALETTE_LABEL {
                     // Alt+F4 sur la palette : masquée, jamais détruite.
                     api.prevent_close();
-                    let _ = window.hide();
+                    palette::on_close_requested(window);
                 }
             }
             WindowEvent::Focused(false) => palette::on_focus_lost(window),
             _ => {}
         })
         .setup(|app| {
-            storage::ensure_initialized(app.handle())?;
+            if let Err(e) = storage::ensure_initialized(app.handle()) {
+                report_startup_failure(app.handle(), &e);
+                return Ok(());
+            }
             // Ne renvoie jamais d'erreur : un raccourci indisponible n'empêche pas le démarrage.
             shortcuts::init(app.handle());
             // Zone de notification : un échec n'empêche pas le démarrage ; la fenêtre principale

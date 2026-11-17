@@ -93,11 +93,13 @@ function place(subAreaId) {
 const indoorWorld = (subAreaId) => (place(subAreaId).area === 'Incarnam' ? 'incarnam' : 'douze');
 
 const collator = new Intl.Collator('fr', { sensitivity: 'base' });
+const compareIds = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 function nearestZaap(world, x, y) {
   const list = zaaps
     .filter((z) => z.world === world)
     .map((z) => ({ z, d: Math.abs(z.x - x) + Math.abs(z.y - y) }))
-    .sort((a, b) => a.d - b.d || collator.compare(a.z.name, b.z.name) || (a.z.id < b.z.id ? -1 : 1));
+    // Comparateur cohérent, comme l’exige `sort` : 0 quand les deux éléments sont le même zaap.
+    .sort((a, b) => a.d - b.d || collator.compare(a.z.name, b.z.name) || compareIds(a.z.id, b.z.id));
   if (list.length === 0) throw new Error(`Aucun zaap dans le monde ${world}`);
   return list[0];
 }

@@ -264,9 +264,8 @@ pub fn parse_accelerator(input: &str) -> Result<Accelerator, String> {
         }
     }
 
-    let (code, key_name) = match key {
-        Some(found) => found,
-        None => return Err("Il manque une touche après les modificateurs.".to_string()),
+    let Some((code, key_name)) = key else {
+        return Err("Il manque une touche après les modificateurs.".to_string());
     };
     if !ctrl && !alt {
         return Err("Le raccourci doit contenir Ctrl ou Alt.".to_string());

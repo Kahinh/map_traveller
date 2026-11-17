@@ -189,12 +189,9 @@ fn create_palette<M: Manager<tauri::Wry>>(app: &M) -> Result<WebviewWindow, Stri
 /// au même endroit quelle que soit la hauteur ; les résultats se développent vers le bas.
 /// Sans écran principal connu : centrage par défaut de Tauri.
 fn center_on_primary(window: &WebviewWindow) {
-    let monitor = match window.primary_monitor() {
-        Ok(Some(monitor)) => monitor,
-        _ => {
-            let _ = window.center();
-            return;
-        }
+    let Ok(Some(monitor)) = window.primary_monitor() else {
+        let _ = window.center();
+        return;
     };
     let scale = monitor.scale_factor();
     let screen = monitor.size();

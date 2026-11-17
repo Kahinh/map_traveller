@@ -80,7 +80,7 @@ export function isValidFarmRoute(route: FarmRoute): boolean {
   return route.steps.length > 0 && route.issues.length === 0;
 }
 
-/** « Démarrer depuis le début » : commande complète, Zaap initial compris. `null` si vide. */
+/** Bouton « Début » du panneau Farm : commande complète, Zaap initial compris. `null` si vide. */
 export function farmStartCommand(route: FarmRoute): string | null {
   return rightClickCommand(route.command);
 }

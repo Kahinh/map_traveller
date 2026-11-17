@@ -19,6 +19,7 @@ const GENERATED = [
   { re: /\/src-tauri\/gen\//, why: 'schémas générés par Tauri' },
   { re: /\/package-lock\.json$/, why: 'lockfile npm (passer par npm install)' },
   { re: /\/src-tauri\/Cargo\.lock$/, why: 'lockfile Cargo (passer par cargo)' },
+  { re: /\/resources\/catalog\.seed\.json$/, why: 'catalogue livré, généré par scripts/catalog/build-official-catalog.mjs (changer le générateur)' },
 ];
 
 for (const g of GENERATED) {

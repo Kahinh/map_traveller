@@ -11,7 +11,7 @@ Tu lis, tu analyses, tu planifies. Tu ne modifies rien.
 ## Ordre de lecture
 
 1. `CLAUDE.md` (racine) — invariants du projet.
-2. `docs/cahier-des-charges.md` — section concernée uniquement.
+2. Le skill de la zone (`.claude/skills/`) et la section du README qui décrit le comportement visible.
 3. CodeGraph : `codegraph query <symbole>` ou `sqlite3 .codegraph/codegraph.db "SELECT name, kind, file_path, start_line FROM nodes WHERE lower(name) LIKE '%x%';"`.
 4. Les fichiers identifiés, et seulement eux.
 

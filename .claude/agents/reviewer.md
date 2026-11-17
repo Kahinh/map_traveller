@@ -10,17 +10,13 @@ Tu cherches activement les erreurs. Tu ne modifies aucun fichier.
 
 ## Checklist
 
-- [ ] `CLAUDE.md` respecté.
-- [ ] Clic gauche : seul le **premier** segment `/zaap` est retiré, le reste copié à l'identique (espaces, ordre, segments).
-- [ ] Clic droit : commande intégrale ; menu contextuel bloqué ; pas de double copie.
-- [ ] Farm : reprise par **indice d'étape**, jamais par recherche de coordonnées ; dernière étape → rien copié + signal.
-- [ ] Aucun texte de commande perdu silencieusement (segments non reconnus signalés).
-- [ ] Logique pure séparée de Tauri/React ; tests Vitest ajoutés ou mis à jour.
-- [ ] Persistance : écriture atomique, `.bak`, catalogue utilisateur jamais écrasé par le seed, chemins d'image relatifs.
-- [ ] Capabilities Tauri minimales ; pas de chargement d'URL distante ; aucune commande exécutée comme commande système.
-- [ ] DA : tokens de `src/styles/tokens.css` utilisés, pas de couleurs en dur.
-- [ ] Aucun trajet réel inventé dans les tests ou la doc ; seed identique à la sortie de `scripts/catalog/build-official-catalog.mjs` (pas d'édition à la main).
-- [ ] README / docs mis à jour si comportement ou architecture changent.
+La checklist est la liste des **invariants de `CLAUDE.md`** (1 à 15) : les relire, puis vérifier chacun que le changement touche, avec le fichier et la ligne en cause. Ne pas en tenir une copie ici (elle divergerait). En plus :
+
+- [ ] Tests Vitest ajoutés ou mis à jour pour toute logique pure modifiée ; aucun test d'ordre ou de règle de copie supprimé sans raison écrite ; coordonnées fictives.
+- [ ] `npm run check:full` vert (budget JS compris) ; si du Rust a changé, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`.
+- [ ] Changement visuel : contrôlé selon « Validation de l'interface » de `CLAUDE.md` (sinon, le signaler).
+- [ ] README, skills, `CHANGELOG.md` et `docs/` à jour si le comportement ou l'architecture changent ; aucun nom de fichier ou de fonction cité qui n'existe pas.
+- [ ] Ce qui ne se voit que sous Windows est listé comme non vérifié (et ajouté à `docs/recette-v1.md` si c'est à contrôler avant publication).
 
 ## Sortie
 

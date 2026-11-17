@@ -2,7 +2,7 @@
 
 Les numéros entre parenthèses renvoient aux issues et pull requests du dépôt. Seules les versions taguées ont une Release téléchargeable ; 0.7.0 et 0.8.0 ont été numérotées sans être taguées : leur contenu est arrivé aux utilisateurs avec la 0.9.0.
 
-## 1.0.0 — non publiée
+## 1.0.0 — 2026-11-17
 
 Revue complète avant la 1.0, en six lots (A à F). Aucun changement de format des fichiers : les données des versions 0.x sont lues telles quelles.
 

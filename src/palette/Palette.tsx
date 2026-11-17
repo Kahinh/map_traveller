@@ -415,7 +415,7 @@ export function Palette() {
       case 'Escape':
         e.preventDefault();
         void hidePalette().catch((err: unknown) =>
-          setStatus({ kind: 'warning', text: `Fermeture impossible : ${String(err)}` }),
+          setStatus({ kind: 'warning', text: `Fermeture impossible : ${errorText(err)}` }),
         );
         return;
       case 'Tab':

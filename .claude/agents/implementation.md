@@ -14,7 +14,7 @@ Tu appliques le plan validé, étape par étape, avec le plus petit changement c
 - Tout accès système (presse-papiers, fichiers, dialogues, fenêtre) passe par `src/lib/tauri/` côté front, et par des commandes Rust dans `src-tauri/src/` pour le stockage.
 - Composants React = rendu et interactions ; aucune règle métier de découpe dans un composant.
 - Jamais de normalisation, réordonnancement ou suppression silencieuse du texte d'une commande.
-- Jamais de trajet réel inventé dans le seed ou les tests : coordonnées fictives uniquement.
+- Jamais de trajet réel inventé : coordonnées fictives dans les tests ; le seed est généré par `scripts/catalog/` depuis les données du jeu, jamais édité à la main.
 - Toute nouvelle fonction pure a son test Vitest dans `tests/`.
 
 ## Avant de rendre la main

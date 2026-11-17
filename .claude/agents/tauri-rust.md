@@ -11,7 +11,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 - Rust stable, Tauri 2. Pas de `unwrap()` sur des entrées utilisateur ou du disque : retourner `Result<_, String>` aux commandes.
 - Données utilisateur dans le dossier `app_data_dir()` (`%APPDATA%\MapTraveller\` via l'identifiant), jamais à côté de l'exécutable.
 - Écriture atomique : fichier `*.tmp` → `fs::rename`, copie `*.bak` du précédent.
-- Le seed (`resources/catalog.seed.json`) est en lecture seule ; il n'est copié que si `catalog.json` n'existe pas.
+- Le seed (`resources/catalog.seed.json`) est en lecture seule ; il n'est copié que si `catalog.json` n'existe pas. Les images livrées (`resources/images/`) sont copiées dans `images/` au lancement quand elles manquent, sans jamais remplacer un fichier.
 - Images : vérifier le format réel (signature), taille max, nom interne unique, chemin **relatif** `images/...` renvoyé au front.
 - Capabilities minimales dans `src-tauri/capabilities/default.json` ; justifier chaque ajout.
 - Pas de `shell`, pas de `http`, pas d'exécution de commandes.

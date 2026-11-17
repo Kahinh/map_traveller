@@ -27,7 +27,9 @@ Source : cahier des charges §6.3, §7, §8.
 - Schéma courant : **3**. Champs `twoStep: boolean` (PNJ et Donjons uniquement, sinon erreur) et `command2: string` (texte brut, jamais modifié, conservé même si `twoStep` est faux). Un catalogue v2 est accepté : les champs absents prennent `false` et `''`.
 - Changement de schéma → incrémenter `schemaVersion` + migration (valeurs par défaut dans `validateCatalog`, ou fonction dédiée si une transformation est nécessaire) + test.
 - Aucune URL distante, aucun chemin absolu dans le JSON.
-- Seed : coordonnées **fictives** uniquement.
+- Seed = catalogue livré (issue n°8) : **généré** par `scripts/catalog/build-official-catalog.mjs` (données du jeu, source citée dans le script), jamais édité à la main ; images dans `resources/images/` (`convert-images.py`). Identifiants `officiel-…` stables : ne jamais en changer un (il reviendrait chez les utilisateurs qui l'ont supprimé).
+- Catalogue existant : `mergeOfficial` (`src/features/catalog/official.ts`) ajoute les entrées livrées absentes et jamais proposées ; `official.json` retient les identifiants proposés. Rien n'est modifié ni retiré.
+- Tests : coordonnées **fictives** uniquement.
 
 ## Recherche et réglages
 

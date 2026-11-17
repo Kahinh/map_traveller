@@ -28,7 +28,8 @@ export async function initImages(): Promise<void> {
 /** URL affichable pour une image relative, ou `null` (placeholder). */
 export function imageSrc(relative: string | null): string | null {
   if (!relative) return null;
-  if (!isTauri()) return `/${relative}`;
+  // Navigateur de développement : seules les images livrées existent, servies depuis le dépôt.
+  if (!isTauri()) return `/resources/${relative}`;
   if (dataDir === null) return null;
   return convertFileSrc(`${dataDir}\\${relative.replaceAll('/', '\\')}`);
 }

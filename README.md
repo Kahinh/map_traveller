@@ -189,7 +189,7 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON), et leurs vignettes `img-….thumb.webp` |
 
 - Windows contient aussi deux dossiers techniques nommés `app.maptraveller`, l'un dans `%APPDATA%` (position de la fenêtre), l'autre dans `%LOCALAPPDATA%` (cache de la vue web). Ils ne contiennent aucune donnée de l'utilisateur.
-- Au premier lancement, le catalogue d'exemple (`resources/catalog.seed.json`) est copié dans ce dossier.
+- Au premier lancement, le catalogue livré (`resources/catalog.seed.json` : donjons, PNJ importants, hôtels de vente et ateliers) est copié dans ce dossier, avec ses images. Après une mise à jour, les nouvelles entrées livrées sont ajoutées au catalogue existant ; une entrée modifiée n'est jamais remplacée, une entrée supprimée ne revient pas (`official.json`).
 - Le catalogue est au **schéma 3**. Chaque destination peut porter `"twoStep": true` (PNJ et Donjons uniquement) et `"command2"` (commande de l'étape 2). Champs absents : `false` et `""`. `command2` est conservée même si `twoStep` vaut `false`. Un catalogue au schéma 2 est lu sans modification ; il est réécrit au schéma 3 à la prochaine sauvegarde.
 - Une version **0.1.x** refuse un `catalog.json` au schéma 3 (« version plus récente que l'application ») **sans le modifier**. Revenir à une version antérieure demande donc de restaurer une sauvegarde au schéma 2.
 - Les mises à jour **n'écrasent jamais** vos données. Les alias fournis avec l'application sont embarqués dans celle-ci et peuvent évoluer d'une version à l'autre ; vos alias personnalisés et vos désactivations, rangés dans `aliases.json`, ne sont jamais touchés.
@@ -254,7 +254,8 @@ src-tauri/
   capabilities/        # permissions minimales
   tauri.conf.json
   tauri.release.conf.json  # surcharge des builds de tag : fichiers de mise à jour signés
-resources/catalog.seed.json   # seed lecture seule (fictif)
+resources/catalog.seed.json   # catalogue livré, généré par scripts/catalog/ (lecture seule)
+resources/images/             # images du catalogue livré
 resources/aliases.default.json # alias de recherche livrés (lecture seule, embarqués dans l'interface)
 resources/zaaps.json          # référentiel des 48 zaaps (source citée, non vérifié en jeu), embarqué dans la palette
 scripts/make-latest-json.mjs  # latest.json + contrôles avant et après publication

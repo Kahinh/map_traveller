@@ -2,66 +2,6106 @@
   "schemaVersion": 3,
   "destinations": [
     {
-      "id": "exemple-pnj",
-      "name": "Exemple PNJ",
-      "category": "npc",
-      "zone": "Exemple fictif",
-      "aliases": ["demo"],
-      "tags": ["exemple"],
-      "image": null,
-      "command": "/zaap 5 -18;/travel 1 1;/travel 2 2;/travel 3 3",
-      "sortOrder": 10,
-      "enabled": true
-    },
-    {
-      "id": "exemple-donjon",
-      "name": "Exemple Donjon",
-      "category": "dungeon",
-      "zone": "Exemple fictif",
-      "aliases": [],
-      "tags": ["exemple", "boss"],
-      "image": null,
-      "command": "/zaap 1 2;/travel 3 4",
-      "sortOrder": 10,
-      "enabled": true
-    },
-    {
-      "id": "exemple-donjon-deux-etapes",
-      "name": "Exemple Donjon en deux étapes",
-      "category": "dungeon",
-      "zone": "Exemple fictif",
-      "aliases": [],
-      "tags": ["exemple", "boss", "deux étapes"],
-      "image": null,
-      "command": "/zaap 5 -18;/travel 1 1",
-      "sortOrder": 10,
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Cité d'Astrub"
+      ],
       "enabled": true,
-      "twoStep": true,
-      "command2": "/travel 2 2;/travel 3 3"
-    },
-    {
-      "id": "exemple-lieu-dit",
-      "name": "Exemple Lieu-dit",
-      "category": "place",
-      "zone": "Exemple fictif",
-      "aliases": [],
-      "tags": ["exemple"],
-      "image": null,
-      "command": "/travel 7 7",
       "sortOrder": 10,
-      "enabled": true
+      "id": "officiel-banque-2756",
+      "name": "Banque · Astrub",
+      "category": "npc",
+      "zone": "Astrub",
+      "image": "images/banque.webp",
+      "command": "/zaap 5 -18;/travel 4 -18"
     },
     {
-      "id": "exemple-circuit-farm",
-      "name": "Exemple circuit Farm",
-      "category": "farm",
-      "zone": "Exemple fictif",
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Cœur immaculé"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-2783",
+      "name": "Banque · Bonta",
+      "category": "npc",
+      "zone": "Bonta",
+      "image": "images/banque.webp",
+      "command": "/zaap -31 -56;/travel -31 -57"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "La Cuirasse"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-3004",
+      "name": "Banque · Brâkmar",
+      "category": "npc",
+      "zone": "Brâkmar",
+      "image": "images/banque.webp",
+      "command": "/zaap -26 37;/travel -26 36"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-3106",
+      "name": "Banque · La Bourgade",
+      "category": "npc",
+      "zone": "Île de Frigost",
+      "image": "images/banque.webp",
+      "command": "/zaap -78 -41;/travel -77 -41"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Port de Sarakech"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-3392",
+      "name": "Banque · Port de Sarakech",
+      "category": "npc",
+      "zone": "Saharach",
+      "image": "images/banque.webp",
+      "command": "/zaap 15 -58;/travel 15 -57"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-2795",
+      "name": "Banque · Sufokia",
+      "category": "npc",
+      "zone": "Baie de Sufokia",
+      "image": "images/banque.webp",
+      "command": "/zaap 13 26;/travel 14 25"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Village côtier"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-2974",
+      "name": "Banque · Village côtier",
+      "category": "npc",
+      "zone": "Île d'Otomaï",
+      "image": "images/banque.webp",
+      "command": "/zaap -46 18;/travel -47 21"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-2755",
+      "name": "Banque · Village d'Amakna",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/banque.webp",
+      "command": "/zaap 3 -5;/travel 2 -2"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-2782",
+      "name": "Banque · Village de Pandala",
+      "category": "npc",
+      "zone": "Île de Pandala",
+      "image": "images/banque.webp",
+      "command": "/zaap 20 -29;/travel 20 -30"
+    },
+    {
+      "aliases": [
+        "banquier"
+      ],
+      "tags": [
+        "banque",
+        "Village des Éleveurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-banque-2785",
+      "name": "Banque · Village des Éleveurs",
+      "category": "npc",
+      "zone": "Montagne des Koalaks",
+      "image": "images/banque.webp",
+      "command": "/zaap -16 1;/travel -16 4"
+    },
+    {
       "aliases": [],
-      "tags": ["exemple"],
-      "image": null,
-      "command": "/travel 1 1;/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5;/travel 6 6",
+      "tags": [
+        "pnj",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-pnj-1901",
+      "name": "Kerubim Crépin",
+      "category": "npc",
+      "zone": "Astrub",
+      "image": "images/kerubim-crepin.webp",
+      "command": "/zaap 5 -18;/travel 3 -17"
+    },
+    {
+      "aliases": [],
+      "tags": [
+        "pnj",
+        "Village de la Canopée"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-pnj-914",
+      "name": "Otomaï",
+      "category": "npc",
+      "zone": "Île d'Otomaï",
+      "image": "images/otomai.webp",
+      "command": "/zaap -54 16;/travel -55 15"
+    },
+    {
+      "aliases": [
+        "almanax",
+        "offrande"
+      ],
+      "tags": [
+        "almanax",
+        "Plaine des Porkass"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-almanax",
+      "name": "Sanctuaire de l'Almanax",
+      "category": "npc",
+      "zone": "Plaines de Cania",
+      "image": "images/almanax.webp",
+      "command": "/zaap -5 -23;/travel -4 -24"
+    },
+    {
+      "aliases": [
+        "Crâ",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-cra",
+      "name": "Temple Crâ",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-cra.webp",
+      "command": "/zaap -2 0;/travel 0 3"
+    },
+    {
+      "aliases": [
+        "Ecaflip",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Montagne des Craqueleurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-ecaflip",
+      "name": "Temple Ecaflip",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-ecaflip.webp",
+      "command": "/zaap 3 -5;/travel 1 -5"
+    },
+    {
+      "aliases": [
+        "Eliotrope",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-eliotrope",
+      "name": "Temple Eliotrope",
+      "category": "npc",
+      "zone": "Baie de Sufokia",
+      "image": "images/temple-eliotrope.webp",
+      "command": "/zaap 13 35;/travel 16 33"
+    },
+    {
+      "aliases": [
+        "Eniripsa",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Campagne d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-eniripsa",
+      "name": "Temple Eniripsa",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-eniripsa.webp",
+      "command": "/zaap 7 -4;/travel 7 1"
+    },
+    {
+      "aliases": [
+        "Enutrof",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-enutrof",
+      "name": "Temple Enutrof",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-enutrof.webp",
+      "command": "/zaap 3 -5;/travel -1 -4"
+    },
+    {
+      "aliases": [
+        "Féca",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Coin des Boos"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-feca",
+      "name": "Temple Feca",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-feca.webp",
+      "command": "/zaap 5 7;/travel 12 5"
+    },
+    {
+      "aliases": [
+        "Forgelance",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Ancienne Albuera"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-forgelance",
+      "name": "Temple Forgelance",
+      "category": "npc",
+      "zone": "Archipel de Valonia",
+      "image": "images/temple-forgelance.webp",
+      "command": "/zaap 39 -82;/travel 33 -84"
+    },
+    {
+      "aliases": [
+        "Huppermage",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Hauts du Kramdam"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-huppermage",
+      "name": "Temple Huppermage",
+      "category": "npc",
+      "zone": "Île de Rok",
+      "image": "images/temple-huppermage.webp",
+      "command": "/zaap 27 -14;/travel 38 -21"
+    },
+    {
+      "aliases": [
+        "Iop",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-iop",
+      "name": "Temple Iop",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-iop.webp",
+      "command": "/zaap -2 0;/travel 1 3"
+    },
+    {
+      "aliases": [
+        "Osamodas",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Campagne d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-osamodas",
+      "name": "Temple Osamodas",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-osamodas.webp",
+      "command": "/zaap 7 -4;/travel 8 2"
+    },
+    {
+      "aliases": [
+        "Ouginak",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Gorge des Vents Hurlants"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-ouginak",
+      "name": "Temple Ouginak",
+      "category": "npc",
+      "zone": "Saharach",
+      "image": "images/temple-ouginak.webp",
+      "command": "/zaap 15 -58;/travel 8 -67"
+    },
+    {
+      "aliases": [
+        "Pandawa",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Rivière Kawaii"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-pandawa",
+      "name": "Temple Pandawa",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-pandawa.webp",
+      "command": "/zaap 3 -5;/travel 4 -2"
+    },
+    {
+      "aliases": [
+        "Roublard",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Cimetière"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-roublard",
+      "name": "Temple Roublard",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-roublard.webp",
+      "command": "/zaap 10 22;/travel 10 16"
+    },
+    {
+      "aliases": [
+        "Sacrieur",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Montagne des Craqueleurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-sacrieur",
+      "name": "Temple Sacrieur",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-sacrieur.webp",
+      "command": "/zaap -2 0;/travel -3 -4"
+    },
+    {
+      "aliases": [
+        "Sadida",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Montagne basse des Craqueleurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-sadida",
+      "name": "Temple Sadida",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-sadida.webp",
+      "command": "/zaap -1 13;/travel -1 9"
+    },
+    {
+      "aliases": [
+        "Sram",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Montagne basse des Craqueleurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-sram",
+      "name": "Temple Sram",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-sram.webp",
+      "command": "/zaap -2 0;/travel -4 0"
+    },
+    {
+      "aliases": [
+        "Steamer",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-steamer",
+      "name": "Temple Steamer",
+      "category": "npc",
+      "zone": "Baie de Sufokia",
+      "image": "images/temple-steamer.webp",
+      "command": "/zaap 10 22;/travel 26 22"
+    },
+    {
+      "aliases": [
+        "Xélor",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-xelor",
+      "name": "Temple Xélor",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-xelor.webp",
+      "command": "/zaap 3 -5;/travel 3 1"
+    },
+    {
+      "aliases": [
+        "Zobal",
+        "maître de classe"
+      ],
+      "tags": [
+        "temple de classe",
+        "Montagne des Craqueleurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-temple-zobal",
+      "name": "Temple Zobal",
+      "category": "npc",
+      "zone": "Amakna",
+      "image": "images/temple-zobal.webp",
+      "command": "/zaap 3 -5;/travel 1 -8"
+    },
+    {
+      "aliases": [
+        "Kardorim"
+      ],
+      "tags": [
+        "niveau 10",
+        "Cimetière"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-donjon-90",
+      "name": "Crypte de Kardorim",
+      "category": "dungeon",
+      "zone": "Incarnam",
+      "image": "images/donjon-90.webp",
+      "command": "/zaap 3 0;/travel 5 -1"
+    },
+    {
+      "aliases": [
+        "Mob l'Éponge"
+      ],
+      "tags": [
+        "niveau 20",
+        "Calanques d'Astrub"
+      ],
+      "enabled": true,
       "sortOrder": 20,
-      "enabled": true
+      "id": "officiel-donjon-19",
+      "name": "Château Ensablé",
+      "category": "dungeon",
+      "zone": "Astrub",
+      "image": "images/donjon-19.webp",
+      "command": "/zaap 20 -29;/travel 13 -28"
+    },
+    {
+      "aliases": [
+        "Tournesol Affamé"
+      ],
+      "tags": [
+        "niveau 20",
+        "Champs d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 20,
+      "id": "officiel-donjon-8",
+      "name": "Grange du Tournesol Affamé",
+      "category": "dungeon",
+      "zone": "Astrub",
+      "image": "images/donjon-8.webp",
+      "command": "/zaap 5 -18;/travel 7 -24"
+    },
+    {
+      "aliases": [
+        "Bouftou Royal"
+      ],
+      "tags": [
+        "niveau 30",
+        "Tainéla"
+      ],
+      "enabled": true,
+      "sortOrder": 30,
+      "id": "officiel-donjon-1",
+      "name": "Cour du Bouftou Royal",
+      "category": "dungeon",
+      "zone": "Astrub",
+      "image": "images/donjon-1.webp",
+      "command": "/zaap 1 -32;/travel 2 -34"
+    },
+    {
+      "aliases": [
+        "Directeur Grunob"
+      ],
+      "tags": [
+        "niveau 40",
+        "Campement des Gobelins"
+      ],
+      "enabled": true,
+      "sortOrder": 40,
+      "id": "officiel-donjon-138",
+      "name": "Akadémie des Gobs",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-138.webp",
+      "command": "/zaap -2 0;/travel -5 3"
+    },
+    {
+      "aliases": [
+        "Kankreblath"
+      ],
+      "tags": [
+        "niveau 40",
+        "Cache de Kankreblath"
+      ],
+      "enabled": true,
+      "sortOrder": 40,
+      "id": "officiel-donjon-88",
+      "name": "Cache de Kankreblath",
+      "category": "dungeon",
+      "zone": "Astrub",
+      "image": "images/donjon-88.webp",
+      "command": "/zaap 5 -18;/travel 3 -17"
+    },
+    {
+      "aliases": [
+        "Scarabosse Doré"
+      ],
+      "tags": [
+        "niveau 40",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 40,
+      "id": "officiel-donjon-45",
+      "name": "Donjon des Scarafeuilles",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-45.webp",
+      "command": "/zaap -1 24;/travel 1 26"
+    },
+    {
+      "aliases": [
+        "Chafer Rōnin"
+      ],
+      "tags": [
+        "niveau 40",
+        "Donjon des Squelettes"
+      ],
+      "enabled": true,
+      "sortOrder": 40,
+      "id": "officiel-donjon-47",
+      "name": "Donjon des Squelettes",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-47.webp",
+      "command": "/zaap 10 22;/travel 10 15"
+    },
+    {
+      "aliases": [
+        "Batofu"
+      ],
+      "tags": [
+        "niveau 40",
+        "Champ des Ingalsse"
+      ],
+      "enabled": true,
+      "sortOrder": 40,
+      "id": "officiel-donjon-48",
+      "name": "Donjon des Tofus",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-48.webp",
+      "command": "/zaap 5 7;/travel 5 6"
+    },
+    {
+      "aliases": [
+        "Boostache"
+      ],
+      "tags": [
+        "niveau 40",
+        "Foire du Trool"
+      ],
+      "enabled": true,
+      "sortOrder": 40,
+      "id": "officiel-donjon-34",
+      "name": "Maison Fantôme",
+      "category": "dungeon",
+      "zone": "Foire du Trool",
+      "image": "images/donjon-34.webp",
+      "command": "/zaap -11 -36;/travel -13 -41"
+    },
+    {
+      "aliases": [
+        "Sapik"
+      ],
+      "tags": [
+        "niveau 50",
+        "Havre de Nowel"
+      ],
+      "enabled": true,
+      "sortOrder": 50,
+      "id": "officiel-donjon-36",
+      "name": "Donjon de Nowel",
+      "category": "dungeon",
+      "zone": "Île de Nowel",
+      "image": "images/donjon-36.webp",
+      "command": "/zaap -31 -56;/travel -32 -89"
+    },
+    {
+      "aliases": [
+        "Bworkette"
+      ],
+      "tags": [
+        "niveau 50",
+        "Village des Bworks"
+      ],
+      "enabled": true,
+      "sortOrder": 50,
+      "id": "officiel-donjon-13",
+      "name": "Donjon des Bworks",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-13.webp",
+      "command": "/zaap -1 13;/travel -5 10"
+    },
+    {
+      "aliases": [
+        "Coffre des Forgerons"
+      ],
+      "tags": [
+        "niveau 50",
+        "Territoire des Bandits"
+      ],
+      "enabled": true,
+      "sortOrder": 50,
+      "id": "officiel-donjon-21",
+      "name": "Donjon des Forgerons",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-21.webp",
+      "command": "/zaap 10 22;/travel 13 21"
+    },
+    {
+      "aliases": [
+        "Shin Larve"
+      ],
+      "tags": [
+        "niveau 50",
+        "Donjon des Larves"
+      ],
+      "enabled": true,
+      "sortOrder": 50,
+      "id": "officiel-donjon-33",
+      "name": "Donjon des Larves",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-33.webp",
+      "command": "/zaap 3 -5;/travel -2 -5"
+    },
+    {
+      "aliases": [
+        "Corailleur Magistral"
+      ],
+      "tags": [
+        "niveau 50",
+        "Plage de Corail"
+      ],
+      "enabled": true,
+      "sortOrder": 50,
+      "id": "officiel-donjon-25",
+      "name": "Grotte Hesque",
+      "category": "dungeon",
+      "zone": "Île d'Otomaï",
+      "image": "images/donjon-25.webp",
+      "command": "/zaap -54 16;/travel -59 15"
+    },
+    {
+      "aliases": [
+        "Kwakwa"
+      ],
+      "tags": [
+        "niveau 50",
+        "Montagne des Craqueleurs"
+      ],
+      "enabled": true,
+      "sortOrder": 50,
+      "id": "officiel-donjon-32",
+      "name": "Nid du Kwakwa",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-32.webp",
+      "command": "/zaap -5 -8;/travel -4 -7"
+    },
+    {
+      "aliases": [
+        "Rakoopeur"
+      ],
+      "tags": [
+        "niveau 50",
+        "Futaie enneigée"
+      ],
+      "enabled": true,
+      "sortOrder": 50,
+      "id": "officiel-donjon-142",
+      "name": "Refuge sylvestre",
+      "category": "dungeon",
+      "zone": "Archipel de Valonia",
+      "image": "images/donjon-142.webp",
+      "command": "/zaap 39 -82;/travel 40 -84"
+    },
+    {
+      "aliases": [
+        "Wa Wabbit"
+      ],
+      "tags": [
+        "niveau 60",
+        "Îlot de la Couronne"
+      ],
+      "enabled": true,
+      "sortOrder": 60,
+      "id": "officiel-donjon-52",
+      "name": "Château du Wa Wabbit",
+      "category": "dungeon",
+      "zone": "Île des Wabbits",
+      "image": "images/donjon-52.webp",
+      "command": "/zaap 27 -14;/travel 24 -13"
+    },
+    {
+      "aliases": [
+        "Blop Coco Royal",
+        "Blop Indigo Royal",
+        "Blop Reinette Royal",
+        "Blop Griotte Royal"
+      ],
+      "tags": [
+        "niveau 60",
+        "Clos des Blops"
+      ],
+      "enabled": true,
+      "sortOrder": 60,
+      "id": "officiel-donjon-11",
+      "name": "Clos des Blops",
+      "category": "dungeon",
+      "zone": "Plaines de Cania",
+      "image": "images/donjon-11.webp",
+      "command": "/zaap -3 -42;/travel -7 -43"
+    },
+    {
+      "aliases": [
+        "Mawabouaino"
+      ],
+      "tags": [
+        "niveau 60",
+        "Carrière Chocolatée"
+      ],
+      "enabled": true,
+      "sortOrder": 60,
+      "id": "officiel-donjon-113",
+      "name": "Fonderie des Waddicts",
+      "category": "dungeon",
+      "zone": "Île de Pwâk",
+      "image": "images/donjon-113.webp",
+      "command": "/travel -3 -4"
+    },
+    {
+      "aliases": [
+        "Gelée Royale Bleuet",
+        "Gelée Royale Citron",
+        "Gelée Royale Fraise",
+        "Gelée Royale Menthe"
+      ],
+      "tags": [
+        "niveau 60",
+        "Péninsule des gelées"
+      ],
+      "enabled": true,
+      "sortOrder": 60,
+      "id": "officiel-donjon-24",
+      "name": "Gelaxième Dimension",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-24.webp",
+      "command": "/zaap 13 26;/travel 10 28"
+    },
+    {
+      "aliases": [
+        "Kanniboul Ebil"
+      ],
+      "tags": [
+        "niveau 60",
+        "Forêt des Masques"
+      ],
+      "enabled": true,
+      "sortOrder": 60,
+      "id": "officiel-donjon-27",
+      "name": "Village Kanniboul",
+      "category": "dungeon",
+      "zone": "Île de Moon",
+      "image": "images/donjon-27.webp",
+      "command": "/zaap 35 12;/travel 29 9"
+    },
+    {
+      "aliases": [
+        "Gourlo le Terrible"
+      ],
+      "tags": [
+        "niveau 70",
+        "Arche d'Otomaï"
+      ],
+      "enabled": true,
+      "sortOrder": 70,
+      "id": "officiel-donjon-39",
+      "name": "Cale de l'Arche d'Otomaï",
+      "category": "dungeon",
+      "zone": "Île d'Otomaï",
+      "image": "images/donjon-39.webp",
+      "command": "/zaap -54 16;/travel -55 -4"
+    },
+    {
+      "aliases": [
+        "Draegnerys"
+      ],
+      "tags": [
+        "niveau 70",
+        "Presqu'île des Dragoeufs"
+      ],
+      "enabled": true,
+      "sortOrder": 70,
+      "id": "officiel-donjon-116",
+      "name": "Épreuve de Draegnerys",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-116.webp",
+      "command": "/zaap -1 24;/travel -4 29"
+    },
+    {
+      "aliases": [
+        "Nelween"
+      ],
+      "tags": [
+        "niveau 70",
+        "Désolation de Sidimote"
+      ],
+      "enabled": true,
+      "sortOrder": 70,
+      "id": "officiel-donjon-35",
+      "name": "Laboratoire de Brumen Tinctorias",
+      "category": "dungeon",
+      "zone": "Landes de Sidimote",
+      "image": "images/donjon-35.webp",
+      "command": "/zaap -25 12;/travel -27 17"
+    },
+    {
+      "aliases": [
+        "Craqueleur Légendaire"
+      ],
+      "tags": [
+        "niveau 70",
+        "Montagne des Craqueleurs"
+      ],
+      "enabled": true,
+      "sortOrder": 70,
+      "id": "officiel-donjon-18",
+      "name": "Pitons Rocheux des Craqueleurs",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-18.webp",
+      "command": "/zaap -5 -8;/travel -3 -7"
+    },
+    {
+      "aliases": [
+        "Mantiscore"
+      ],
+      "tags": [
+        "niveau 80",
+        "Dunes des ossements"
+      ],
+      "enabled": true,
+      "sortOrder": 80,
+      "id": "officiel-donjon-100",
+      "name": "Cimetière des Mastodontes",
+      "category": "dungeon",
+      "zone": "Saharach",
+      "image": "images/donjon-100.webp",
+      "command": "/zaap 15 -58;/travel 19 -61"
+    },
+    {
+      "aliases": [
+        "Wa Wobot"
+      ],
+      "tags": [
+        "niveau 80",
+        "Îlot de Waldo"
+      ],
+      "enabled": true,
+      "sortOrder": 80,
+      "id": "officiel-donjon-17",
+      "name": "Terrier du Wa Wabbit",
+      "category": "dungeon",
+      "zone": "Île des Wabbits",
+      "image": "images/donjon-17.webp",
+      "command": "/zaap 27 -14;/travel 28 -12"
+    },
+    {
+      "aliases": [
+        "Reine Nyée"
+      ],
+      "tags": [
+        "niveau 90",
+        "Antre de la Reine Nyée"
+      ],
+      "enabled": true,
+      "sortOrder": 90,
+      "id": "officiel-donjon-89",
+      "name": "Antre de la Reine Nyée",
+      "category": "dungeon",
+      "zone": "Forêt des Abraknydes",
+      "image": "images/donjon-89.webp",
+      "command": "/zaap -5 -8;/travel -6 -15"
+    },
+    {
+      "aliases": [
+        "Le Chouque"
+      ],
+      "tags": [
+        "niveau 90",
+        "Chemin du Crâne"
+      ],
+      "enabled": true,
+      "sortOrder": 90,
+      "id": "officiel-donjon-91",
+      "name": "Bateau du Chouque",
+      "category": "dungeon",
+      "zone": "Île de Moon",
+      "image": "images/donjon-91.webp",
+      "command": "/zaap 35 12;/travel 33 3"
+    },
+    {
+      "aliases": [
+        "Choudini"
+      ],
+      "tags": [
+        "niveau 90",
+        "Route des Roulottes"
+      ],
+      "enabled": true,
+      "sortOrder": 90,
+      "id": "officiel-donjon-105",
+      "name": "Chapiteau des Magik Riktus",
+      "category": "dungeon",
+      "zone": "Landes de Sidimote",
+      "image": "images/donjon-105.webp",
+      "command": "/zaap -25 12;/travel -22 12"
+    },
+    {
+      "aliases": [
+        "Abraknyde Ancestral"
+      ],
+      "tags": [
+        "niveau 90",
+        "Forêt Sombre"
+      ],
+      "enabled": true,
+      "sortOrder": 90,
+      "id": "officiel-donjon-9",
+      "name": "Domaine Ancestral",
+      "category": "dungeon",
+      "zone": "Forêt des Abraknydes",
+      "image": "images/donjon-9.webp",
+      "command": "/zaap -5 -8;/travel -9 -14"
+    },
+    {
+      "aliases": [
+        "Dragon Cochon"
+      ],
+      "tags": [
+        "niveau 100",
+        "Labyrinthe du Dragon Cochon"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-6",
+      "name": "Antre du Dragon Cochon",
+      "category": "dungeon",
+      "zone": "Labyrinthe du Dragon Cochon",
+      "image": "images/donjon-6.webp",
+      "command": "/zaap -1 24;/travel -1 33",
+      "twoStep": true,
+      "command2": "/travel 5 32"
+    },
+    {
+      "aliases": [
+        "Moon"
+      ],
+      "tags": [
+        "niveau 100",
+        "Jungle Interdite"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-92",
+      "name": "Arbre de Moon",
+      "category": "dungeon",
+      "zone": "Île de Moon",
+      "image": "images/donjon-92.webp",
+      "command": "/zaap 35 12;/travel 29 6"
+    },
+    {
+      "aliases": [
+        "Koulosse"
+      ],
+      "tags": [
+        "niveau 100",
+        "Canyon sauvage"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-30",
+      "name": "Caverne du Koulosse",
+      "category": "dungeon",
+      "zone": "Montagne des Koalaks",
+      "image": "images/donjon-30.webp",
+      "command": "/zaap -16 1;/travel -17 8"
+    },
+    {
+      "aliases": [
+        "Malléfisk"
+      ],
+      "tags": [
+        "niveau 100",
+        "Fabrique de Malléfisk"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-77",
+      "name": "Fabrique de Malléfisk",
+      "category": "dungeon",
+      "zone": "Enutrosor",
+      "image": "images/donjon-77.webp",
+      "command": "/travel -6 -2"
+    },
+    {
+      "aliases": [
+        "Halouine"
+      ],
+      "tags": [
+        "niveau 100",
+        "Potager d'Halouine"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-66",
+      "name": "Potager d'Halouine",
+      "category": "dungeon",
+      "zone": "Forêt Maléfique",
+      "image": "images/donjon-66.webp",
+      "command": "/zaap -1 24;/travel -1 22"
+    },
+    {
+      "aliases": [
+        "Kharnozor"
+      ],
+      "tags": [
+        "niveau 100",
+        "Village des Dragoeufs"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-115",
+      "name": "Repaire du Kharnozor",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-115.webp",
+      "command": "/zaap -1 24;/travel -3 25"
+    },
+    {
+      "aliases": [
+        "Meulou"
+      ],
+      "tags": [
+        "niveau 100",
+        "Hauts des Hurlements"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-15",
+      "name": "Tanière du Meulou",
+      "category": "dungeon",
+      "zone": "Landes de Sidimote",
+      "image": "images/donjon-15.webp",
+      "command": "/zaap -16 1;/travel -23 0"
+    },
+    {
+      "aliases": [
+        "Maître des Pantins"
+      ],
+      "tags": [
+        "niveau 100",
+        "Île de Kartonpath"
+      ],
+      "enabled": true,
+      "sortOrder": 100,
+      "id": "officiel-donjon-72",
+      "name": "Théâtre de Dramak",
+      "category": "dungeon",
+      "zone": "Îlots de la mer d'Asse",
+      "image": "images/donjon-72.webp",
+      "command": "/zaap 25 -4;/travel 21 7"
+    },
+    {
+      "aliases": [
+        "Damadrya"
+      ],
+      "tags": [
+        "niveau 110",
+        "Plantala"
+      ],
+      "enabled": true,
+      "sortOrder": 110,
+      "id": "officiel-donjon-125",
+      "name": "Bambusaie de Damadrya",
+      "category": "dungeon",
+      "zone": "Île de Pandala",
+      "image": "images/donjon-125.webp",
+      "command": "/zaap 20 -29;/travel 26 -30"
+    },
+    {
+      "aliases": [
+        "Maître Corbac"
+      ],
+      "tags": [
+        "niveau 110",
+        "Pénates du Corbac"
+      ],
+      "enabled": true,
+      "sortOrder": 110,
+      "id": "officiel-donjon-3",
+      "name": "Bibliothèque du Maître Corbac",
+      "category": "dungeon",
+      "zone": "Plaines de Cania",
+      "image": "images/donjon-3.webp",
+      "command": "/zaap -17 -47;/travel -15 -62"
+    },
+    {
+      "aliases": [
+        "Papa Nowel"
+      ],
+      "tags": [
+        "niveau 110",
+        "Terre de Nowel"
+      ],
+      "enabled": true,
+      "sortOrder": 110,
+      "id": "officiel-donjon-37",
+      "name": "Caverne de Nowel",
+      "category": "dungeon",
+      "zone": "Île de Nowel",
+      "image": "images/donjon-37.webp",
+      "command": "/zaap -31 -56;/travel -36 -89"
+    },
+    {
+      "aliases": [
+        "Rat Blanc"
+      ],
+      "tags": [
+        "niveau 110",
+        "Canaux méphitiques",
+        "Bonta"
+      ],
+      "enabled": true,
+      "sortOrder": 110,
+      "id": "officiel-donjon-42",
+      "name": "Garde-manger du Rat Blanc",
+      "category": "dungeon",
+      "zone": "Canaux Méphitiques",
+      "image": "images/donjon-42.webp",
+      "command": "/travel -34 -59"
+    },
+    {
+      "aliases": [
+        "Silf le Rasboul Majeur"
+      ],
+      "tags": [
+        "niveau 110",
+        "Goulet du Rasboul"
+      ],
+      "enabled": true,
+      "sortOrder": 110,
+      "id": "officiel-donjon-41",
+      "name": "Goulet du Rasboul",
+      "category": "dungeon",
+      "zone": "Île d'Otomaï",
+      "image": "images/donjon-41.webp",
+      "command": "/zaap -54 16;/travel -51 9"
+    },
+    {
+      "aliases": [
+        "Pounicheur"
+      ],
+      "tags": [
+        "niveau 110",
+        "Miausolée du Pounicheur"
+      ],
+      "enabled": true,
+      "sortOrder": 110,
+      "id": "officiel-donjon-93",
+      "name": "Miausolée du Pounicheur",
+      "category": "dungeon",
+      "zone": "Ecaflipus",
+      "image": "images/donjon-93.webp",
+      "command": "/travel 3 -9"
+    },
+    {
+      "aliases": [
+        "Rat Noir"
+      ],
+      "tags": [
+        "niveau 110",
+        "Entrailles de Brâkmar",
+        "Brâkmar"
+      ],
+      "enabled": true,
+      "sortOrder": 110,
+      "id": "officiel-donjon-43",
+      "name": "Sousouricière du Rat Noir",
+      "category": "dungeon",
+      "zone": "Entrailles de Brâkmar",
+      "image": "images/donjon-43.webp",
+      "command": "/zaap -26 37;/travel -29 35",
+      "twoStep": true,
+      "command2": "/travel -28 37"
+    },
+    {
+      "aliases": [
+        "Crocabulia"
+      ],
+      "tags": [
+        "niveau 120",
+        "Sanctuaire des Dragoeufs",
+        "Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 120,
+      "id": "officiel-donjon-7",
+      "name": "Antre de Crocabulia",
+      "category": "dungeon",
+      "zone": "Sanctuaire des Dragoeufs",
+      "image": "images/donjon-7.webp",
+      "command": "/travel -2 25"
+    },
+    {
+      "aliases": [
+        "Blop Multicolore Royal"
+      ],
+      "tags": [
+        "niveau 120",
+        "Clos des Blops"
+      ],
+      "enabled": true,
+      "sortOrder": 120,
+      "id": "officiel-donjon-49",
+      "name": "Antre du Blop Multicolore Royal",
+      "category": "dungeon",
+      "zone": "Plaines de Cania",
+      "image": "images/donjon-49.webp",
+      "command": "/zaap -3 -42;/travel -7 -43"
+    },
+    {
+      "aliases": [
+        "Minotoror"
+      ],
+      "tags": [
+        "niveau 120",
+        "Labyrinthe du Minotoror",
+        "Île du Minotoror"
+      ],
+      "enabled": true,
+      "sortOrder": 120,
+      "id": "officiel-donjon-4",
+      "name": "Centre du Labyrinthe du Minotoror",
+      "category": "dungeon",
+      "zone": "Labyrinthe du Minotoror",
+      "image": "images/donjon-4.webp",
+      "command": "/zaap -34 -8;/travel -42 -17",
+      "twoStep": true,
+      "command2": "/travel -38 -15"
+    },
+    {
+      "aliases": [
+        "Fraktale"
+      ],
+      "tags": [
+        "niveau 120",
+        "Chemins d'hier"
+      ],
+      "enabled": true,
+      "sortOrder": 120,
+      "id": "officiel-donjon-85",
+      "name": "Mégalithe de Fraktale",
+      "category": "dungeon",
+      "zone": "Xélorium",
+      "image": "images/donjon-85.webp",
+      "command": "/travel 7 3"
+    },
+    {
+      "aliases": [
+        "Skeunk"
+      ],
+      "tags": [
+        "niveau 120",
+        "Vallée de la Morh'Kitu"
+      ],
+      "enabled": true,
+      "sortOrder": 120,
+      "id": "officiel-donjon-46",
+      "name": "Repaire de Skeunk",
+      "category": "dungeon",
+      "zone": "Montagne des Koalaks",
+      "image": "images/donjon-46.webp",
+      "command": "/zaap -25 12;/travel -20 10"
+    },
+    {
+      "aliases": [
+        "Royalmouth"
+      ],
+      "tags": [
+        "niveau 120",
+        "Champs de glace"
+      ],
+      "enabled": true,
+      "sortOrder": 120,
+      "id": "officiel-donjon-54",
+      "name": "Serre du Royalmouth",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-54.webp",
+      "command": "/zaap -78 -41;/travel -84 -49"
+    },
+    {
+      "aliases": [
+        "Tofu Royal"
+      ],
+      "tags": [
+        "niveau 120",
+        "Champ des Ingalsse"
+      ],
+      "enabled": true,
+      "sortOrder": 120,
+      "id": "officiel-donjon-50",
+      "name": "Tofulailler Royal",
+      "category": "dungeon",
+      "zone": "Amakna",
+      "image": "images/donjon-50.webp",
+      "command": "/zaap 5 7;/travel 5 6"
+    },
+    {
+      "aliases": [
+        "Tanukouï San"
+      ],
+      "tags": [
+        "niveau 130",
+        "Terrdala"
+      ],
+      "enabled": true,
+      "sortOrder": 130,
+      "id": "officiel-donjon-126",
+      "name": "Atelier du Tanukouï San",
+      "category": "dungeon",
+      "zone": "Île de Pandala",
+      "image": "images/donjon-126.webp",
+      "command": "/zaap 27 -14;/travel 26 -24"
+    },
+    {
+      "aliases": [
+        "El Piko"
+      ],
+      "tags": [
+        "niveau 130",
+        "Territoire Cacterre"
+      ],
+      "enabled": true,
+      "sortOrder": 130,
+      "id": "officiel-donjon-101",
+      "name": "Caverne d'El Piko",
+      "category": "dungeon",
+      "zone": "Saharach",
+      "image": "images/donjon-101.webp",
+      "command": "/zaap 15 -58;/travel 15 -65"
+    },
+    {
+      "aliases": [
+        "Croqueleur"
+      ],
+      "tags": [
+        "niveau 130",
+        "Croquanterie"
+      ],
+      "enabled": true,
+      "sortOrder": 130,
+      "id": "officiel-donjon-112",
+      "name": "Croquanterie",
+      "category": "dungeon",
+      "zone": "Île de Pwâk",
+      "image": "images/donjon-112.webp",
+      "command": "/travel -1 -7"
+    },
+    {
+      "aliases": [
+        "Capitaine Ekarlatte"
+      ],
+      "tags": [
+        "niveau 130",
+        "Ring du Capitaine Ekarlatte"
+      ],
+      "enabled": true,
+      "sortOrder": 130,
+      "id": "officiel-donjon-81",
+      "name": "Ring du Capitaine Ekarlatte",
+      "category": "dungeon",
+      "zone": "Srambad",
+      "image": "images/donjon-81.webp",
+      "command": "/travel 6 3"
+    },
+    {
+      "aliases": [
+        "Nagate"
+      ],
+      "tags": [
+        "niveau 130",
+        "Akwadala"
+      ],
+      "enabled": true,
+      "sortOrder": 130,
+      "id": "officiel-donjon-123",
+      "name": "Vallée de la Dame des eaux",
+      "category": "dungeon",
+      "zone": "Île de Pandala",
+      "image": "images/donjon-123.webp",
+      "command": "/zaap 20 -29;/travel 22 -24"
+    },
+    {
+      "aliases": [
+        "Haute Truche"
+      ],
+      "tags": [
+        "niveau 130",
+        "Cirque de Cania"
+      ],
+      "enabled": true,
+      "sortOrder": 130,
+      "id": "officiel-donjon-80",
+      "name": "Volière de la Haute Truche",
+      "category": "dungeon",
+      "zone": "Plaines de Cania",
+      "image": "images/donjon-80.webp",
+      "command": "/zaap -11 -36;/travel -10 -44"
+    },
+    {
+      "aliases": [
+        "Chêne Mou"
+      ],
+      "tags": [
+        "niveau 140",
+        "Clairière du Chêne Mou"
+      ],
+      "enabled": true,
+      "sortOrder": 140,
+      "id": "officiel-donjon-10",
+      "name": "Clairière du Chêne Mou",
+      "category": "dungeon",
+      "zone": "Forêt des Abraknydes",
+      "image": "images/donjon-10.webp",
+      "command": "/zaap -15 -23;/travel -14 -13"
+    },
+    {
+      "aliases": [
+        "Shihan",
+        "Hanshi"
+      ],
+      "tags": [
+        "niveau 140",
+        "Aerdala"
+      ],
+      "enabled": true,
+      "sortOrder": 140,
+      "id": "officiel-donjon-122",
+      "name": "Dojo du Vent",
+      "category": "dungeon",
+      "zone": "Île de Pandala",
+      "image": "images/donjon-122.webp",
+      "command": "/zaap 20 -29;/travel 20 -37"
+    },
+    {
+      "aliases": [
+        "Mansot Royal"
+      ],
+      "tags": [
+        "niveau 140",
+        "Lac gelé"
+      ],
+      "enabled": true,
+      "sortOrder": 140,
+      "id": "officiel-donjon-55",
+      "name": "Excavation du Mansot Royal",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-55.webp",
+      "command": "/zaap -67 -77;/travel -64 -55"
+    },
+    {
+      "aliases": [
+        "Founoroshi"
+      ],
+      "tags": [
+        "niveau 140",
+        "Feudala"
+      ],
+      "enabled": true,
+      "sortOrder": 140,
+      "id": "officiel-donjon-124",
+      "name": "Fabrique de foux d'artifice",
+      "category": "dungeon",
+      "zone": "Île de Pandala",
+      "image": "images/donjon-124.webp",
+      "command": "/zaap 20 -29;/travel 14 -32"
+    },
+    {
+      "aliases": [
+        "Tynril Ahuri",
+        "Tynril Consterné",
+        "Tynril Déconcerté",
+        "Tynril Perfide"
+      ],
+      "tags": [
+        "niveau 140",
+        "Jungle obscure"
+      ],
+      "enabled": true,
+      "sortOrder": 140,
+      "id": "officiel-donjon-51",
+      "name": "Laboratoire du Tynril",
+      "category": "dungeon",
+      "zone": "Île d'Otomaï",
+      "image": "images/donjon-51.webp",
+      "command": "/zaap -53 18;/travel -53 20"
+    },
+    {
+      "aliases": [
+        "Ben le Ripate"
+      ],
+      "tags": [
+        "niveau 150",
+        "Berceau d'Alma"
+      ],
+      "enabled": true,
+      "sortOrder": 150,
+      "id": "officiel-donjon-56",
+      "name": "Épave du Grolandais violent",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-56.webp",
+      "command": "/zaap -67 -77;/travel -60 -84"
+    },
+    {
+      "aliases": [
+        "Phossile"
+      ],
+      "tags": [
+        "niveau 150",
+        "Galerie du Phossile"
+      ],
+      "enabled": true,
+      "sortOrder": 150,
+      "id": "officiel-donjon-79",
+      "name": "Galerie du Phossile",
+      "category": "dungeon",
+      "zone": "Enutrosor",
+      "image": "images/donjon-79.webp",
+      "command": "/travel -2 -3"
+    },
+    {
+      "aliases": [
+        "Sphincter Cell"
+      ],
+      "tags": [
+        "niveau 150",
+        "Cloaque d'Amakna",
+        "Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 150,
+      "id": "officiel-donjon-44",
+      "name": "Repaire de Sphincter Cell",
+      "category": "dungeon",
+      "zone": "Souterrain d'Astrub",
+      "image": "images/donjon-44.webp",
+      "command": "/travel 3 -6"
+    },
+    {
+      "aliases": [
+        "Hell Mina"
+      ],
+      "tags": [
+        "niveau 150",
+        "Dédale du Dark Vlad"
+      ],
+      "enabled": true,
+      "sortOrder": 150,
+      "id": "officiel-donjon-139",
+      "name": "Tertre du long sommeil",
+      "category": "dungeon",
+      "zone": "Forêt Maléfique",
+      "image": "images/donjon-139.webp",
+      "command": "/zaap -1 24;/travel -3 19"
+    },
+    {
+      "aliases": [
+        "Kimbo"
+      ],
+      "tags": [
+        "niveau 160",
+        "Feuillage de l'arbre Hakam"
+      ],
+      "enabled": true,
+      "sortOrder": 160,
+      "id": "officiel-donjon-28",
+      "name": "Canopée du Kimbo",
+      "category": "dungeon",
+      "zone": "Île d'Otomaï",
+      "image": "images/donjon-28.webp",
+      "command": "/zaap -54 16"
+    },
+    {
+      "aliases": [
+        "Kanigroula"
+      ],
+      "tags": [
+        "niveau 160",
+        "Grotte de Kanigroula"
+      ],
+      "enabled": true,
+      "sortOrder": 160,
+      "id": "officiel-donjon-75",
+      "name": "Grotte de Kanigroula",
+      "category": "dungeon",
+      "zone": "Plaines de Cania",
+      "image": "images/donjon-75.webp",
+      "command": "/zaap 0 -56;/travel -5 -54"
+    },
+    {
+      "aliases": [
+        "Obsidiantre"
+      ],
+      "tags": [
+        "niveau 160",
+        "Larmes d'Ouronigride"
+      ],
+      "enabled": true,
+      "sortOrder": 160,
+      "id": "officiel-donjon-57",
+      "name": "Hypogée de l'Obsidiantre",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-57.webp",
+      "command": "/zaap -67 -77;/travel -71 -83"
+    },
+    {
+      "aliases": [
+        "Ush Galesh"
+      ],
+      "tags": [
+        "niveau 160",
+        "Plateau de Ush"
+      ],
+      "enabled": true,
+      "sortOrder": 160,
+      "id": "officiel-donjon-94",
+      "name": "Plateau de Ush",
+      "category": "dungeon",
+      "zone": "Ecaflipus",
+      "image": "images/donjon-94.webp",
+      "command": "/travel 7 -3"
+    },
+    {
+      "aliases": [
+        "Minotot"
+      ],
+      "tags": [
+        "niveau 160",
+        "Centre du labyrinthe du Minotoror",
+        "Île du Minotoror"
+      ],
+      "enabled": true,
+      "sortOrder": 160,
+      "id": "officiel-donjon-53",
+      "name": "Salle du Minotot",
+      "category": "dungeon",
+      "zone": "Labyrinthe du Minotoror",
+      "image": "images/donjon-53.webp",
+      "command": "/zaap -34 -8;/travel -42 -17",
+      "twoStep": true,
+      "command2": "/travel -39 -11"
+    },
+    {
+      "aliases": [
+        "Shogun Tofugawa"
+      ],
+      "tags": [
+        "niveau 160",
+        "Cimetière de Grobe"
+      ],
+      "enabled": true,
+      "sortOrder": 160,
+      "id": "officiel-donjon-132",
+      "name": "Tombe du Shogun Tofugawa",
+      "category": "dungeon",
+      "zone": "Île de Grobe",
+      "image": "images/donjon-132.webp",
+      "command": "/zaap 40 -44;/travel 36 -44"
+    },
+    {
+      "aliases": [
+        "Père Ver"
+      ],
+      "tags": [
+        "niveau 170",
+        "Gorge des Vents Hurlants"
+      ],
+      "enabled": true,
+      "sortOrder": 170,
+      "id": "officiel-donjon-102",
+      "name": "Boyau du Père Ver",
+      "category": "dungeon",
+      "zone": "Saharach",
+      "image": "images/donjon-102.webp",
+      "command": "/zaap 15 -58;/travel 7 -70"
+    },
+    {
+      "aliases": [
+        "Koumiho"
+      ],
+      "tags": [
+        "niveau 170",
+        "Mont des Tombeaux"
+      ],
+      "enabled": true,
+      "sortOrder": 170,
+      "id": "officiel-donjon-131",
+      "name": "Demeure des Esprits",
+      "category": "dungeon",
+      "zone": "Île de Grobe",
+      "image": "images/donjon-131.webp",
+      "command": "/zaap 40 -44;/travel 39 -44"
+    },
+    {
+      "aliases": [
+        "XLII"
+      ],
+      "tags": [
+        "niveau 170",
+        "Jour présent"
+      ],
+      "enabled": true,
+      "sortOrder": 170,
+      "id": "officiel-donjon-86",
+      "name": "Horologium de XLII",
+      "category": "dungeon",
+      "zone": "Xélorium",
+      "image": "images/donjon-86.webp",
+      "command": "/travel 7 -2"
+    },
+    {
+      "aliases": [
+        "Supervizœuf"
+      ],
+      "tags": [
+        "niveau 170",
+        "Toorbz Boorzzbz"
+      ],
+      "enabled": true,
+      "sortOrder": 170,
+      "id": "officiel-donjon-163",
+      "name": "Poste de contrôle du Supervizœuf",
+      "category": "dungeon",
+      "zone": "Osavora",
+      "image": "images/donjon-163.webp",
+      "command": "/travel 24 23"
+    },
+    {
+      "aliases": [
+        "Tengu Givrefoux",
+        "Fuji Givrefoux Nourricière"
+      ],
+      "tags": [
+        "niveau 170",
+        "Cavernes des Givrefoux",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 170,
+      "id": "officiel-donjon-58",
+      "name": "Tanière Givrefoux",
+      "category": "dungeon",
+      "zone": "Cavernes des Givrefoux",
+      "image": "images/donjon-58.webp",
+      "command": "/zaap -77 -73;/travel -80 -75",
+      "twoStep": true,
+      "command2": "/travel -76 -75"
+    },
+    {
+      "aliases": [
+        "Korriandre"
+      ],
+      "tags": [
+        "niveau 180",
+        "Forêt pétrifiée"
+      ],
+      "enabled": true,
+      "sortOrder": 180,
+      "id": "officiel-donjon-59",
+      "name": "Antre du Korriandre",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-59.webp",
+      "command": "/zaap -77 -73;/travel -73 -69"
+    },
+    {
+      "aliases": [
+        "Kralamoure Géant"
+      ],
+      "tags": [
+        "niveau 180",
+        "Tourbière nauséabonde"
+      ],
+      "enabled": true,
+      "sortOrder": 180,
+      "id": "officiel-donjon-31",
+      "name": "Antre du Kralamoure Géant",
+      "category": "dungeon",
+      "zone": "Île d'Otomaï",
+      "image": "images/donjon-31.webp",
+      "command": "/zaap -34 -8;/travel -60 -8"
+    },
+    {
+      "aliases": [
+        "Toxoliath"
+      ],
+      "tags": [
+        "niveau 180",
+        "Cave du Toxoliath"
+      ],
+      "enabled": true,
+      "sortOrder": 180,
+      "id": "officiel-donjon-82",
+      "name": "Cave du Toxoliath",
+      "category": "dungeon",
+      "zone": "Srambad",
+      "image": "images/donjon-82.webp",
+      "command": "/travel 8 8"
+    },
+    {
+      "aliases": [
+        "Bworker"
+      ],
+      "tags": [
+        "niveau 180",
+        "Gisgoul"
+      ],
+      "enabled": true,
+      "sortOrder": 180,
+      "id": "officiel-donjon-14",
+      "name": "Grotte du Bworker",
+      "category": "dungeon",
+      "zone": "Landes de Sidimote",
+      "image": "images/donjon-14.webp",
+      "command": "/zaap -12 19;/travel -15 14"
+    },
+    {
+      "aliases": [
+        "Père Fwetar"
+      ],
+      "tags": [
+        "niveau 180",
+        "Taïga de Nowel"
+      ],
+      "enabled": true,
+      "sortOrder": 180,
+      "id": "officiel-donjon-38",
+      "name": "Maison du Papa Nowel",
+      "category": "dungeon",
+      "zone": "Île de Nowel",
+      "image": "images/donjon-38.webp",
+      "command": "/zaap -31 -56;/travel -34 -89"
+    },
+    {
+      "aliases": [
+        "Ougah"
+      ],
+      "tags": [
+        "niveau 180",
+        "Caverne des Fungus",
+        "Landes de Sidimote"
+      ],
+      "enabled": true,
+      "sortOrder": 180,
+      "id": "officiel-donjon-22",
+      "name": "Temple du Grand Ougah",
+      "category": "dungeon",
+      "zone": "Caverne des Fungus",
+      "image": "images/donjon-22.webp",
+      "command": "/travel -9 29"
+    },
+    {
+      "aliases": [
+        "Glourséleste"
+      ],
+      "tags": [
+        "niveau 190",
+        "Ruche des Gloursons"
+      ],
+      "enabled": true,
+      "sortOrder": 190,
+      "id": "officiel-donjon-61",
+      "name": "Antichambre des Gloursons",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-61.webp",
+      "command": "/zaap -67 -77;/travel -63 -75"
+    },
+    {
+      "aliases": [
+        "Barbéryl Clochecuivre"
+      ],
+      "tags": [
+        "niveau 190",
+        "Bastion des Marteaux-Aigris",
+        "Archipel de Valonia"
+      ],
+      "enabled": true,
+      "sortOrder": 190,
+      "id": "officiel-donjon-141",
+      "name": "Bastion des Marteaux-Aigris",
+      "category": "dungeon",
+      "zone": "Galeries d'Ereboria",
+      "image": "images/donjon-141.webp",
+      "command": "/travel 32 -64"
+    },
+    {
+      "aliases": [
+        "Comte Razof"
+      ],
+      "tags": [
+        "niveau 190",
+        "Nimotopia"
+      ],
+      "enabled": true,
+      "sortOrder": 190,
+      "id": "officiel-donjon-104",
+      "name": "Camp du Comte Razof",
+      "category": "dungeon",
+      "zone": "Nimotopia",
+      "image": "images/donjon-104.webp",
+      "command": "/zaap -67 29;/travel -68 30"
+    },
+    {
+      "aliases": [
+        "Kolosso",
+        "Professeur Xa"
+      ],
+      "tags": [
+        "niveau 190",
+        "Crocs de verre"
+      ],
+      "enabled": true,
+      "sortOrder": 190,
+      "id": "officiel-donjon-60",
+      "name": "Cavernes du Kolosso",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-60.webp",
+      "command": "/zaap -67 -77;/travel -61 -69"
+    },
+    {
+      "aliases": [
+        "Grolloum"
+      ],
+      "tags": [
+        "niveau 190",
+        "Forêt enneigée"
+      ],
+      "enabled": true,
+      "sortOrder": 190,
+      "id": "officiel-donjon-62",
+      "name": "Donjon de la mine de Sakaï",
+      "category": "dungeon",
+      "zone": "Île de Sakaï",
+      "image": "images/donjon-62.webp",
+      "command": "/zaap -78 -41;/travel -52 -45"
+    },
+    {
+      "aliases": [
+        "Ombre"
+      ],
+      "tags": [
+        "niveau 190",
+        "Dimension Obscure"
+      ],
+      "enabled": true,
+      "sortOrder": 190,
+      "id": "officiel-donjon-74",
+      "name": "Pyramide d'Ombre",
+      "category": "dungeon",
+      "zone": "Dimension Obscure",
+      "image": "images/donjon-74.webp",
+      "command": "/travel 5 9"
+    },
+    {
+      "aliases": [
+        "Merkator"
+      ],
+      "tags": [
+        "niveau 200",
+        "Salles des Abîmes",
+        "Baie de Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-73",
+      "name": "Aquadôme de Merkator",
+      "category": "dungeon",
+      "zone": "Base Abyssale",
+      "image": "images/donjon-73.webp",
+      "command": "/travel 22 30"
+    },
+    {
+      "aliases": [
+        "Corruption"
+      ],
+      "tags": [
+        "niveau 200",
+        "Royaume Corrompu",
+        "Dimensions des Cavaliers"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-117",
+      "name": "Arbre de Mort",
+      "category": "dungeon",
+      "zone": "Royaume Corrompu",
+      "image": "images/donjon-117.webp",
+      "command": "/travel 4 0"
+    },
+    {
+      "aliases": [
+        "Déchireuse"
+      ],
+      "tags": [
+        "niveau 200",
+        "Village Rhoarim"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-165",
+      "name": "Autel de la Déchireuse",
+      "category": "dungeon",
+      "zone": "Osavora",
+      "image": "images/donjon-165.webp",
+      "command": "/travel 12 2"
+    },
+    {
+      "aliases": [
+        "L'Éternel Conflit"
+      ],
+      "tags": [
+        "niveau 200",
+        "Cauchemar des Ravageurs"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-136",
+      "name": "Bataille de l'Aurore Pourpre",
+      "category": "dungeon",
+      "zone": "Cauchemar",
+      "image": "images/donjon-136.webp",
+      "command": "/travel 1 0"
+    },
+    {
+      "aliases": [
+        "Ilyzaelle"
+      ],
+      "tags": [
+        "niveau 200",
+        "Caserne du Jour sans fin",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-107",
+      "name": "Belvédère d'Ilyzaelle",
+      "category": "dungeon",
+      "zone": "Château de Harebourg",
+      "image": "images/donjon-107.webp",
+      "command": "/travel -73 -76"
+    },
+    {
+      "aliases": [
+        "Dazak Martegel"
+      ],
+      "tags": [
+        "niveau 200",
+        "Royaume des Martegel"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-110",
+      "name": "Brasserie du roi Dazak",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-110.webp",
+      "command": "/zaap -67 -77;/travel -62 -70"
+    },
+    {
+      "aliases": [
+        "Vénérable Endormi"
+      ],
+      "tags": [
+        "niveau 200",
+        "Réserve Touffue"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-164",
+      "name": "Breuil du Vénérable",
+      "category": "dungeon",
+      "zone": "Osavora",
+      "image": "images/donjon-164.webp",
+      "command": "/travel 6 9"
+    },
+    {
+      "aliases": [
+        "Tal Kasha"
+      ],
+      "tags": [
+        "niveau 200",
+        "Pyramide Maudite",
+        "Saharach"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-103",
+      "name": "Chambre de Tal Kasha",
+      "category": "dungeon",
+      "zone": "Pyramide Maudite",
+      "image": "images/donjon-103.webp",
+      "command": "/travel 12 -77"
+    },
+    {
+      "aliases": [
+        "Belladone"
+      ],
+      "tags": [
+        "niveau 200",
+        "Ephedrya"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-140",
+      "name": "Chambre des maléfices",
+      "category": "dungeon",
+      "zone": "Archipel de Valonia",
+      "image": "images/donjon-140.webp",
+      "command": "/zaap 39 -82;/travel 29 -88"
+    },
+    {
+      "aliases": [
+        "Chalœil"
+      ],
+      "tags": [
+        "niveau 200",
+        "Défi du Chalœil"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-95",
+      "name": "Défi du Chalœil",
+      "category": "dungeon",
+      "zone": "Ecaflipus",
+      "image": "images/donjon-95.webp",
+      "command": "/travel -9 -22"
+    },
+    {
+      "aliases": [
+        "Comte Harebourg"
+      ],
+      "tags": [
+        "niveau 200",
+        "Tour de la Clepsydre",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-71",
+      "name": "Donjon du Comte Harebourg",
+      "category": "dungeon",
+      "zone": "Château de Harebourg",
+      "image": "images/donjon-71.webp",
+      "command": "/travel -59 -89"
+    },
+    {
+      "aliases": [
+        "Servitude"
+      ],
+      "tags": [
+        "niveau 200",
+        "Galère de Servitude",
+        "Dimensions des Cavaliers"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-118",
+      "name": "Fers de la Tyrannie",
+      "category": "dungeon",
+      "zone": "Galère de Servitude",
+      "image": "images/donjon-118.webp",
+      "command": "/travel 4 -3"
+    },
+    {
+      "aliases": [
+        "Missiz Frizz"
+      ],
+      "tags": [
+        "niveau 200",
+        "Bastion des froides légions",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-69",
+      "name": "Forgefroide de Missiz Frizz",
+      "category": "dungeon",
+      "zone": "Château de Harebourg",
+      "image": "images/donjon-69.webp",
+      "command": "/travel -71 -88"
+    },
+    {
+      "aliases": [
+        "Nileza"
+      ],
+      "tags": [
+        "niveau 200",
+        "Jardins d'Hiver",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-70",
+      "name": "Laboratoire de Nileza",
+      "category": "dungeon",
+      "zone": "Château de Harebourg",
+      "image": "images/donjon-70.webp",
+      "command": "/travel -59 -74"
+    },
+    {
+      "aliases": [
+        "Anerice la Shushess"
+      ],
+      "tags": [
+        "niveau 200",
+        "Terres Désacrées"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-106",
+      "name": "Manoir des Katrepat",
+      "category": "dungeon",
+      "zone": "Landes de Sidimote",
+      "image": "images/donjon-106.webp",
+      "command": "/zaap -15 25;/travel -14 25"
+    },
+    {
+      "aliases": [
+        "Roi Imagami"
+      ],
+      "tags": [
+        "niveau 200",
+        "Royaume d'encre"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-133",
+      "name": "Mémoire d'Orukam",
+      "category": "dungeon",
+      "zone": "Wukin et Wukang",
+      "image": "images/donjon-133.webp",
+      "command": "/travel -3 -1"
+    },
+    {
+      "aliases": [
+        "Vortex"
+      ],
+      "tags": [
+        "niveau 200",
+        "Lendemains incertains"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-87",
+      "name": "Œil de Vortex",
+      "category": "dungeon",
+      "zone": "Xélorium",
+      "image": "images/donjon-87.webp",
+      "command": "/travel 7 -7"
+    },
+    {
+      "aliases": [
+        "Dantinéa"
+      ],
+      "tags": [
+        "niveau 200",
+        "Domaine des Trithons"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-99",
+      "name": "Palais de Dantinéa",
+      "category": "dungeon",
+      "zone": "Profondeurs de Sufokia",
+      "image": "images/donjon-99.webp",
+      "command": "/travel 19 26"
+    },
+    {
+      "aliases": [
+        "Roi Nidas"
+      ],
+      "tags": [
+        "niveau 200",
+        "Palais du roi Nidas"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-76",
+      "name": "Palais du roi Nidas",
+      "category": "dungeon",
+      "zone": "Enutrosor",
+      "image": "images/donjon-76.webp",
+      "command": "/travel -5 -5"
+    },
+    {
+      "aliases": [
+        "Kabahal"
+      ],
+      "tags": [
+        "niveau 200",
+        "Pandamonium"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-135",
+      "name": "Rituel de Kabahal",
+      "category": "dungeon",
+      "zone": "Atoll des Possédés",
+      "image": "images/donjon-135.webp",
+      "command": "/zaap 40 -44;/travel 43 -57"
+    },
+    {
+      "aliases": [
+        "Klime"
+      ],
+      "tags": [
+        "niveau 200",
+        "Tannerie Écarlate",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-68",
+      "name": "Salons privés de Klime",
+      "category": "dungeon",
+      "zone": "Château de Harebourg",
+      "image": "images/donjon-68.webp",
+      "command": "/travel -63 -93"
+    },
+    {
+      "aliases": [
+        "Torkélonia"
+      ],
+      "tags": [
+        "niveau 200",
+        "Crocuzko",
+        "Archipel des Écailles"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-114",
+      "name": "Sanctuaire de Torkélonia",
+      "category": "dungeon",
+      "zone": "Crocuzko",
+      "image": "images/donjon-114.webp",
+      "command": "/travel -84 -16"
+    },
+    {
+      "aliases": [
+        "Misère"
+      ],
+      "tags": [
+        "niveau 200",
+        "Désert de Misère",
+        "Dimensions des Cavaliers"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-119",
+      "name": "Sentence de la Balance",
+      "category": "dungeon",
+      "zone": "Désert de Misère",
+      "image": "images/donjon-119.webp",
+      "command": "/travel 1 0"
+    },
+    {
+      "aliases": [
+        "Reine Amirukam"
+      ],
+      "tags": [
+        "niveau 200",
+        "Royaume de papier"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-134",
+      "name": "Souvenir d'Imagiro",
+      "category": "dungeon",
+      "zone": "Wukin et Wukang",
+      "image": "images/donjon-134.webp",
+      "command": "/travel 2 0"
+    },
+    {
+      "aliases": [
+        "Guerre",
+        "Servitude",
+        "Misère",
+        "Corruption"
+      ],
+      "tags": [
+        "niveau 200",
+        "Tempête de l'Eliocalypse",
+        "Eliocalypse"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-121",
+      "name": "Tempête de l'Eliocalypse",
+      "category": "dungeon",
+      "zone": "Mappemondes",
+      "image": "images/donjon-121.webp",
+      "command": "/zaap 15 -20",
+      "twoStep": true,
+      "command2": "/travel 15 -20"
+    },
+    {
+      "aliases": [
+        "Larve de Koutoulou"
+      ],
+      "tags": [
+        "niveau 200",
+        "Plateau de R'lyugluglu"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-98",
+      "name": "Temple de Koutoulou",
+      "category": "dungeon",
+      "zone": "Profondeurs de Sufokia",
+      "image": "images/donjon-98.webp",
+      "command": "/travel 27 26"
+    },
+    {
+      "aliases": [
+        "Prêtresse de Kao"
+      ],
+      "tags": [
+        "niveau 200",
+        "Laboratoires des Chocomanciens"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-111",
+      "name": "Temple du dieu Kao",
+      "category": "dungeon",
+      "zone": "Île de Pwâk",
+      "image": "images/donjon-111.webp",
+      "command": "/travel -1 -10"
+    },
+    {
+      "aliases": [
+        "Bethel Akarna"
+      ],
+      "tags": [
+        "niveau 200",
+        "Épaves Silencieuses",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-108",
+      "name": "Tour de Bethel",
+      "category": "dungeon",
+      "zone": "Épaves Silencieuses",
+      "image": "images/donjon-108.webp",
+      "command": "/travel -48 -82"
+    },
+    {
+      "aliases": [
+        "Solar"
+      ],
+      "tags": [
+        "niveau 200",
+        "Marches Magmatiques"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-109",
+      "name": "Tour de Solar",
+      "category": "dungeon",
+      "zone": "Landes de Sidimote",
+      "image": "images/donjon-109.webp",
+      "command": "/zaap -25 12;/travel -31 15"
+    },
+    {
+      "aliases": [
+        "Sylargh"
+      ],
+      "tags": [
+        "niveau 200",
+        "Remparts à vent",
+        "Île de Frigost"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-67",
+      "name": "Transporteur de Sylargh",
+      "category": "dungeon",
+      "zone": "Château de Harebourg",
+      "image": "images/donjon-67.webp",
+      "command": "/travel -52 -87"
+    },
+    {
+      "aliases": [
+        "Reine des Voleurs"
+      ],
+      "tags": [
+        "niveau 200",
+        "Hauts Ténébreux"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-83",
+      "name": "Trône de la Cour Sombre",
+      "category": "dungeon",
+      "zone": "Srambad",
+      "image": "images/donjon-83.webp",
+      "command": "/travel 8 -4"
+    },
+    {
+      "aliases": [
+        "Guerre"
+      ],
+      "tags": [
+        "niveau 200",
+        "Blessures de Guerre",
+        "Dimensions des Cavaliers"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-120",
+      "name": "Trône de Sang",
+      "category": "dungeon",
+      "zone": "Blessures de Guerre",
+      "image": "images/donjon-120.webp",
+      "command": "/travel 4 -3"
+    },
+    {
+      "aliases": [
+        "Capitaine Meno"
+      ],
+      "tags": [
+        "niveau 200",
+        "Ville submergée"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-97",
+      "name": "Vaisseau du Capitaine Meno",
+      "category": "dungeon",
+      "zone": "Profondeurs de Sufokia",
+      "image": "images/donjon-97.webp",
+      "command": "/travel 24 27"
+    },
+    {
+      "aliases": [
+        "Protozorreur"
+      ],
+      "tags": [
+        "niveau 200",
+        "Roc des Salbatroces"
+      ],
+      "enabled": true,
+      "sortOrder": 200,
+      "id": "officiel-donjon-84",
+      "name": "Ventre de la Baleine",
+      "category": "dungeon",
+      "zone": "Île de Frigost",
+      "image": "images/donjon-84.webp",
+      "command": "/zaap -77 -73;/travel -85 -59"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2805",
+      "name": "Alchimiste · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap 5 -18;/travel 3 -21"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2739",
+      "name": "Alchimiste · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap -31 -56;/travel -29 -54"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Bord de la forêt maléfique"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2767",
+      "name": "Alchimiste · Bord de la forêt maléfique",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap -1 13;/travel 1 16"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "La Marmite"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2766",
+      "name": "Alchimiste · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap -26 37;/travel -22 35"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Lac"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3340",
+      "name": "Alchimiste · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap -1 -3;/travel -2 -2"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3094",
+      "name": "Alchimiste · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap -78 -41;/travel -81 -44"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Nouvelle Albuera"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3615",
+      "name": "Alchimiste · Nouvelle Albuera",
+      "category": "place",
+      "zone": "Archipel de Valonia",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap 39 -82;/travel 38 -78"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Plaines herbeuses"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3532",
+      "name": "Alchimiste · Plaines herbeuses",
+      "category": "place",
+      "zone": "Île d'Otomaï",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap -53 18;/travel -57 19"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3575",
+      "name": "Alchimiste · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap 13 26;/travel 11 27"
+    },
+    {
+      "aliases": [
+        "Atelier des alchimistes"
+      ],
+      "tags": [
+        "atelier",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3496",
+      "name": "Alchimiste · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-alchimiste.webp",
+      "command": "/zaap 20 -29;/travel 23 -29"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2746",
+      "name": "Bijoutier · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap 5 -18;/travel 6 -15"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2825",
+      "name": "Bijoutier · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap -31 -56;/travel -33 -55"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2823",
+      "name": "Bijoutier · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap -26 37;/travel -29 34"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Pâturages"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3337",
+      "name": "Bijoutier · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap 2 -5;/travel 1 -4"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3099",
+      "name": "Bijoutier · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap -78 -41;/travel -79 -43"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2822",
+      "name": "Bijoutier · Plaine des Scarafeuilles",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap -1 24;/travel 2 29"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3576",
+      "name": "Bijoutier · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap 13 26;/travel 19 23"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Territoire des Porcos"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3179",
+      "name": "Bijoutier · Territoire des Porcos",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap -1 24;/travel 0 32"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2824",
+      "name": "Bijoutier · Village d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap -2 0;/travel 0 2"
+    },
+    {
+      "aliases": [
+        "Atelier des bijoutiers"
+      ],
+      "tags": [
+        "atelier",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3667",
+      "name": "Bijoutier · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-bijoutier.webp",
+      "command": "/zaap 20 -29;/travel 19 -27"
+    },
+    {
+      "aliases": [
+        "Atelier des bricoleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3356",
+      "name": "Bricoleur · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-bricoleur.webp",
+      "command": "/zaap 5 -18;/travel 3 -15"
+    },
+    {
+      "aliases": [
+        "Atelier des bricoleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2811",
+      "name": "Bricoleur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-bricoleur.webp",
+      "command": "/zaap -31 -56;/travel -32 -54"
+    },
+    {
+      "aliases": [
+        "Atelier des bricoleurs"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2810",
+      "name": "Bricoleur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-bricoleur.webp",
+      "command": "/zaap -26 37;/travel -29 36"
+    },
+    {
+      "aliases": [
+        "Atelier des bricoleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3347",
+      "name": "Bricoleur · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-bricoleur.webp",
+      "command": "/zaap -1 -3;/travel 1 -2"
+    },
+    {
+      "aliases": [
+        "Atelier des bricoleurs"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3110",
+      "name": "Bricoleur · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-bricoleur.webp",
+      "command": "/zaap -78 -41;/travel -75 -38"
+    },
+    {
+      "aliases": [
+        "Atelier des bricoleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3200",
+      "name": "Bricoleur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-bricoleur.webp",
+      "command": "/zaap 10 22;/travel 7 25"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2862",
+      "name": "Bûcheron · Astrub 0,-25",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -5 -23;/travel 0 -25"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3464",
+      "name": "Bûcheron · Astrub 2,-16",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap 5 -18;/travel 2 -16"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Bois de Litneg"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2859",
+      "name": "Bûcheron · Bois de Litneg",
+      "category": "place",
+      "zone": "Plaines de Cania",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -17 -47;/travel -13 -51"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3535",
+      "name": "Bûcheron · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -31 -56;/travel -28 -56"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2891",
+      "name": "Bûcheron · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -26 37;/travel -28 32"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Coin des Bouftous"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2861",
+      "name": "Bûcheron · Coin des Bouftous",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap 5 7;/travel 4 8"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2860",
+      "name": "Bûcheron · Forêt d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -1 13;/travel 6 16"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt des pins perdus"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3123",
+      "name": "Bûcheron · Forêt des pins perdus -64,-51",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -78 -41;/travel -64 -51"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt des pins perdus"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3122",
+      "name": "Bûcheron · Forêt des pins perdus -66,-60",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -67 -77;/travel -66 -60"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Futaie enneigée"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3603",
+      "name": "Bûcheron · Futaie enneigée",
+      "category": "place",
+      "zone": "Archipel de Valonia",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap 39 -82;/travel 39 -80"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3348",
+      "name": "Bûcheron · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap 3 0;/travel 2 -2"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3645",
+      "name": "Bûcheron · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -78 -41;/travel -72 -40"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2858",
+      "name": "Bûcheron · Plaine des Scarafeuilles",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap -1 24;/travel 4 30"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Plantala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2992",
+      "name": "Bûcheron · Plantala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap 20 -29;/travel 24 -29"
+    },
+    {
+      "aliases": [
+        "Atelier des bûcherons"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3577",
+      "name": "Bûcheron · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-bucheron.webp",
+      "command": "/zaap 10 22;/travel 10 25"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2744",
+      "name": "Chasseur · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap 5 -18;/travel 5 -20"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2775",
+      "name": "Chasseur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap -31 -56;/travel -30 -52"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "Bord de la forêt maléfique"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2812",
+      "name": "Chasseur · Bord de la forêt maléfique",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap -1 13;/travel 1 13"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "La Marmite"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2776",
+      "name": "Chasseur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap -26 37;/travel -22 37"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt des pins perdus"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3121",
+      "name": "Chasseur · Forêt des pins perdus",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap -78 -41;/travel -74 -49"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "Lac"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3341",
+      "name": "Chasseur · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap -1 -3;/travel -1 -2"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3098",
+      "name": "Chasseur · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap -78 -41;/travel -79 -46"
+    },
+    {
+      "aliases": [
+        "Atelier des chasseurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3585",
+      "name": "Chasseur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-chasseur.webp",
+      "command": "/zaap 10 22;/travel 11 24"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2897",
+      "name": "Cordonnier · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap 5 -18;/travel 4 -16"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2997",
+      "name": "Cordonnier · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap -31 -56;/travel -30 -57"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2998",
+      "name": "Cordonnier · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap -26 37;/travel -29 33"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "Lac"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3342",
+      "name": "Cordonnier · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap -1 -3;/travel 0 -2"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3113",
+      "name": "Cordonnier · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap -78 -41;/travel -74 -42"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3578",
+      "name": "Cordonnier · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap 13 26;/travel 20 24"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2896",
+      "name": "Cordonnier · Village d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap 5 7;/travel 5 1"
+    },
+    {
+      "aliases": [
+        "Atelier des cordonniers"
+      ],
+      "tags": [
+        "atelier",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3524",
+      "name": "Cordonnier · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-cordonnier.webp",
+      "command": "/zaap 20 -29;/travel 22 -27"
+    },
+    {
+      "aliases": [
+        "Atelier des éleveurs"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3750",
+      "name": "Éleveur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-eleveur.webp",
+      "command": "/zaap -31 -56;/travel -30 -58"
+    },
+    {
+      "aliases": [
+        "Atelier des éleveurs"
+      ],
+      "tags": [
+        "atelier",
+        "L'Ancre"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3751",
+      "name": "Éleveur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-eleveur.webp",
+      "command": "/zaap -26 37;/travel -25 38"
+    },
+    {
+      "aliases": [
+        "Atelier des éleveurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3753",
+      "name": "Éleveur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-eleveur.webp",
+      "command": "/zaap 13 26;/travel 19 23"
+    },
+    {
+      "aliases": [
+        "Atelier des éleveurs"
+      ],
+      "tags": [
+        "atelier",
+        "Village des Éleveurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3755",
+      "name": "Éleveur · Village des Éleveurs",
+      "category": "place",
+      "zone": "Montagne des Koalaks",
+      "image": "images/metier-eleveur.webp",
+      "command": "/zaap -16 1;/travel -20 1"
+    },
+    {
+      "aliases": [
+        "Atelier d'emballage de cadeaux"
+      ],
+      "tags": [
+        "atelier",
+        "Feudala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3519",
+      "name": "Emballage de cadeaux · Feudala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/atelier-emballage-de-cadeaux.webp",
+      "command": "/zaap 20 -29;/travel 18 -34"
+    },
+    {
+      "aliases": [
+        "Atelier d'emballage de cadeaux"
+      ],
+      "tags": [
+        "atelier",
+        "Foire du Trool"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3189",
+      "name": "Emballage de cadeaux · Foire du Trool",
+      "category": "place",
+      "zone": "Foire du Trool",
+      "image": "images/atelier-emballage-de-cadeaux.webp",
+      "command": "/zaap -11 -36;/travel -12 -39"
+    },
+    {
+      "aliases": [
+        "Atelier d'emballage de cadeaux"
+      ],
+      "tags": [
+        "atelier",
+        "Havre de Nowel"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3469",
+      "name": "Emballage de cadeaux · Havre de Nowel",
+      "category": "place",
+      "zone": "Île de Nowel",
+      "image": "images/atelier-emballage-de-cadeaux.webp",
+      "command": "/zaap -31 -56;/travel -32 -86"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3334",
+      "name": "Façonneur · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap 5 -18;/travel 4 -15"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3536",
+      "name": "Façonneur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap -31 -56;/travel -32 -53"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2892",
+      "name": "Façonneur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap -26 37;/travel -28 36"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "Route des âmes"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3346",
+      "name": "Façonneur · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap 3 0;/travel 3 -3"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "Massif de Cania"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3626",
+      "name": "Façonneur · Massif de Cania",
+      "category": "place",
+      "zone": "Plaines de Cania",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap -13 -28;/travel -13 -29"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3579",
+      "name": "Façonneur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap 13 26;/travel 6 26"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3181",
+      "name": "Façonneur · Village de Pandala 23,-28",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap 20 -29;/travel 23 -28"
+    },
+    {
+      "aliases": [
+        "Atelier des façonneurs"
+      ],
+      "tags": [
+        "atelier",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3499",
+      "name": "Façonneur · Village de Pandala 23,-28",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-faconneur.webp",
+      "command": "/zaap 20 -29;/travel 23 -28"
+    },
+    {
+      "aliases": [
+        "Atelier des fées d'artifice"
+      ],
+      "tags": [
+        "atelier",
+        "Village des Brigandins"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3788",
+      "name": "Fées d'artifice · Village des Brigandins",
+      "category": "place",
+      "zone": "Plaines de Cania",
+      "image": "images/atelier-fees-d-artifice.webp",
+      "command": "/zaap -15 -23;/travel -13 -20"
+    },
+    {
+      "aliases": [
+        "Atelier des forgemages"
+      ],
+      "tags": [
+        "atelier",
+        "Bois des Arak-haï"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2885",
+      "name": "Forgemage · Bois des Arak-haï",
+      "category": "place",
+      "zone": "Forêt des Abraknydes",
+      "image": "images/metier-forgemage.webp",
+      "command": "/zaap -5 -8;/travel -5 -13"
+    },
+    {
+      "aliases": [
+        "Atelier des forgemages"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2901",
+      "name": "Forgemage · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-forgemage.webp",
+      "command": "/zaap -31 -56;/travel -29 -57"
+    },
+    {
+      "aliases": [
+        "Atelier des forgemages"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2902",
+      "name": "Forgemage · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-forgemage.webp",
+      "command": "/zaap -26 37;/travel -26 38"
+    },
+    {
+      "aliases": [
+        "Atelier des forgemages"
+      ],
+      "tags": [
+        "atelier",
+        "Hauts du Kramdam"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3526",
+      "name": "Forgemage · Hauts du Kramdam",
+      "category": "place",
+      "zone": "Île de Rok",
+      "image": "images/metier-forgemage.webp",
+      "command": "/zaap 27 -14;/travel 38 -20"
+    },
+    {
+      "aliases": [
+        "Atelier des forgemages"
+      ],
+      "tags": [
+        "atelier",
+        "Port de givre"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3517",
+      "name": "Forgemage · Port de givre",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-forgemage.webp",
+      "command": "/zaap -78 -41;/travel -83 -40"
+    },
+    {
+      "aliases": [
+        "Atelier des forgemages"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3515",
+      "name": "Forgemage · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-forgemage.webp",
+      "command": "/zaap 13 26;/travel 13 24"
+    },
+    {
+      "aliases": [
+        "Atelier des forgemages"
+      ],
+      "tags": [
+        "atelier",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3513",
+      "name": "Forgemage · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-forgemage.webp",
+      "command": "/zaap 20 -29;/travel 17 -29"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Ancienne Albuera"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3595",
+      "name": "Forgeron · Ancienne Albuera",
+      "category": "place",
+      "zone": "Archipel de Valonia",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap 39 -82;/travel 33 -83"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2927",
+      "name": "Forgeron · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap 5 -18;/travel 7 -16"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2906",
+      "name": "Forgeron · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap -31 -56;/travel -30 -56"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2907",
+      "name": "Forgeron · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap -26 37;/travel -28 33"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Campagne d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3197",
+      "name": "Forgeron · Campagne d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap 7 -4;/travel 6 0"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Pâturages"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3360",
+      "name": "Forgeron · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap 2 -5;/travel 2 -4"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3111",
+      "name": "Forgeron · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap -78 -41;/travel -74 -33"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2905",
+      "name": "Forgeron · Plaine des Scarafeuilles",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap -1 24;/travel 3 29"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3580",
+      "name": "Forgeron · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap 13 26;/travel 17 24"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Terrdala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3503",
+      "name": "Forgeron · Terrdala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap 15 -20;/travel 24 -22"
+    },
+    {
+      "aliases": [
+        "Atelier des forgerons"
+      ],
+      "tags": [
+        "atelier",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2919",
+      "name": "Forgeron · Village d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-forgeron.webp",
+      "command": "/zaap -2 0;/travel -1 2"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des âmes"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Cœur immaculé"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3010",
+      "name": "HDV âmes · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/hdv-ames.webp",
+      "command": "/zaap -31 -56;/travel -32 -59"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des âmes"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Cuirasse"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3011",
+      "name": "HDV âmes · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/hdv-ames.webp",
+      "command": "/zaap -26 37;/travel -25 36"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3444",
+      "name": "HDV consommables · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap 5 -18;/travel 3 -19"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3442",
+      "name": "HDV consommables · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap -31 -56;/travel -31 -53"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Marmite"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3443",
+      "name": "HDV consommables · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap -26 37;/travel -23 36"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3445",
+      "name": "HDV consommables · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap -78 -41;/travel -79 -41"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3446",
+      "name": "HDV consommables · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap 13 26;/travel 12 29"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village côtier"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3448",
+      "name": "HDV consommables · Village côtier",
+      "category": "place",
+      "zone": "Île d'Otomaï",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap -46 18;/travel -46 17"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3447",
+      "name": "HDV consommables · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap 20 -29;/travel 21 -29"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des consommables"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village des Éleveurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3449",
+      "name": "HDV consommables · Village des Éleveurs",
+      "category": "place",
+      "zone": "Montagne des Koalaks",
+      "image": "images/hdv-consommables.webp",
+      "command": "/zaap -16 1;/travel -16 2"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des cosmétiques"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3634",
+      "name": "HDV cosmétiques · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/hdv-cosmetiques.webp",
+      "command": "/zaap 5 -18;/travel 5 -17"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des cosmétiques"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Promontoire des cieux"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3540",
+      "name": "HDV cosmétiques · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/hdv-cosmetiques.webp",
+      "command": "/zaap -31 -56;/travel -35 -60"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des cosmétiques"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-2909",
+      "name": "HDV cosmétiques · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/hdv-cosmetiques.webp",
+      "command": "/zaap -26 37;/travel -29 38"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des cosmétiques"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3643",
+      "name": "HDV cosmétiques · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/hdv-cosmetiques.webp",
+      "command": "/zaap -78 -41;/travel -85 -44"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des cosmétiques"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3641",
+      "name": "HDV cosmétiques · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/hdv-cosmetiques.webp",
+      "command": "/zaap 13 26;/travel 22 23"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des cosmétiques"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3668",
+      "name": "HDV cosmétiques · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/hdv-cosmetiques.webp",
+      "command": "/zaap 20 -29;/travel 19 -27"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des créatures"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3671",
+      "name": "HDV créatures · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/hdv-creatures.webp",
+      "command": "/zaap 5 -18;/travel 2 -15"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des créatures"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-2987",
+      "name": "HDV créatures · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/hdv-creatures.webp",
+      "command": "/zaap -31 -56;/travel -30 -59"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des créatures"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "L'Ancre"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-2986",
+      "name": "HDV créatures · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/hdv-creatures.webp",
+      "command": "/zaap -26 37;/travel -25 38"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des créatures"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3644",
+      "name": "HDV créatures · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/hdv-creatures.webp",
+      "command": "/zaap -78 -41;/travel -73 -34"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des créatures"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3642",
+      "name": "HDV créatures · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/hdv-creatures.webp",
+      "command": "/zaap 10 22;/travel 15 22"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des créatures"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3656",
+      "name": "HDV créatures · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/hdv-creatures.webp",
+      "command": "/zaap 20 -29;/travel 18 -29"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des créatures"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village des Éleveurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3756",
+      "name": "HDV créatures · Village des Éleveurs",
+      "category": "place",
+      "zone": "Montagne des Koalaks",
+      "image": "images/hdv-creatures.webp",
+      "command": "/zaap -16 1;/travel -19 1"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3452",
+      "name": "HDV équipements · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap 5 -18;/travel 6 -17"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3450",
+      "name": "HDV équipements · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap -31 -56;/travel -31 -55"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3451",
+      "name": "HDV équipements · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap -26 37;/travel -28 35"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3453",
+      "name": "HDV équipements · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap -78 -41;/travel -78 -40"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3454",
+      "name": "HDV équipements · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap 13 26;/travel 12 26"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village côtier"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3456",
+      "name": "HDV équipements · Village côtier",
+      "category": "place",
+      "zone": "Île d'Otomaï",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap -46 18;/travel -46 20"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3455",
+      "name": "HDV équipements · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap 20 -29;/travel 19 -29"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des équipements"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village des Éleveurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3457",
+      "name": "HDV équipements · Village des Éleveurs",
+      "category": "place",
+      "zone": "Montagne des Koalaks",
+      "image": "images/hdv-equipements.webp",
+      "command": "/zaap -16 1;/travel -17 1"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3435",
+      "name": "HDV ressources · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap 5 -18;/travel 4 -17"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3433",
+      "name": "HDV ressources · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap -31 -56;/travel -30 -54"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Cuirasse"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3434",
+      "name": "HDV ressources · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap -26 37;/travel -26 33"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Route des âmes"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3441",
+      "name": "HDV ressources · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap -1 -3;/travel 1 -3"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3436",
+      "name": "HDV ressources · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap -78 -41;/travel -77 -40"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3437",
+      "name": "HDV ressources · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap 13 26;/travel 21 23"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village côtier"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3439",
+      "name": "HDV ressources · Village côtier",
+      "category": "place",
+      "zone": "Île d'Otomaï",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap -46 18;/travel -47 19"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3438",
+      "name": "HDV ressources · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap 20 -29;/travel 21 -28"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des ressources"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village des Éleveurs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3440",
+      "name": "HDV ressources · Village des Éleveurs",
+      "category": "place",
+      "zone": "Montagne des Koalaks",
+      "image": "images/hdv-ressources.webp",
+      "command": "/zaap -16 1;/travel -16 3"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des runes"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-2926",
+      "name": "HDV runes · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/hdv-runes.webp",
+      "command": "/zaap -31 -56;/travel -29 -57"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des runes"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-2925",
+      "name": "HDV runes · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/hdv-runes.webp",
+      "command": "/zaap -26 37;/travel -26 38"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des runes"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Port de givre"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3518",
+      "name": "HDV runes · Port de givre",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/hdv-runes.webp",
+      "command": "/zaap -78 -41;/travel -83 -40"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des runes"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3516",
+      "name": "HDV runes · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/hdv-runes.webp",
+      "command": "/zaap 13 26;/travel 13 24"
+    },
+    {
+      "aliases": [
+        "Hôtel de vente des runes"
+      ],
+      "tags": [
+        "hôtel de vente",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-hdv-3514",
+      "name": "HDV runes · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/hdv-runes.webp",
+      "command": "/zaap 20 -29;/travel 17 -29"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Ancienne Albuera"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3594",
+      "name": "Mineur · Ancienne Albuera",
+      "category": "place",
+      "zone": "Archipel de Valonia",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap 39 -82;/travel 33 -83"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2872",
+      "name": "Mineur · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap 5 -18;/travel 7 -16"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2770",
+      "name": "Mineur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap -31 -56;/travel -28 -55"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2873",
+      "name": "Mineur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap -26 37;/travel -28 33"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Pâturages"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3339",
+      "name": "Mineur · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap 2 -5;/travel 2 -4"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3112",
+      "name": "Mineur · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap -78 -41;/travel -74 -33"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Milifutaie"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2870",
+      "name": "Mineur · Milifutaie",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap -2 0;/travel -1 5"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2869",
+      "name": "Mineur · Plaine des Scarafeuilles",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap -1 24;/travel 3 29"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3581",
+      "name": "Mineur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap 13 26;/travel 16 26"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Terrdala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3505",
+      "name": "Mineur · Terrdala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap 15 -20;/travel 24 -22"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Territoire des Porcos"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3180",
+      "name": "Mineur · Territoire des Porcos",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap -1 24;/travel 0 33"
+    },
+    {
+      "aliases": [
+        "Atelier des mineurs"
+      ],
+      "tags": [
+        "atelier",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2871",
+      "name": "Mineur · Village d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-mineur.webp",
+      "command": "/zaap -2 0;/travel -2 -3"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Akwadala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3510",
+      "name": "Paysan · Akwadala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap 20 -29;/travel 20 -26"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2773",
+      "name": "Paysan · Astrub 5,-21",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap 5 -18;/travel 5 -21"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Champs d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2780",
+      "name": "Paysan · Astrub 7,-24",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap 5 -18;/travel 7 -24"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2771",
+      "name": "Paysan · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -31 -56;/travel -31 -52"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "La Marmite"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2772",
+      "name": "Paysan · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -26 37;/travel -23 35"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Champ des Ingalsse"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2792",
+      "name": "Paysan · Champ des Ingalsse 5,6",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap 5 7;/travel 5 6"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Champ des Ingalsse"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3216",
+      "name": "Paysan · Champ des Ingalsse 9,4",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap 5 7;/travel 9 4"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Champs de Cania"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2779",
+      "name": "Paysan · Champs de Cania",
+      "category": "place",
+      "zone": "Plaines de Cania",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -27 -36;/travel -26 -41"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Champs de glace"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3124",
+      "name": "Paysan · Champs de glace",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -78 -41;/travel -69 -39"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2769",
+      "name": "Paysan · Forêt d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -1 13;/travel 4 13"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Champs"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3336",
+      "name": "Paysan · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -1 -3;/travel -1 -4"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3091",
+      "name": "Paysan · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -78 -41;/travel -83 -44"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2761",
+      "name": "Paysan · Plaine des Scarafeuilles -1,23",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -1 24;/travel -1 23"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2847",
+      "name": "Paysan · Plaine des Scarafeuilles 1,23",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -1 24;/travel 1 23"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2826",
+      "name": "Paysan · Plaine des Scarafeuilles 2,25",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -1 24;/travel 2 25"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2768",
+      "name": "Paysan · Plaine des Scarafeuilles 3,23",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -1 24;/travel 3 23"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Plaines herbeuses"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3534",
+      "name": "Paysan · Plaines herbeuses -50,20",
+      "category": "place",
+      "zone": "Île d'Otomaï",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -53 18;/travel -50 20"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Plaines herbeuses"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3533",
+      "name": "Paysan · Plaines herbeuses -57,11",
+      "category": "place",
+      "zone": "Île d'Otomaï",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap -54 16;/travel -57 11"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3582",
+      "name": "Paysan · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap 13 26;/travel 14 28"
+    },
+    {
+      "aliases": [
+        "Atelier des paysans"
+      ],
+      "tags": [
+        "atelier",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2774",
+      "name": "Paysan · Village d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-paysan.webp",
+      "command": "/zaap 3 -5;/travel 3 0"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Akwadala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3511",
+      "name": "Pêcheur · Akwadala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap 15 -20;/travel 21 -19"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2781",
+      "name": "Pêcheur · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap 5 -18;/travel 4 -20"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Havres d'ivoire"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2991",
+      "name": "Pêcheur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap -31 -56;/travel -34 -54"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "L'Ancre"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2793",
+      "name": "Pêcheur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap -26 37;/travel -22 39"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Lac"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3350",
+      "name": "Pêcheur · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap -1 -3;/travel 0 -1"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3092",
+      "name": "Pêcheur · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap -78 -41;/travel -82 -42"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Port de givre"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3125",
+      "name": "Pêcheur · Port de givre",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap -78 -41;/travel -77 -36"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Port de Madrestam"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3169",
+      "name": "Pêcheur · Port de Madrestam 12,-1",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap 7 -4;/travel 12 -1"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Port de Madrestam"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2794",
+      "name": "Pêcheur · Port de Madrestam 9,0",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap 7 -4;/travel 9 0"
+    },
+    {
+      "aliases": [
+        "Atelier des pêcheurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2848",
+      "name": "Pêcheur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-pecheur.webp",
+      "command": "/zaap 13 26;/travel 15 26"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2757",
+      "name": "Sculpteur · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap 5 -18;/travel 2 -16"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2777",
+      "name": "Sculpteur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap -31 -56;/travel -29 -56"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2778",
+      "name": "Sculpteur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap -26 37;/travel -28 32"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2791",
+      "name": "Sculpteur · Forêt d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap -1 13;/travel 3 12"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Forêt"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3349",
+      "name": "Sculpteur · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap 3 0;/travel 2 -2"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3114",
+      "name": "Sculpteur · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap -78 -41;/travel -72 -40"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2845",
+      "name": "Sculpteur · Plaine des Scarafeuilles 2,30",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap -1 24;/travel 2 30"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Plaine des Scarafeuilles"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2846",
+      "name": "Sculpteur · Plaine des Scarafeuilles 5,29",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap -1 24;/travel 5 29"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Plantala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3652",
+      "name": "Sculpteur · Plantala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap 20 -29;/travel 24 -29"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3583",
+      "name": "Sculpteur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap 13 26;/travel 9 26"
+    },
+    {
+      "aliases": [
+        "Atelier des sculpteurs"
+      ],
+      "tags": [
+        "atelier",
+        "Territoire des Bandits"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2790",
+      "name": "Sculpteur · Territoire des Bandits",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-sculpteur.webp",
+      "command": "/zaap 10 22;/travel 14 20"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Cité d'Astrub"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2948",
+      "name": "Tailleur · Astrub",
+      "category": "place",
+      "zone": "Astrub",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap 5 -18;/travel 7 -15"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Faubourgs des artisans"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2935",
+      "name": "Tailleur · Bonta",
+      "category": "place",
+      "zone": "Bonta",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap -31 -56;/travel -33 -54"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "L'Enclume"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2946",
+      "name": "Tailleur · Brâkmar",
+      "category": "place",
+      "zone": "Brâkmar",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap -26 37;/travel -28 34"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Lac"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3343",
+      "name": "Tailleur · Incarnam",
+      "category": "place",
+      "zone": "Incarnam",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap -1 -3;/travel 0 -2"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "La Bourgade"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3108",
+      "name": "Tailleur · La Bourgade",
+      "category": "place",
+      "zone": "Île de Frigost",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap -78 -41;/travel -76 -40"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Sufokia"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3584",
+      "name": "Tailleur · Sufokia",
+      "category": "place",
+      "zone": "Baie de Sufokia",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap 13 26;/travel 18 25"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Village d'Amakna"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-2947",
+      "name": "Tailleur · Village d'Amakna",
+      "category": "place",
+      "zone": "Amakna",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap -2 0;/travel 2 2"
+    },
+    {
+      "aliases": [
+        "Atelier des tailleurs"
+      ],
+      "tags": [
+        "atelier",
+        "Village de Pandala"
+      ],
+      "enabled": true,
+      "sortOrder": 10,
+      "id": "officiel-atelier-3523",
+      "name": "Tailleur · Village de Pandala",
+      "category": "place",
+      "zone": "Île de Pandala",
+      "image": "images/metier-tailleur.webp",
+      "command": "/zaap 20 -29;/travel 22 -27"
     }
   ]
 }

@@ -1,8 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import seed from '../../resources/catalog.seed.json';
 import { removeDestination, upsertDestination, type DestinationDraft } from '../features/catalog/editor';
-import { SCHEMA_VERSION, type Catalog, type Destination } from '../features/catalog/schema';
+import { mergeOfficial } from '../features/catalog/official';
+import { SCHEMA_VERSION, validateCatalog, type Catalog, type Destination } from '../features/catalog/schema';
 import { initImages } from '../lib/tauri/images';
-import { loadCatalog, saveCatalog } from '../lib/tauri/storage';
+import { loadCatalog, loadOfficialState, saveCatalog, saveOfficialState } from '../lib/tauri/storage';
+
+/** Catalogue livré (seed), validé par `tests/officialCatalog.test.ts`. */
+const shipped = validateCatalog(seed);
+const OFFICIAL: readonly Destination[] = shipped.ok ? shipped.catalog.destinations : [];
+
+/**
+ * Ajoute les entrées livrées jamais proposées (`mergeOfficial`) : catalogue écrit d'abord, puis
+ * `official.json`. Un échec n'empêche pas l'ouverture : le catalogue reste celui du disque, et
+ * l'ajout est retenté au prochain lancement (idempotent).
+ */
+async function withOfficialEntries(catalog: Catalog): Promise<Catalog> {
+  const state = await loadOfficialState();
+  if (!state.ok) return catalog;
+  const merge = mergeOfficial(catalog, OFFICIAL, state.known);
+  try {
+    if (merge.added.length > 0) await saveCatalog(merge.catalog);
+  } catch {
+    return catalog;
+  }
+  if (merge.state) await saveOfficialState(merge.state).catch(() => undefined);
+  return merge.catalog;
+}
 
 export type LoadState = { status: 'loading' } | { status: 'ready' } | { status: 'error'; message: string };
 
@@ -21,13 +45,14 @@ export function useCatalog() {
 
   useEffect(() => {
     void (async () => {
-      const [cat] = await Promise.all([loadCatalog(), initImages()]);
+      const [cat] = await Promise.all([loadCatalog(seed), initImages()]);
       if (!cat.ok) {
         setLoad({ status: 'error', message: cat.errors.map((e) => `${e.path} ${e.message}`.trim()).join(' · ') });
         return;
       }
-      catalogRef.current = cat.catalog;
-      setDestinations(cat.catalog.destinations);
+      const catalog = await withOfficialEntries(cat.catalog);
+      catalogRef.current = catalog;
+      setDestinations(catalog.destinations);
       setLoad({ status: 'ready' });
     })().catch((e: unknown) => setLoad({ status: 'error', message: String(e) }));
   }, []);

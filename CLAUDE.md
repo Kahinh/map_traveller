@@ -33,7 +33,7 @@ npm run tauri build    # installateur NSIS (normalement fait par la CI)
 ```
 src/features/commands/   # PUR : clic gauche / clic droit, zones d'une carte (cardParts)
 src/features/farm/       # PUR : parsing parcours + reprise par indice
-src/features/catalog/    # PUR : types, validation, tri, éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove), recherche (searchText.ts : normalisation, mots ; searchIndex.ts : index, coûts, classement ; search.ts : façade), grille fenêtrée (gridWindow.ts)
+src/features/catalog/    # PUR : types, validation, tri, catalogue livré (official.ts : ajout des entrées jamais proposées, official.json), éditeur (editor.ts : brouillon, validation, aperçu, upsert/remove), recherche (searchText.ts : normalisation, mots ; searchIndex.ts : index, coûts, classement ; search.ts : façade), grille fenêtrée (gridWindow.ts)
 src/features/aliases/    # PUR : dictionnaire GLOBAL d'alias de recherche (alias livrés + aliases.json), lecture tolérante, édition sans mutation
 src/features/palette/    # PUR : lignes de palette (entries.ts), position tapée + lignes Farm (farmQuery.ts), sélection (navigation.ts)
 src/features/settings/   # PUR : modèle des réglages (clés inconnues conservées), capture d'un raccourci (accelerator.ts), path.ts
@@ -45,10 +45,12 @@ src/components/          # composants React (rendu + interactions uniquement) : 
 src/app/                 # App, état global, useCatalog et useAliases (écriture disque AVANT mise à jour de l'état), useSettings (écritures à la file), useUpdater (moteur de mise à jour, monté dans App), useCopyFeedback, useGridWindow (seules les rangées visibles + 2 sont rendues)
 src/styles/tokens.css    # tokens DA — seule source des couleurs
 src-tauri/src/           # Rust : stockage atomique (storage.rs), import d'images, relecture et vignettes (images.rs), fenêtre palette (palette.rs, préchargée au lancement), raccourcis globaux (shortcuts.rs), fenêtre principale et réduction dans la zone de notification (main_window.rs), icône et menu de la zone de notification (tray.rs), plugins
-resources/catalog.seed.json  # seed lecture seule, coordonnées FICTIVES
+resources/catalog.seed.json  # catalogue livré (issue n°8), lecture seule, GÉNÉRÉ par scripts/catalog/ depuis les données du jeu : ne pas éditer à la main
+resources/images/  # images du catalogue livré (WebP 256 px), copiées dans images/ au lancement quand elles y manquent
 resources/aliases.default.json  # alias de recherche livrés, lecture seule, embarqués dans le paquet (jamais copiés chez l'utilisateur)
 resources/zaaps.json  # référentiel des zaaps (issue n°7) : données RÉELLES relevées d'une source citée (`source`), non vérifiées en jeu, embarquées dans la palette
 scripts/make-latest-json.mjs       # index latest.json, contrôles avant et après publication
+scripts/catalog/  # génération du catalogue livré (build-official-catalog.mjs) et de ses images (convert-images.py)
 src-tauri/tauri.release.conf.json  # surcharge des builds de tag (fichiers de mise à jour signés)
 tests/                   # Vitest
 ```
@@ -93,9 +95,9 @@ Les tests ne voient ni un chevauchement, ni un texte illisible, ni un débordeme
 2. Clic gauche : retire **uniquement** le premier segment s'il est `/zaap` (frontière de mot) + son `;`. Clic droit : intégral. Carte à deux étapes (PNJ/Donjons, `twoStep`) : même règle zone par zone, zone 1 = `command`, zone 2 = `command2`, toujours via `cardParts` / `partCommand`.
 3. Farm : reprise par **indice d'étape** ; clic sur l'étape i copie les segments originaux après i ; dernière étape → rien + signal ; « Démarrer » → commande complète.
 4. Logique de découpe = fonctions pures testées. Aucun import Tauri/React dans `src/features/`.
-5. Données utilisateur dans `app_data_dir` ; le seed n'écrase jamais `catalog.json` ; écriture atomique + `.bak` ; chemins d'image relatifs. Schéma 3 : `twoStep` / `command2` ; un catalogue v2 est accepté avec les valeurs par défaut ; `command2` n'est jamais normalisée ni effacée.
+5. Données utilisateur dans `app_data_dir` ; le seed n'écrase jamais `catalog.json` ; les entrées livrées ne sont qu'AJOUTÉES (`mergeOfficial`) si leur identifiant est absent et jamais proposé (`official.json`) : une entrée modifiée n'est jamais remplacée, une entrée supprimée ne revient pas ; identifiants livrés `officiel-…` stables ; écriture atomique + `.bak` ; chemins d'image relatifs. Schéma 3 : `twoStep` / `command2` ; un catalogue v2 est accepté avec les valeurs par défaut ; `command2` n'est jamais normalisée ni effacée.
 6. Jamais de collage/saisie dans le jeu, lecture mémoire, sniffing, télémétrie. **Seul réseau autorisé** : la recherche (`latest.json`) et le téléchargement des mises à jour sur les Releases GitHub du dépôt, par le plugin updater ; en mode manuel (défaut), aucune requête sans clic de l'utilisateur. Aucun identifiant, aucune statistique.
-7. **Jamais de trajet réel inventé** : coordonnées fictives dans seed, tests et docs. Seule exception, `resources/zaaps.json` : des positions réelles **relevées** d'une source citée dans le fichier, jamais complétées de mémoire ; une entrée ne s'y ajoute qu'avec sa source.
+7. **Jamais de trajet réel inventé** : coordonnées fictives dans les tests et les docs. Exceptions, toujours d'une source citée et jamais complétées de mémoire : `resources/zaaps.json` (positions relevées, une entrée ne s'y ajoute qu'avec sa source) et `resources/catalog.seed.json` (généré par `scripts/catalog/build-official-catalog.mjs` depuis les données extraites du client du jeu, publication dofus-sqlite citée dans le script ; commande = zaap le plus proche puis `/travel`, recalculée par `tests/officialCatalog.test.ts`). Pour changer une entrée livrée : changer le générateur, pas le JSON.
 8. Couleurs via `tokens.css` uniquement. Clics gauche/droit des cartes réservés à la copie / ouverture Farm.
 9. Permissions Tauri minimales. Seule exécution de programme autorisée : `open_data_dir` (`storage.rs`), qui lance l'Explorateur Windows (chemin complet sous `SystemRoot`) sur `app_data_dir()` : aucun paramètre, chemin passé comme argument distinct, sans attendre le processus, sous `cfg(windows)` uniquement. Pas de plugin opener ni shell.
 10. Éditeur : aucune mutation d'une `Destination` ni du tableau (nouveaux objets, identité conservée pour les autres) ; l'identifiant ne change jamais en modification ; l'état n'est mis à jour qu'APRÈS `saveCatalog` ; aucun fichier image n'est supprimé automatiquement. Vignettes (`images/<nom>.thumb.webp`, 256 px) : fabriquées dans la page, enregistrées par `save_thumbnail` (fenêtre principale seulement, WebP contrôlé) ; une vignette peut être remplacée, un original jamais modifié.

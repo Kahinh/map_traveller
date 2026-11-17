@@ -5,7 +5,6 @@
  */
 import { invoke } from '@tauri-apps/api/core';
 import defaultAliases from '../../../resources/aliases.default.json';
-import seed from '../../../resources/catalog.seed.json';
 import {
   aliasesFileProblem,
   EMPTY_USER_ALIASES,
@@ -14,11 +13,12 @@ import {
   parseUserAliases,
   type UserAliases,
 } from '../../features/aliases/aliases';
-import { validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
+import { parseOfficialState, type OfficialState, type OfficialStateResult } from '../../features/catalog/official';
+import { SCHEMA_VERSION, validateCatalog, type Catalog, type ValidationResult } from '../../features/catalog/schema';
 import { mergeSettings, parseSettings, type Settings } from '../../features/settings/settings';
 import { isTauri } from './env';
 
-export type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases';
+export type StoreName = 'catalog' | 'favorites' | 'settings' | 'aliases' | 'official';
 
 const LS_PREFIX = 'map-traveller:';
 
@@ -58,21 +58,38 @@ function isRecord(v: unknown): v is Record<string, unknown> {
  */
 export const readStoreText = (name: StoreName): Promise<string | null> => readRaw(name);
 
-/** Valide le texte de `catalog.json` (`null` : fichier absent, le seed le remplace). Ne lève jamais. */
-export function parseCatalogText(raw: string | null): ValidationResult {
+const EMPTY_CATALOG: Catalog = { schemaVersion: SCHEMA_VERSION, destinations: [] };
+
+/**
+ * Valide le texte de `catalog.json`. Ne lève jamais. Fichier absent (`null`) : `fallback`. Dans
+ * l'application, Rust copie le seed avant l'ouverture des fenêtres : le fichier existe toujours.
+ * La palette garde le catalogue vide par défaut, pour ne pas embarquer le catalogue livré.
+ */
+export function parseCatalogText(raw: string | null, fallback: unknown = EMPTY_CATALOG): ValidationResult {
   let data: unknown;
   try {
     data = raw == null ? undefined : JSON.parse(raw);
   } catch {
     return { ok: false, errors: [{ path: '', message: 'catalog.json illisible (JSON invalide).' }] };
   }
-  return validateCatalog(data ?? seed);
+  return validateCatalog(data ?? fallback);
 }
 
-/** Charge et valide le catalogue utilisateur (le seed est copié par Rust au premier lancement). */
-export async function loadCatalog(): Promise<ValidationResult> {
-  return parseCatalogText(await readRaw('catalog'));
+/** Charge et valide le catalogue utilisateur ; `seed` le remplace s'il n'existe pas encore. */
+export async function loadCatalog(seed: unknown): Promise<ValidationResult> {
+  return parseCatalogText(await readRaw('catalog'), seed);
 }
+
+/** Entrées du catalogue livré déjà proposées (`official.json`). Ne lève jamais. */
+export async function loadOfficialState(): Promise<OfficialStateResult> {
+  try {
+    return parseOfficialState(await readJson('official'));
+  } catch {
+    return { ok: false, message: 'official.json illisible (JSON invalide).' };
+  }
+}
+
+export const saveOfficialState = (state: OfficialState): Promise<void> => writeJson('official', state);
 
 /** Valide puis enregistre. Refuse d'écrire un catalogue invalide. */
 export async function saveCatalog(catalog: Catalog): Promise<void> {

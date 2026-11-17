@@ -19,7 +19,7 @@ Tu cherches activement les erreurs. Tu ne modifies aucun fichier.
 - [ ] Persistance : écriture atomique, `.bak`, catalogue utilisateur jamais écrasé par le seed, chemins d'image relatifs.
 - [ ] Capabilities Tauri minimales ; pas de chargement d'URL distante ; aucune commande exécutée comme commande système.
 - [ ] DA : tokens de `src/styles/tokens.css` utilisés, pas de couleurs en dur.
-- [ ] Aucun trajet réel inventé dans le seed, les tests ou la doc.
+- [ ] Aucun trajet réel inventé dans les tests ou la doc ; seed identique à la sortie de `scripts/catalog/build-official-catalog.mjs` (pas d'édition à la main).
 - [ ] README / docs mis à jour si comportement ou architecture changent.
 
 ## Sortie

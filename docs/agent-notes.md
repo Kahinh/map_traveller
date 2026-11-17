@@ -135,3 +135,14 @@ La hauteur du contenu est vérifiée dans le navigateur (48 px pour la barre seu
 ### 2026-11-16 — `test-fragile` — Seuils de `palettePerf.test.ts`, deuxième occurrence
 Lot 2 de l'issue n°13 (apparence et textes seulement, aucun code de recherche touché) : `npm run check:full` a échoué trois fois de suite sur « requête « vilel123 » < 50 ms » (53 à 69 ms) et une fois sur « construction de l'index < 300 ms » (334 ms). Lancé seul, le fichier passe 4 fois sur 4 ; toute la suite passe avec `vitest run --no-file-parallelism` (377 tests). Cause : 21 fichiers testés en parallèle sur 8 cœurs, avec d'autres worktrees actifs.
 **Garde-fou :** aucun encore. Vue deux fois, l'erreur doit devenir un garde-fou : mesurer une médiane sur plusieurs passes, ou isoler ce fichier (`poolMatchGlobs` / projet Vitest séparé sans parallélisme). À décider avec l'utilisateur.
+
+### 2026-11-17 — `test-fragile` — `palettePerf.test.ts`, troisième occurrence
+Issue n°8 (catalogue livré, aucun code de recherche touché) : `npm run check:full` a échoué sur « requête «  » < 50 ms » (53 ms) ; lancé seul, le fichier passe. **Garde-fou :** toujours aucun ; à décider avec l'utilisateur (médiane sur plusieurs passes, ou fichier isolé sans parallélisme).
+
+### 2026-11-17 — `revue` — Noms de cartes coupés avant le lieu (issue n°8)
+Contrôle dans le navigateur : « Atelier des alchimistes · Bonta » tronqué sur deux lignes, le lieu disparaissait et vingt cartes semblaient identiques. Corrigé dans le générateur : le métier puis le lieu (« Alchimiste · Bonta »), le nom complet en alias. **Garde-fou :** pour un nom fabriqué, mettre ce qui distingue au début.
+
+### 2026-11-17 — `non-vérifié` — Catalogue livré : images et ajout aux catalogues existants (issue n°8)
+Rust non compilé en local : `copy_missing_images` et la ressource `resources/images/` (`tauri.conf.json`) ne sont prouvés que par la CI. Le navigateur de développement lit les images dans `resources/` : il ne prouve ni la copie, ni le protocole `asset:`.
+**À contrôler sur l'application installée :** installation neuve → 355 cartes avec images ; mise à jour depuis 0.8.0 → les entrées livrées s'ajoutent aux cartes existantes, sans toucher aux cartes de l'utilisateur ; supprimer une carte livrée puis relancer → elle ne revient pas ; dossier `images/` complété sans remplacer un fichier présent.
+Commandes non testées en jeu : le zaap le plus proche « à vol d'oiseau » peut être de l'autre côté de la mer (ex. Château Ensablé, zaap de Pandala).

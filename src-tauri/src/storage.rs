@@ -3,7 +3,10 @@
 //! Dossier : `%APPDATA%\MapTraveller\` (`catalog.json`, `favorites.json`, `settings.json`,
 //! `aliases.json`, `images/`).
 //! - Le seed livré n'est copié que si `catalog.json` n'existe pas : une mise à jour
-//!   n'écrase jamais les données utilisateur.
+//!   n'écrase jamais les données utilisateur. Les entrées livrées absentes d'un catalogue
+//!   existant y sont ajoutées par l'interface (`src/features/catalog/official.ts`).
+//! - Images du catalogue livré (`resources/images/`) : copiées dans `images/` à chaque lancement
+//!   quand elles y manquent ; un fichier déjà présent n'est jamais remplacé.
 //! - Écriture atomique : `*.tmp` puis renommage ; copie `*.bak` de la version précédente.
 //! - Le contenu est validé comme JSON avant écriture ; la validation métier est faite côté TS.
 //! - `settings.json` a deux auteurs : l'interface (`save_store`) et Rust (`shortcuts::set_shortcut`).
@@ -20,6 +23,7 @@ use tauri::{AppHandle, Manager};
 
 const APP_DIR: &str = "MapTraveller";
 const SEED_RESOURCE: &str = "resources/catalog.seed.json";
+const IMAGES_RESOURCE: &str = "resources/images";
 
 /// Nom du fichier de réglages dans le dossier de données.
 pub const SETTINGS_FILE: &str = "settings.json";
@@ -71,6 +75,8 @@ fn store_file(name: &str) -> Result<&'static str, String> {
         "settings" => Ok(SETTINGS_FILE),
         // Alias de recherche personnalisés (issue n°10) ; les alias livrés sont dans l'interface.
         "aliases" => Ok("aliases.json"),
+        // Entrées du catalogue livré déjà proposées (issue n°8) : jamais rajoutées une fois supprimées.
+        "official" => Ok("official.json"),
         other => Err(format!("Stockage inconnu : {other}")),
     }
 }
@@ -106,9 +112,58 @@ pub fn write_atomic(path: &Path, contents: &str) -> Result<(), String> {
     })
 }
 
-/// Premier lancement : copie le seed si aucun catalogue utilisateur n'existe.
+/// Nom d'une image livrée : `<lettres, chiffres, ., _, ->.webp`, sans chemin.
+fn is_bundled_image_name(name: &str) -> bool {
+    name.len() > ".webp".len()
+        && name.ends_with(".webp")
+        && !name.starts_with('.')
+        && name.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+}
+
+/// Copie dans `dest` les images de `src` qui y manquent. Ne remplace jamais un fichier présent.
+/// Renvoie le nombre de fichiers copiés.
+fn copy_missing_images(src: &Path, dest: &Path) -> Result<usize, String> {
+    let entries = fs::read_dir(src).map_err(|e| format!("Lecture de {} impossible : {e}", src.display()))?;
+    let mut copied = 0;
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        if !is_bundled_image_name(name) || !entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
+            continue;
+        }
+        let target = dest.join(name);
+        if target.exists() {
+            continue;
+        }
+        // Copie sous un nom temporaire puis renommage : jamais d'image tronquée sous son vrai nom.
+        let tmp = dest.join(format!("{name}.tmp"));
+        fs::copy(entry.path(), &tmp).map_err(|e| format!("Copie de {name} impossible : {e}"))?;
+        fs::rename(&tmp, &target).map_err(|e| {
+            let _ = fs::remove_file(&tmp);
+            format!("Copie de {name} impossible : {e}")
+        })?;
+        copied += 1;
+    }
+    Ok(copied)
+}
+
+/// Images du catalogue livré. Un échec n'empêche pas le démarrage : les cartes concernées
+/// affichent alors leur repère sans image.
+fn install_bundled_images(app: &AppHandle, dir: &Path) {
+    let result = app
+        .path()
+        .resolve(IMAGES_RESOURCE, BaseDirectory::Resource)
+        .map_err(|e| format!("Images livrées introuvables : {e}"))
+        .and_then(|src| copy_missing_images(&src, &dir.join("images")));
+    if let Err(e) = result {
+        eprintln!("{e}");
+    }
+}
+
+/// Au lancement : images livrées manquantes, puis seed si aucun catalogue utilisateur n'existe.
 pub fn ensure_initialized(app: &AppHandle) -> Result<(), String> {
     let dir = app_data_dir(app)?;
+    install_bundled_images(app, &dir);
     let catalog = dir.join("catalog.json");
     if catalog.exists() {
         return Ok(());
@@ -207,6 +262,35 @@ mod tests {
         assert_eq!(fs::read_to_string(dir.join("catalog.json.bak")).unwrap(), "{\"v\":1}");
         assert!(!dir.join("catalog.json.tmp").exists());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn bundled_images_are_copied_once_and_never_replaced() {
+        let root = std::env::temp_dir().join(format!("map-traveller-images-{}", std::process::id()));
+        let (src, dest) = (root.join("src"), root.join("dest"));
+        fs::create_dir_all(&src).unwrap();
+        fs::create_dir_all(&dest).unwrap();
+        fs::write(src.join("donjon-1.webp"), "livree").unwrap();
+        fs::write(src.join("banque.webp"), "livree").unwrap();
+        fs::write(src.join("notes.txt"), "ignoree").unwrap();
+        fs::write(dest.join("banque.webp"), "utilisateur").unwrap();
+
+        assert_eq!(copy_missing_images(&src, &dest), Ok(1));
+        assert_eq!(fs::read_to_string(dest.join("donjon-1.webp")).unwrap(), "livree");
+        assert_eq!(fs::read_to_string(dest.join("banque.webp")).unwrap(), "utilisateur");
+        assert!(!dest.join("notes.txt").exists());
+        assert!(!dest.join("donjon-1.webp.tmp").exists());
+        assert_eq!(copy_missing_images(&src, &dest), Ok(0));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn bundled_image_names_are_plain_webp_files() {
+        assert!(is_bundled_image_name("metier-paysan.webp"));
+        assert!(!is_bundled_image_name(".webp"));
+        assert!(!is_bundled_image_name("../x.webp"));
+        assert!(!is_bundled_image_name("x.png"));
+        assert!(!is_bundled_image_name(".cache.webp"));
     }
 
     #[test]

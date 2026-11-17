@@ -65,7 +65,8 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../resources/catalog.seed.json": "resources/catalog.seed.json"
+      "../resources/catalog.seed.json": "resources/catalog.seed.json",
+      "../resources/images/": "resources/images/"
     },
     "windows": {
       "webviewInstallMode": { "type": "downloadBootstrapper" },

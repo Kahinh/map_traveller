@@ -29,7 +29,7 @@ But : fermer la boucle « écrire → vérifier → corriger » sans tourner en 
 
 ## Ce que la boucle ne couvre pas
 
-- Le Rust : sans `cargo` local, sa validation est la CI (`npm run ci:watch`), une fois le changement poussé avec l'accord de l'utilisateur.
+- Le code Rust `cfg(windows)` : seule la CI le compile (`npm run ci:watch`), une fois le changement poussé avec l'accord de l'utilisateur. Le reste du Rust se vérifie en local (`cargo test`, `cargo clippy --all-targets -- -D warnings`, voir CLAUDE.md).
 - Le rendu : un relecteur sans navigateur ne voit rien. Les changements visuels se contrôlent selon « Validation de l'interface » de `CLAUDE.md`.
 - Le comportement natif sous Windows : à lister comme non vérifié.
 

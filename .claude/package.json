@@ -1,0 +1,4 @@
+{
+  "//": "Hooks et ligne d'état de Claude Code : scripts CommonJS (require), alors que le dépôt est en \"type\": \"module\".",
+  "type": "commonjs"
+}

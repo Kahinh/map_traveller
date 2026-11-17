@@ -20,7 +20,7 @@ Source de vérité : cahier des charges §4 et §5 (`docs/cahier-des-charges.md`
    - chaque `/travel X Y` est une étape avec un **indice** ; coordonnées = libellé uniquement ;
    - segments non reconnus → listés dans `issues`, jamais supprimés en silence ;
    - « Démarrer depuis le début » → commande complète (Zaap inclus) ;
-   - clic sur l'étape `i` → segments originaux des étapes `i+1..n` joints par `;` ; dernière étape → `null` (fin de parcours).
+   - clic sur l'étape `i` → texte original qui suit son segment (`route.command` coupé à `steps[i].end`, sans blancs ni `;` de tête : segments non reconnus et `;` final conservés) ; dernière étape → `null` (fin de parcours).
    - coordonnées répétées : seul l'indice compte.
 6. Multi-ligne : les retours à la ligne sont conservés tels quels ; ajouter un test pour tout nouveau cas inhabituel.
 

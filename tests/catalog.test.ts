@@ -7,23 +7,11 @@ import {
   validateCatalog,
   type Destination,
 } from '../src/features/catalog/schema';
-import { filterDestinations, normalizeText } from '../src/features/catalog/search';
+import { filterDestinations } from '../src/features/catalog/search';
+import { normalizeText } from '../src/features/catalog/searchText';
+import { makeDestination } from './helpers/destination';
 
-function dest(partial: Partial<Destination> & { id: string; name: string }): Destination {
-  return {
-    category: 'place',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/travel 0 0',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-    ...partial,
-  };
-}
+const dest = (partial: Partial<Destination> & { id: string; name: string }): Destination => makeDestination(partial);
 
 describe('validation du catalogue (CdC §8)', () => {
   it('le seed livré est valide', () => {
@@ -152,6 +140,9 @@ describe('validation du catalogue (CdC §8)', () => {
     expect(makeDestinationId('Abraknyde Ancestral', [])).toBe('abraknyde-ancestral');
     expect(makeDestinationId('Mériana', ['meriana'])).toBe('meriana-2');
     expect(makeDestinationId('!!!', [])).toBe('destination');
+    // Ligatures dépliées comme dans la recherche, au lieu de couper le mot.
+    expect(makeDestinationId('Cœur de Ætheria', [])).toBe('coeur-de-aetheria');
+    expect(makeDestinationId('Straße  Łódź', [])).toBe('strasse-lodz');
   });
 });
 

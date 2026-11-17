@@ -5,6 +5,7 @@
  * seul juge : modificateurs `Ctrl`, `Alt`, `Shift` (au moins `Ctrl` ou `Alt`) puis UNE touche
  * parmi `A`–`Z`, `0`–`9`, `F1`–`F12`, `Space`. Forme normalisée : `Ctrl+Alt+Shift+Touche`.
  */
+import { isRecord } from '../shared/json';
 
 export type ShortcutAction = 'toggleMain' | 'palette';
 
@@ -145,10 +146,6 @@ export function formatAccelerator(accelerator: string): string {
     .split('+')
     .map((part) => DISPLAY_NAMES[part] ?? part)
     .join(' + ');
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
 /** Valide la réponse de Rust (`get_shortcuts`, `set_shortcut`, `reset_shortcuts`) ; `null` si inattendue. */

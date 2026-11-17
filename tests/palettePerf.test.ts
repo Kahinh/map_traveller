@@ -41,7 +41,7 @@ describe('performance de la palette', () => {
     expect(parse).toHaveBeenCalledTimes(200);
     parse.mockClear();
 
-    // Première passe : remplit le cache du texte normalisé (fait une fois par ouverture).
+    // Première requête hors mesure : échauffe le moteur JavaScript (l'index, lui, est déjà construit).
     searchPalette(index, 'x', PALETTE_LIMIT);
 
     const queries = ['', 'd', 'des', 'destination 4', 'parcours 12', 'parcours 12 7 -7', 'farm 3', 'zone fictive 1'];

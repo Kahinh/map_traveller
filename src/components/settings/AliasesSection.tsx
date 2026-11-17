@@ -57,7 +57,7 @@ export function AliasesSection({ aliases, destinations }: SettingsSectionProps) 
   const counts = useMemo(() => {
     const index = getSearchIndex(destinations, dictionary);
     return new Map(
-      rows.filter((r) => r.enabled).map((r) => [r.key, searchIndexMatch(index, r.key, { typos: false }).size]),
+      rows.filter((r) => r.enabled).map((r) => [r.key, searchIndexMatch(index, r.key, { typos: false })?.size ?? index.docs.length]),
     );
   }, [destinations, dictionary, rows]);
 

@@ -20,6 +20,11 @@ describe('normalisation du texte de recherche', () => {
     expect(normalizeText('ŒUVRE Ex Æquo Straße')).toBe('oeuvre ex aequo strasse');
     expect(normalizeText('Søren Łódź')).toBe('soren lodz');
   });
+
+  it('accents combinants retirés ; texte ASCII : minuscules et espaces seulement', () => {
+    expect(normalizeText('Cafe\u0301 de\u0300')).toBe('cafe de');
+    expect(normalizeText('  Zone\t10 -  NORD ')).toBe('zone 10 - nord');
+  });
 });
 
 describe('découpe en mots', () => {
@@ -28,6 +33,10 @@ describe('découpe en mots', () => {
     expect(tokenize("L'atelier d’Astrub")).toEqual(['l', 'atelier', 'd', 'astrub']);
     expect(tokenize('  lieu-dit ;  zone   2, (nord) ')).toEqual(['lieu', 'dit', 'zone', '2', 'nord']);
     expect(tokenize('   ')).toEqual([]);
+    expect(tokenize('')).toEqual([]);
+    expect(tokenize('---')).toEqual([]);
+    expect(tokenize('-Zone-2-')).toEqual(['zone', '2']);
+    expect(tokenize('-Zoné-2-')).toEqual(['zone', '2']);
     // Autres alphabets : les lettres au sens d'Unicode restent des mots.
     expect(tokenize('東京 - Αθήνα')).toEqual(['東京', 'αθηνα']);
   });

@@ -9,12 +9,11 @@
  *   concernées gardent leur identité (cache de recherche et mémoïsation des cartes).
  * - En modification, l'identifiant ne change jamais (les favoris y sont rattachés).
  */
-import { cardParts, partCommand, type PartIndex } from '../commands/cardParts';
+import { cardParts, isTwoStep, partCommand, type PartIndex } from '../commands/cardParts';
 import { isValidFarmRoute, parseFarmRoute, type FarmRoute } from '../farm/farmRoute';
 import {
   isSafeImagePath,
   makeDestinationId,
-  TWO_STEP_CATEGORIES,
   type Catalog,
   type Category,
   type Destination,
@@ -107,7 +106,7 @@ export function duplicateDraft(d: Destination): DestinationDraft {
 
 /** Vrai si la case « deux étapes » s'applique : cochée ET catégorie PNJ ou Donjon. */
 export function draftIsTwoStep(draft: DestinationDraft): boolean {
-  return draft.twoStep && TWO_STEP_CATEGORIES.includes(draft.category);
+  return isTwoStep(draft);
 }
 
 /** Découpe une liste saisie (virgules) : espaces retirés, entrées vides et doublons supprimés. */
@@ -161,7 +160,7 @@ export function validateDraft(draft: DestinationDraft): DraftErrors {
   return errors;
 }
 
-export function hasErrors(errors: DraftErrors): boolean {
+function hasErrors(errors: DraftErrors): boolean {
   return Object.keys(errors).length > 0;
 }
 
@@ -232,22 +231,8 @@ export type DraftPreview = { kind: 'classic'; parts: PreviewPart[] } | { kind: '
  */
 export function draftPreview(draft: DestinationDraft): DraftPreview {
   if (draft.category === 'farm') return { kind: 'farm', route: parseFarmRoute(draft.command) };
-  const shape: Destination = {
-    id: draft.id ?? '',
-    name: draft.name,
-    category: draft.category,
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: draft.command,
-    sortOrder: 0,
-    enabled: true,
-    twoStep: draft.twoStep,
-    command2: draft.command2,
-  };
   return {
     kind: 'classic',
-    parts: cardParts(shape).map((p) => ({ index: p.index, left: partCommand(p, 'left'), right: partCommand(p, 'right') })),
+    parts: cardParts(draft).map((p) => ({ index: p.index, left: partCommand(p, 'left'), right: partCommand(p, 'right') })),
   };
 }

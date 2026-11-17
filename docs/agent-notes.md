@@ -22,6 +22,10 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
+### 2026-11-17 — `correction-humaine` — Palette ouverte au-dessus du centre de l'écran
+`center_on_primary` centrait la fenêtre comme si elle avait sa hauteur maximale (430 px) : la barre seule (48 px) apparaissait environ 190 px au-dessus du centre. L'utilisateur la veut centrée. C'est désormais la barre qui est centrée ; les résultats se développent vers le bas, la barre ne bouge pas.
+**Garde-fou :** position non testable hors Windows ; à contrôler sur l'application installée.
+
 ### 2026-11-17 — `outil-trompeur` — Requête média ignorée avec `#root` fixé (revue finale)
 Les onglets à 360 px restaient coupés au contrôle : `#root` était fixé à 360 dans une page de 900 de large, et `@media (max-width: 439px)` suit la largeur de la page, pas celle de `#root`. Dans l'application, fenêtre et page ont la même largeur.
 **Garde-fou :** pour une règle `@media` de largeur, régler aussi la largeur de la page du navigateur de contrôle (hauteur libre), en plus de `#root`.

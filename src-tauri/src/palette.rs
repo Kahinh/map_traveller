@@ -10,7 +10,7 @@
 //!   (`BAR_HEIGHT`) ; l'interface demande ensuite la hauteur de son contenu par la commande
 //!   `set_palette_height`. C'est la fenêtre elle-même qui change de taille : aucune zone vide
 //!   ni transparente sous la barre.
-//! - Affichage : placée sur l'écran principal (haut de fenêtre fixe, voir `center_on_primary`),
+//! - Affichage : barre centrée sur l'écran principal, haut de fenêtre fixe ensuite (voir `center_on_primary`),
 //!   puis focus, puis événement `palette:shown`.
 //! - Perte de focus → masquée, sauf dans les `FOCUS_GRACE` qui suivent un affichage.
 //! - Masquage : un seul chemin (`hide`), quelle qu'en soit la cause (raccourci, perte de focus,
@@ -184,9 +184,9 @@ fn create_palette<M: Manager<tauri::Wry>>(app: &M) -> Result<WebviewWindow, Stri
 }
 
 /// Place la fenêtre sur l'écran principal, en pixels physiques, d'après le facteur d'échelle de
-/// CET écran (la fenêtre y prendra cette échelle) : centrée en largeur, et en hauteur comme si
-/// elle avait sa taille maximale. Le haut de la fenêtre, donc la barre de recherche, reste ainsi
-/// au même endroit quelle que soit la hauteur ; les résultats se développent vers le bas.
+/// CET écran (la fenêtre y prendra cette échelle) : la barre de recherche seule (taille à
+/// l'ouverture) est centrée en largeur et en hauteur. Le haut de la fenêtre ne bouge plus
+/// ensuite : les résultats se développent vers le bas sans déplacer la barre.
 /// Sans écran principal connu : centrage par défaut de Tauri.
 fn center_on_primary(window: &WebviewWindow) {
     let Ok(Some(monitor)) = window.primary_monitor() else {
@@ -197,7 +197,7 @@ fn center_on_primary(window: &WebviewWindow) {
     let screen = monitor.size();
     let origin = monitor.position();
     let width = (WIDTH * scale).round() as i32;
-    let height = (MAX_HEIGHT * scale).round() as i32;
+    let height = (BAR_HEIGHT * scale).round() as i32;
     let x = origin.x + (screen.width as i32 - width) / 2;
     let y = origin.y + (screen.height as i32 - height) / 2;
     if let Err(e) = window.set_position(PhysicalPosition::new(x, y)) {

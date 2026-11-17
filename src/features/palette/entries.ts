@@ -7,8 +7,8 @@
  */
 import { EMPTY_DICTIONARY, type AliasDictionary } from '../aliases/aliases';
 import type { Destination } from '../catalog/schema';
-import { queryWords } from '../catalog/search';
 import { buildSearchIndex, searchIndexRank } from '../catalog/searchIndex';
+import { queryTokens } from '../catalog/searchText';
 import { cardParts, orderVariants, partVariants, type PartIndex, type VariantKind } from '../commands/cardParts';
 import { parseFarmRoute, type FarmRoute } from '../farm/farmRoute';
 import {
@@ -200,7 +200,7 @@ export function searchPalette(
 
   // (b) Requête entière prise comme texte.
   const textMatches = searchIndexRank(index.search, query, favorites);
-  const hasWords = queryWords(query).length > 0;
+  const hasWords = queryTokens(query).length > 0;
   const expand = hasWords && textMatches.filter((d) => d.category === 'farm').length === 1;
   const textEntries: PaletteEntry[] = [];
   for (const d of textMatches) {
@@ -217,7 +217,7 @@ export function searchPalette(
   const positionEntries: PaletteEntry[] = [];
   const restartEntries: PaletteEntry[] = [];
   let notice: string | null = null;
-  if (position && queryWords(text).length > 0) {
+  if (position && queryTokens(text).length > 0) {
     // Restreint aux parcours AVANT la seconde passe : une destination d'une autre catégorie qui
     // correspond exactement ne doit pas empêcher de retrouver un parcours à une faute près.
     const farms = searchIndexRank(index.search, text, favorites, (d) => d.category === 'farm');

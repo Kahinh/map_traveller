@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildDictionary, type AliasDictionary, type AliasEntry } from '../src/features/aliases/aliases';
 import type { Destination } from '../src/features/catalog/schema';
-import { filterDestinations, rankDestinations } from '../src/features/catalog/search';
+import { filterDestinations } from '../src/features/catalog/search';
 import { buildSearchIndex, getSearchIndex, searchIndexMatch, searchIndexRank } from '../src/features/catalog/searchIndex';
 import * as searchText from '../src/features/catalog/searchText';
+import { makeDestination } from './helpers/destination';
 
 // Compte les calculs de distance sans changer leur comportement.
 vi.mock('../src/features/catalog/searchText', async (importOriginal) => {
@@ -12,23 +13,8 @@ vi.mock('../src/features/catalog/searchText', async (importOriginal) => {
 });
 
 // Noms libres, coordonnées fictives uniquement.
-function dest(id: string, name: string, extra: Partial<Destination> = {}): Destination {
-  return {
-    id,
-    name,
-    category: 'place',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/travel 0 0',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-    ...extra,
-  };
-}
+const dest = (id: string, name: string, extra: Partial<Destination> = {}): Destination =>
+  makeDestination({ id, name, ...extra });
 
 const catalog = [
   dest('bijoutiers', 'Bonta - Atelier des bijoutiers'),
@@ -48,7 +34,7 @@ const dictionary = buildDictionary(DEFAULTS, { custom: [], disabledDefaults: [] 
 
 const ids = (list: readonly Destination[]) => list.map((d) => d.id);
 const search = (query: string, dict: AliasDictionary = dictionary, list = catalog) =>
-  ids(rankDestinations(list, query, new Set(), dict));
+  ids(searchIndexRank(getSearchIndex(list, dict), query, new Set()));
 
 describe('critères de l\'issue n°10', () => {
   it('« bijou » retrouve l\'atelier des bijoutiers', () => {
@@ -189,8 +175,10 @@ describe('catégories', () => {
     dest('garde', 'Garde fictif', { category: 'npc' }),
   ];
 
-  it('« on » ne ramène pas les donjons, « di » ne ramène pas les lieux-dits', () => {
+  it('une simple inclusion ne suffit pas : « on » et « jon » ne ramènent pas les donjons, « di » pas les lieux-dits', () => {
     expect(search('on', new Map(), list)).toEqual([]);
+    expect(search('jon', new Map(), list)).toEqual([]);
+    expect(ids(filterDestinations(list, 'all', 'on', new Set()))).toEqual([]);
     expect(search('di', new Map(), list)).toEqual([]);
   });
 
@@ -235,9 +223,26 @@ describe('cas limites', () => {
 
   it('sans tolérance aux fautes sur demande (compteur des alias)', () => {
     const index = buildSearchIndex(catalog, dictionary);
-    expect(searchIndexMatch(index, 'melou').size).toBe(1);
-    expect(searchIndexMatch(index, 'melou', { typos: false }).size).toBe(0);
-    expect(searchIndexMatch(index, 'hdv', { typos: false }).size).toBe(2);
+    expect(searchIndexMatch(index, 'melou')?.size).toBe(1);
+    expect(searchIndexMatch(index, 'melou', { typos: false })?.size).toBe(0);
+    expect(searchIndexMatch(index, 'hdv', { typos: false })?.size).toBe(2);
+  });
+
+  it('requête vide : `null` (tout correspond) ; ponctuation seule : ensemble vide', () => {
+    const index = buildSearchIndex(catalog, dictionary);
+    expect(searchIndexMatch(index, '')).toBeNull();
+    expect(searchIndexMatch(index, '   ')).toBeNull();
+    expect(searchIndexMatch(index, '---')?.size).toBe(0);
+  });
+
+  it('grille : faute de frappe dans l\'onglet courant malgré un lieu qui correspond exactement', () => {
+    const list = [
+      dest('lieu', 'Meulou fictif', { category: 'place' }),
+      dest('donjon', 'Antre du Meulu', { category: 'dungeon' }),
+    ];
+    expect(ids(filterDestinations(list, 'all', 'meulou', new Set()))).toEqual(['lieu']);
+    expect(ids(filterDestinations(list, 'dungeon', 'meulou', new Set()))).toEqual(['donjon']);
+    expect(ids(filterDestinations(list, 'favorites', 'meulou', new Set(['donjon'])))).toEqual(['donjon']);
   });
 });
 
@@ -245,7 +250,23 @@ describe('index', () => {
   it('destination désactivée absente', () => {
     const list = [dest('on', 'Vortex'), dest('off', 'Vortex éteint', { enabled: false })];
     expect(search('vortex', new Map(), list)).toEqual(['on']);
-    expect(ids([...searchIndexMatch(buildSearchIndex(list), '')])).toEqual(['on']);
+    expect(ids([...(searchIndexMatch(buildSearchIndex(list), 'vortex') ?? [])])).toEqual(['on']);
+    expect(ids(filterDestinations(list, 'all', '', new Set()))).toEqual(['on']);
+  });
+
+  it('cache des coûts par mot : le moins récemment lu est évincé, pas tout le cache', () => {
+    const index = buildSearchIndex([dest('a', 'Ancien')]);
+    // Mots de trois lettres : aucune seconde passe, une seule entrée de cache par mot.
+    const word = (i: number) => `w${i.toString(36).padStart(2, '0')}`;
+    const typed = (q: string) => searchIndexRank(index, q, new Set());
+    for (let i = 0; i < 64; i++) typed(word(i));
+    expect(index.cache.size).toBe(64);
+    typed(word(0)); // relu : devient le plus récent
+    typed('zzz');
+    expect(index.cache.size).toBe(64);
+    expect(index.cache.has(`exact:${word(0)}`)).toBe(true);
+    expect(index.cache.has(`exact:${word(1)}`)).toBe(false);
+    expect(index.cache.has('exact:zzz')).toBe(true);
   });
 
   it('réutilisé pour le même tableau et le même dictionnaire, reconstruit sinon', () => {

@@ -9,15 +9,23 @@
 /** Ligatures et lettres barrées que la décomposition Unicode ne déplie pas. */
 const LIGATURES: Record<string, string> = { œ: 'oe', æ: 'ae', ß: 'ss', ø: 'o', đ: 'd', ł: 'l' };
 
-/** Minuscules, sans accents, ligatures dépliées, espaces compactés : « Cœur  Mériana » → « coeur meriana ». */
-export function normalizeText(s: string): string {
+/** Un caractère hors ASCII (paires de substitution comprises) : sans lui, rien à décomposer ni à déplier. */
+const NON_ASCII = /[\u0080-\uffff]/;
+
+/** Minuscules, sans accents, ligatures dépliées ; `ascii` : le texte d'origine est en ASCII. */
+function fold(s: string, ascii: boolean): string {
+  // Raccourci : la plupart des noms et des requêtes sont en ASCII, la décomposition NFD y est inutile.
+  if (ascii) return s.toLowerCase();
   return s
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
-    .replace(/[œæßøđł]/g, (c) => LIGATURES[c] ?? c)
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/[œæßøđł]/g, (c) => LIGATURES[c] ?? c);
+}
+
+/** Minuscules, sans accents, ligatures dépliées, espaces compactés : « Cœur  Mériana » → « coeur meriana ». */
+export function normalizeText(s: string): string {
+  return fold(s, !NON_ASCII.test(s)).replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -26,9 +34,13 @@ export function normalizeText(s: string): string {
  * chiffres au sens d'Unicode : un nom écrit dans un autre alphabet reste cherchable.
  */
 export function tokenize(s: string): string[] {
-  return normalizeText(s)
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter(Boolean);
+  const ascii = !NON_ASCII.test(s);
+  // En ASCII, lettres et chiffres Unicode se réduisent à `a-z0-9` : découpe sans le drapeau `u`, plus rapide.
+  const words = fold(s, ascii).split(ascii ? /[^a-z0-9]+/ : /[^\p{L}\p{N}]+/u);
+  // Seuls le premier et le dernier morceau peuvent être vides : pas de second tableau (`filter`).
+  if (words[words.length - 1] === '') words.pop();
+  if (words[0] === '') words.shift();
+  return words;
 }
 
 /** Mots de liaison ignorés dans la REQUÊTE (jamais retirés des textes indexés). */
@@ -58,7 +70,12 @@ export function contentTokens(s: string): string[] {
  * mots de liaison, ils sont gardés : chercher « la » doit chercher « la ».
  */
 export function queryTokens(query: string): string[] {
-  const unique = [...new Set(tokenize(query))];
+  return queryTokensOf(tokenize(query));
+}
+
+/** `queryTokens` à partir des mots déjà découpés d'une requête (évite une seconde découpe). */
+export function queryTokensOf(tokens: readonly string[]): string[] {
+  const unique = [...new Set(tokens)];
   const kept = unique.filter((w) => !STOP_WORDS.has(w));
   return kept.length > 0 ? kept : unique;
 }

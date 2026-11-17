@@ -3,24 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { Destination } from '../src/features/catalog/schema';
 import { cardParts, isTwoStep, orderVariants, partCommand, partVariants } from '../src/features/commands/cardParts';
 import { leftClickCommand, rightClickCommand } from '../src/features/commands/copyRules';
+import { makeDestination } from './helpers/destination';
 
-function dest(partial: Partial<Destination>): Destination {
-  return {
-    id: 'x',
-    name: 'X',
-    category: 'dungeon',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/zaap 5 -18;/travel 1 1',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-    ...partial,
-  };
-}
+const dest = (partial: Partial<Destination>): Destination =>
+  makeDestination({ category: 'dungeon', command: '/zaap 5 -18;/travel 1 1', ...partial });
 
 describe('carte classique (non-régression)', () => {
   it('une seule partie, clics identiques aux règles existantes', () => {

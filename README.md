@@ -31,6 +31,8 @@ Petite fenêtre Windows à garder au-dessus de **Dofus** (mode fenêtré ou sans
 
 Exemple (coordonnées fictives) : `/zaap 5 -18;/travel 1 1;/travel 2 2` donne `/travel 1 1;/travel 2 2` au clic gauche et la commande entière au clic droit. Seul le **premier** segment est retiré, et seulement s'il s'agit d'un `/zaap` ; le reste est copié exactement tel quel. Une commande vide ne copie rien et un message le signale.
 
+L'infobulle d'une carte dit ce que font ses clics : « Clic gauche : sans Zaap · clic droit : avec Zaap » quand la commande commence par un `/zaap` suivi d'autre chose, sinon « Clic : copier » (les deux clics copient alors la même commande). Après une copie, la bulle en bas de la fenêtre affiche « Copié sans Zaap », « Copié avec Zaap » ou « Copié », suivi de la commande copiée.
+
 **Cartes à deux étapes** (PNJ et Donjons). Pour un trajet qui demande un passage manuel (portail, PNJ, entrée d'une dimension), la carte est coupée en deux triangles par une diagonale : le triangle haut-gauche (repère « 1 ») copie le trajet jusqu'à l'accès, le triangle bas-droite (repère « 2 ») le trajet sur place. Chaque triangle suit les mêmes règles de clic. Franchir le passage reste à faire soi-même.
 
 **Parcours Farm.** Un clic (gauche ou droit) sur une carte Farm ouvre le parcours : une petite carte par position (`1,1`, `2,2`…).
@@ -89,6 +91,8 @@ L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enre
 | Partout (global, réglable) | `Ctrl+Alt+Espace` | ouvrir ou fermer la palette |
 | Fenêtre | taper du texte | lance la recherche |
 | Fenêtre | `Ctrl+F` | place le curseur dans la recherche |
+| Recherche | `↓` | donne le focus à la première carte affichée (premier triangle d'une carte à deux étapes) ; `Tab` passe aux suivantes, `Entrée` copie comme un clic gauche |
+| Recherche | `Entrée` | copie la première carte de la recherche, comme un clic gauche (rien si la recherche est vide ou sans résultat) |
 | Fenêtre | `Échap` | ferme le panneau ouvert (parcours Farm, Paramètres), sinon efface la recherche, sinon quitte le mode gestion |
 | Formulaire | `Ctrl+Entrée` / `Échap` | enregistrer / annuler |
 | Palette | voir [Palette de recherche](#palette-de-recherche) | |

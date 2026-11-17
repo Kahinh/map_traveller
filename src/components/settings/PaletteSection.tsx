@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import type { VariantKind } from '../../features/commands/cardParts';
 import { Segmented, SettingRow, type SegmentedOption } from '../controls';
+import { Keys } from '../Keys';
 import type { SettingsSectionProps } from './types';
 
 const VARIANT_TEXT: Record<VariantKind, { short: string; detail: string }> = {
@@ -45,7 +46,10 @@ export function PaletteSection({ settings, onChange }: SettingsSectionProps) {
           describedBy={`${uid}-variant-hint`}
         />
       </SettingRow>
-      <p className="form__hint">Dans la palette, ← → changent de variante ; Ctrl+Entrée copie l'autre</p>
+      <p className="form__hint">
+        Dans la palette, <Keys keys={['ArrowLeft', 'ArrowRight']} /> changent de variante ;{' '}
+        <Keys keys={['Ctrl', 'Entrée']} combo /> copie l'autre
+      </p>
     </div>
   );
 }

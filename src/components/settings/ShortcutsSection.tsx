@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type KeyboardEvent } from 'react';
 import {
   captureAccelerator,
-  formatAccelerator,
+  acceleratorKeys,
   SHORTCUT_ACTIONS,
   SHORTCUT_LABELS,
   type ShortcutAction,
@@ -11,6 +11,7 @@ import { errorText } from '../../lib/errors';
 import { IS_TAURI } from '../../lib/tauri/env';
 import { getShortcuts, resetShortcuts, setShortcut } from '../../lib/tauri/shortcuts';
 import { InstalledOnly } from '../controls';
+import { Keys } from '../Keys';
 
 const NOT_REGISTERED =
   "Ce raccourci n'est pas actif : il est sans doute déjà utilisé par une autre application. Choisissez-en un autre.";
@@ -167,7 +168,7 @@ export function ShortcutsSection() {
                   {isCapturing
                     ? 'Appuyez sur la combinaison'
                     : status
-                      ? formatAccelerator(status.accelerator)
+                      ? <Keys keys={acceleratorKeys(status.accelerator)} combo />
                       : '…'}
                 </button>
               </div>

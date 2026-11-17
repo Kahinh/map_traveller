@@ -40,7 +40,13 @@ export function FarmPanel({ name, route, currentStep, feedbackKey, onStart, onSt
       onBack={onClose}
       aside={
         <span className="farm-panel__progress">
-          {current ? `Position ${current.label} · ${current.index + 1}/${total}` : `${total} étape${total > 1 ? 's' : ''}`}
+          {current ? (
+            <>
+              Position <span className="coords">{current.label}</span> · {current.index + 1}/{total}
+            </>
+          ) : (
+            `${total} étape${total > 1 ? 's' : ''}`
+          )}
         </span>
       }
     >

@@ -22,6 +22,10 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
+### 2026-11-17 — `non-vérifié` — Palette instantanée (issue n°24)
+Ordre, acronymes, décision d'Entrée et collisions d'alias sont couverts par des tests ; la rafale `rdv` + `Entrée` et la réindexation par `store:changed` ont été contrôlées dans le navigateur (Chrome, fallback `BroadcastChannel`). Ni l'émission réelle de `store:changed` par Rust vers une WebView2 masquée (`SetIsVisible(false)`), ni les temps sous Windows n'ont été observés ; les chiffres de `docs/perf-palette.md` sont des mesures Node.
+**Garde-fou :** section « Palette instantanée » de [recette-v1.md](recette-v1.md) ; `npm run bench:palette` ; `tests/palettePerf.test.ts`.
+
 ### 2026-11-17 — `violation-principe` — Revue V1.0 : cinq défauts que les tests ne voyaient pas
 Une revue en six volets avant la 1.0 (lots A à F) a trouvé, entre autres :
 - **Favoris écrasables** : un `favorites.json` illisible était lu comme vide, et le premier clic sur une étoile le remplaçait. **Règle :** tout fichier réécrit par l'interface passe par `createWriteGate` (`src/lib/writeGate.ts`) : rien avant la fin de la lecture, rien si elle a échoué, disque avant l'état ; `storeRead.ts` distingue « absent » de « lecture échouée ». Tests dans `tests/persistence.test.ts`.

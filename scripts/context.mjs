@@ -3,6 +3,7 @@
 // fichiers modifiés récemment, fichiers où les mots apparaissent, tests liés, symboles CodeGraph.
 // Lecture seule ; ne lit jamais node_modules, dist ni src-tauri/target.
 import { execFileSync } from 'node:child_process';
+import { stripVTControlCharacters } from 'node:util';
 
 const words = process.argv.slice(2).filter(Boolean);
 if (words.length === 0) {
@@ -50,6 +51,6 @@ console.log(recent.length ? recent.map((f) => `  ${f}`).join('\n') : '  aucun');
 
 // 4. Symboles : CodeGraph si l'index existe.
 const symbols = lines(run('codegraph', ['query', words[0]])).filter((l) => /\.(ts|tsx|rs|mjs):\d+/.test(l)).slice(0, 8);
-if (symbols.length) console.log(`\nSymboles (CodeGraph, « ${words[0]} ») :\n${symbols.map((l) => `  ${l.replace(/\x1b\[[0-9;]*m/g, '')}`).join('\n')}`);
+if (symbols.length) console.log(`\nSymboles (CodeGraph, « ${words[0]} ») :\n${symbols.map((l) => `  ${stripVTControlCharacters(l)}`).join('\n')}`);
 
 console.log('\nRègles à respecter : CLAUDE.md (invariants). Pièges connus : docs/agent-notes.md.');

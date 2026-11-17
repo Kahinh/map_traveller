@@ -22,6 +22,17 @@ export default defineConfig({
         main: 'index.html',
         palette: 'palette.html',
       },
+      // Code commun aux deux pages dans des fichiers nommés d'après leur contenu : React d'une
+      // part, nos modules partagés d'autre part. Sans ces groupes, le morceau commun prend le nom
+      // d'un de nos modules (« storage ») et masque ce qu'il contient.
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'react', test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/, priority: 2 },
+            { name: 'shared', minShareCount: 2, priority: 1 },
+          ],
+        },
+      },
     },
   },
   test: {

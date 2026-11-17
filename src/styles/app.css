@@ -1089,11 +1089,6 @@ button {
   color: var(--mt-warning);
 }
 
-/* Échec avec détail technique : la bulle reçoit le survol pour montrer son infobulle. */
-.status[title] {
-  pointer-events: auto;
-}
-
 /* Texte copié : à chasse fixe, comme partout où une commande est affichée. */
 .status__cmd {
   font-family: var(--mt-font-mono);

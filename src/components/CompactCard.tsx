@@ -29,8 +29,13 @@ const STEP_LABELS: Record<PartIndex, string> = {
  * Infobulle d'une zone de copie, exacte pour sa commande : deux variantes seulement si les deux
  * clics copient des textes différents (`partVariants`, mêmes règles que la copie).
  */
-const copyHint = (part: CardPart | undefined) =>
-  part && partVariants(part).length === 2 ? 'Clic gauche : sans Zaap · clic droit : avec Zaap' : 'Clic : copier';
+const copyHint = (part: CardPart | undefined): string => {
+  const variants = part ? partVariants(part) : [];
+  if (variants.length === 2) return 'Clic gauche : sans Zaap · clic droit : avec Zaap';
+  // `/zaap` seul : le clic gauche retire le Zaap et n'a donc rien à copier (invariant 2).
+  if (variants[0]?.kind === 'withZaap') return 'Clic droit : copier le Zaap · clic gauche : rien';
+  return 'Clic : copier';
+};
 
 /** Nom en surimpression : le conteneur porte le dégradé, le texte est coupé à deux lignes. */
 export function CardName({ name }: { name: string }) {

@@ -163,7 +163,8 @@ export function App() {
   /**
    * Clavier propre au champ de recherche (invariant 11 : c'est la recherche) : ↓ donne le focus
    * à la première carte à l'écran (première zone d'une carte à deux étapes) ; Entrée agit comme
-   * un clic gauche sur la première carte de la recherche tapée. Requête vide : Entrée ne fait rien.
+   * un clic gauche sur la première carte de la recherche tapée, ou un clic droit si le clic gauche
+   * n'a rien à copier (commande réduite à un `/zaap`, comme la palette). Requête vide : rien.
    */
   const onSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -176,7 +177,10 @@ export function App() {
       e.preventDefault();
       if (e.repeat) return;
       const first = firstMatch();
-      if (first) onCardAction(first, 1, 'left');
+      if (!first) return;
+      const part = cardParts(first)[0];
+      const button = part && partCommand(part, 'left') === null && partCommand(part, 'right') !== null ? 'right' : 'left';
+      onCardAction(first, 1, button);
     }
   };
 

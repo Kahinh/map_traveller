@@ -75,6 +75,29 @@ describe('parcours Farm (CdC §5)', () => {
     expect(parseFarmRoute('/travel 1 1;;/travel 2 2').issues[0]?.reason).toBe('empty-segment');
   });
 
+  it('reprise : un segment non reconnu entre deux étapes est copié tel quel', () => {
+    const r = parseFarmRoute('/travel 1 1;/emote salut;/travel 2 2;/travel 3 3');
+    expect(farmResumeCommand(r, 0)).toBe('/emote salut;/travel 2 2;/travel 3 3');
+    expect(farmResumeCommand(r, 1)).toBe('/travel 3 3');
+  });
+
+  it('reprise : espaces originaux conservés après la coupe', () => {
+    const r = parseFarmRoute('/travel 1 1;  /travel 2 2 ;/travel  3,3  ');
+    expect(farmResumeCommand(r, 0)).toBe('/travel 2 2 ;/travel  3,3  ');
+    expect(farmResumeCommand(r, 1)).toBe('/travel  3,3  ');
+  });
+
+  it('reprise : `;` final conservé, dernière étape → rien', () => {
+    const r = parseFarmRoute('/zaap 9 9;/travel 1 1;/travel 2 2;');
+    expect(farmResumeCommand(r, 0)).toBe('/travel 2 2;');
+    expect(farmResumeCommand(r, 1)).toBeNull();
+  });
+
+  it('reprise : retours à la ligne conservés', () => {
+    const r = parseFarmRoute('/travel 1 1;\n/travel 2 2;\n/travel 3 3');
+    expect(farmResumeCommand(r, 0)).toBe('/travel 2 2;\n/travel 3 3');
+  });
+
   it('commande vide : aucun parcours', () => {
     const r = parseFarmRoute('');
     expect(r.steps).toEqual([]);

@@ -60,7 +60,7 @@ export const CompactCard = memo(function CompactCard({
   const split = isTwoStep(d);
 
   const contextMenu = (part: PartIndex) => (e: MouseEvent) => {
-    e.preventDefault(); // jamais de menu contextuel parasite (CdC §4)
+    e.preventDefault(); // jamais de menu contextuel parasite (invariant 8)
     onAction(d, part, 'right');
   };
 

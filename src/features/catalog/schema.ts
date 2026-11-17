@@ -1,5 +1,5 @@
 /**
- * Schéma du catalogue de destinations (cahier des charges §8).
+ * Schéma du catalogue de destinations (invariant 5).
  * Fonctions pures : validation et normalisation légère des champs facultatifs.
  * Les champs `command` et `command2` ne sont JAMAIS modifiés.
  *

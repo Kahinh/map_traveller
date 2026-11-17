@@ -15,6 +15,7 @@
  * Ex aequo : départagés de façon stable par nom (ordre français), puis par identifiant.
  */
 import { normalizeText } from '../catalog/searchText';
+import { frCollator } from '../shared/collator';
 import { isRecord } from '../shared/json';
 import { isCoordinate } from '../shared/coordinates';
 
@@ -119,8 +120,6 @@ export interface NearestZaap {
   distance: number;
 }
 
-const byName = new Intl.Collator('fr', { sensitivity: 'base' });
-
 /**
  * Zaaps du monde `world` classés du plus proche au plus lointain, `limit` au plus.
  * Ex aequo : nom (ordre français), puis identifiant. Ne modifie pas `zaaps`.
@@ -137,7 +136,7 @@ export function nearestZaaps(
     .sort(
       (a, b) =>
         a.distance - b.distance ||
-        byName.compare(a.zaap.name, b.zaap.name) ||
+        frCollator.compare(a.zaap.name, b.zaap.name) ||
         (a.zaap.id < b.zaap.id ? -1 : a.zaap.id > b.zaap.id ? 1 : 0),
     )
     .slice(0, Math.max(0, limit));

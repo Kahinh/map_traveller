@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import raw from '../resources/zaaps.json';
 import { buildPaletteIndex, searchPalette, PALETTE_LIMIT } from '../src/features/palette/entries';
-import type { Destination } from '../src/features/catalog/schema';
 import { DEFAULT_ZAAPS } from '../src/features/zaaps/defaultZaaps';
 import {
   formatDistance,
@@ -14,6 +13,7 @@ import {
   type ZaapCatalog,
   type ZaapWorld,
 } from '../src/features/zaaps/zaaps';
+import { makeDestination } from './helpers/destination';
 
 // Référentiel de test : coordonnées FICTIVES (le référentiel livré est contrôlé à part).
 const WORLDS: ZaapWorld[] = [
@@ -190,20 +190,7 @@ describe('commandes copiées', () => {
 });
 
 describe('palette : « proche X,Y »', () => {
-  const dest: Destination = {
-    id: 'p',
-    name: 'Proche du lac',
-    category: 'place',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    command: '/travel 0 0',
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-  };
+  const dest = makeDestination({ id: 'p', name: 'Proche du lac' });
   const index = buildPaletteIndex([dest], undefined, CATALOG);
   const run = (q: string) => searchPalette(index, q, { limit: PALETTE_LIMIT });
 

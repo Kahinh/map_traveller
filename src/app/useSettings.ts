@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { applySettingsPatch, DEFAULT_SETTINGS, type Settings, type SettingsPatch } from '../features/settings/settings';
 import { errorText } from '../lib/errors';
 import { readSettings, saveSettings } from '../lib/tauri/storage';
@@ -30,9 +30,10 @@ export function useSettings(onError: (message: string) => void) {
   const [gate] = useState(() => createWriteGate('Réglages non chargés'));
   const onErrorRef = useRef(onError);
 
-  useEffect(() => {
+  // Dernier rappel, lu par les fonctions stables.
+  useLayoutEffect(() => {
     onErrorRef.current = onError;
-  });
+  }, [onError]);
 
   /** Échec de la fenêtre native : signalé, sans bloquer le réglage. */
   const applyAlwaysOnTop = useCallback((value: boolean) => {

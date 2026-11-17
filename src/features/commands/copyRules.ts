@@ -1,6 +1,6 @@
 /**
  * Règles de copie des destinations classiques (PNJ, Donjons, Lieux-dits).
- * Cahier des charges §4. Fonctions pures : aucun accès système.
+ * Invariants 1 et 2 de `CLAUDE.md`. Fonctions pures : aucun accès système.
  *
  * Le champ `command` est la source de vérité : texte brut saisi par l'utilisateur,
  * jamais normalisé ni reconstruit.

@@ -1,4 +1,4 @@
-/* Tokens DA Map Traveller — seule source des couleurs et dimensions (CdC §3.1).
+/* Tokens DA Map Traveller — seule source des couleurs et dimensions (invariant 8).
    Inspiration ergonomique PNJ ; aucune ressource propriétaire reprise. */
 :root {
   --mt-bg: #252739;

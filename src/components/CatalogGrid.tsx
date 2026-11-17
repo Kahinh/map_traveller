@@ -8,7 +8,7 @@ import type { ClickButton, PartIndex } from '../features/commands/cardParts';
 import { CompactCard } from './CompactCard';
 
 /** Retour visuel en cours sur une carte (copie ou avertissement). */
-export interface CardFeedback {
+interface CardFeedback {
   key: string;
   kind: FeedbackKind;
   part?: PartIndex;

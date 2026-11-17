@@ -15,7 +15,7 @@ interface Props {
   onClose: () => void;
 }
 
-/** Clic gauche et clic droit déclenchent la même action (CdC §5.3). */
+/** Clic gauche et clic droit déclenchent la même action (invariant 3). */
 const bothClicks = (fn: () => void) => ({
   onClick: fn,
   onContextMenu: (e: MouseEvent) => {
@@ -26,7 +26,7 @@ const bothClicks = (fn: () => void) => ({
 
 /**
  * Parcours Farm : une carte par position. Un clic sur une étape copie IMMÉDIATEMENT
- * la suite du parcours — aucun second clic (CdC §5.2). La dernière position cliquée
+ * la suite du parcours — aucun second clic (invariant 3). La dernière position cliquée
  * reste mise en évidence et les précédentes sont estompées, pour se repérer d'un coup d'œil.
  */
 export function FarmPanel({ name, route, currentStep, feedbackKey, onStart, onStep, onClose }: Props) {

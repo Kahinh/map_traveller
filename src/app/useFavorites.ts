@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { errorText } from '../lib/errors';
 import { readFavorites, saveFavorites } from '../lib/tauri/storage';
 import { createWriteGate } from '../lib/writeGate';
@@ -23,9 +23,10 @@ export function useFavorites(onError: (message: string) => void) {
   /** Motif de la lecture seule (fichier illisible), ou `null`. */
   const readOnlyRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  // Dernier rappel, lu par les fonctions stables.
+  useLayoutEffect(() => {
     onErrorRef.current = onError;
-  });
+  }, [onError]);
 
   useEffect(() => {
     let alive = true;

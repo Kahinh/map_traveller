@@ -33,8 +33,7 @@ import {
   type ZaapCatalog,
 } from '../zaaps/zaaps';
 
-export type { PaletteEntry, PaletteEntryKind, PaletteIndex, PaletteStep, PaletteVariant, PaletteVariantKind } from './types';
-export { VARIANT_LABELS } from './types';
+export type { PaletteEntry, PaletteVariantKind } from './types';
 
 /** Nombre maximal de lignes affichées (pas de virtualisation). */
 export const PALETTE_LIMIT = 50;
@@ -94,7 +93,7 @@ export function cardEntries(d: Destination, favorite: boolean, defaultVariant: V
  * le réglage : le trajet complet (zaap puis `/travel` vers la position), puis la commande du
  * zaap seule. Position sur le zaap : une seule variante.
  */
-export function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry {
+function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry {
   const { zaap, distance } = near;
   const trip = zaapTripCommand(zaap, target);
   return {
@@ -120,7 +119,7 @@ export function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry 
  * Recherche « proche X,Y » (issue n°7) : les zaaps les plus proches, ou un message court.
  * `null` si la requête n'est pas une recherche de zaap.
  */
-export function searchNearestZaap(zaaps: ZaapCatalog, query: string): PaletteSearchResult | null {
+function searchNearestZaap(zaaps: ZaapCatalog, query: string): PaletteSearchResult | null {
   const near = parseNearQuery(query, zaaps.worlds);
   switch (near.kind) {
     case 'none':

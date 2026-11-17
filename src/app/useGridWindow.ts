@@ -54,12 +54,12 @@ export function useGridWindow(count: number) {
     [count, measure, scrollTop],
   );
 
-  // Références lues par les écouteurs, à jour après chaque rendu.
+  // Références lues par les écouteurs, à jour avant tout effet.
   useLayoutEffect(() => {
     measureRef.current = measure;
     countRef.current = count;
     rangeRef.current = { start: win.start, end: win.end };
-  });
+  }, [measure, count, win.start, win.end]);
 
   const windowAt = useCallback((top: number): GridWindow => {
     const m = measureRef.current;

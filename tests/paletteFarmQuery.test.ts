@@ -10,6 +10,7 @@ import {
   parsePaletteQuery,
   stepsAtPosition,
 } from '../src/features/palette/farmQuery';
+import { makeDestination } from './helpers/destination';
 
 /** « Parcours complet », puis chaque position si `expand` (ordre de la palette). */
 const routeEntries = (d: Destination, route: FarmRoute, expand: boolean) => [
@@ -21,20 +22,8 @@ const positionEntries = (d: Destination, route: FarmRoute, position: { x: number
   stepsAtPosition(route, position).map((s) => farmStepEntry(d, route, s.index, false));
 
 // Coordonnées fictives uniquement.
-function farm(partial: Partial<Destination> & { id: string; name: string; command: string }): Destination {
-  return {
-    category: 'farm',
-    zone: '',
-    aliases: [],
-    tags: [],
-    image: null,
-    sortOrder: 0,
-    enabled: true,
-    twoStep: false,
-    command2: '',
-    ...partial,
-  };
-}
+const farm = (partial: Partial<Destination> & { id: string; name: string; command: string }) =>
+  makeDestination({ category: 'farm', ...partial });
 
 describe('parsePaletteQuery : position en fin de requête', () => {
   it.each([

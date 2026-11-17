@@ -9,11 +9,21 @@ import type { FarmRoute } from '../farm/farmRoute';
 import type { ZaapCatalog } from '../zaaps/zaaps';
 
 /**
- * Variante copiable d'une ligne. Sur une carte : sans ou avec le `/zaap` initial
- * (`partVariants`). Sur une ligne « zaap le plus proche » (issue n°7) : `withZaap` = trajet
- * complet, `zaapOnly` = la commande du zaap seule.
+ * Genre d'une variante copiable. Sur une carte : sans ou avec le `/zaap` initial
+ * (`partVariants`). Sur une ligne « zaap le plus proche » (issue n°7) : `trip` = zaap puis
+ * `/travel` vers la position tapée, `zaapOnly` = la commande du zaap seule. Sur une ligne Farm :
+ * `route` = parcours complet ou suite du parcours, copié tel quel.
  */
-export type PaletteVariantKind = VariantKind | 'zaapOnly';
+export type PaletteVariantKind = VariantKind | 'trip' | 'zaapOnly' | 'route';
+
+/** Libellés d'un genre : `long` pour l'infobulle et le lecteur d'écran, `short` pour le pied d'aide. */
+export const VARIANT_LABELS: Readonly<Record<PaletteVariantKind, { long: string; short: string }>> = {
+  withoutZaap: { long: 'Sans Zaap : trajet seul', short: 'sans Zaap' },
+  withZaap: { long: 'Avec Zaap : commande complète', short: 'avec Zaap' },
+  trip: { long: 'Trajet complet : zaap puis déplacement', short: 'trajet complet' },
+  zaapOnly: { long: 'Zaap seul', short: 'zaap seul' },
+  route: { long: 'Parcours Farm', short: 'parcours' },
+};
 
 export interface PaletteVariant {
   kind: PaletteVariantKind;
@@ -51,22 +61,33 @@ export interface PaletteEntry {
   variants: PaletteVariant[];
 }
 
+/** Lignes déjà fabriquées pour une destination, avec ce dont elles dépendent hors catalogue. */
+export interface CachedEntries {
+  favorite: boolean;
+  /** Variante préférée à la fabrication (cartes) ; `null` pour une ligne Farm, qui n'en dépend pas. */
+  variant: VariantKind | null;
+  entries: readonly PaletteEntry[];
+}
+
 /**
- * Index de la palette, construit une fois par catalogue chargé : destinations actives, index de
- * recherche (vocabulaire, dictionnaire d'alias) et parcours Farm déjà analysés. Rien n'est
- * analysé pendant la frappe.
+ * Index de la palette, construit une fois par catalogue et dictionnaire chargés : index de
+ * recherche (destinations actives, vocabulaire, alias) et parcours Farm déjà analysés. Rien
+ * n'est analysé pendant la frappe. Favoris et variante préférée sont donnés à chaque recherche :
+ * les changer ne reconstruit rien.
  */
 export interface PaletteIndex {
-  destinations: readonly Destination[];
-  favorites: ReadonlySet<string>;
   /** Index de recherche des destinations actives, alias compris. */
   search: SearchIndex;
   /** Parcours analysé par identifiant de destination Farm. */
   routes: ReadonlyMap<string, FarmRoute>;
   /** Référentiel des zaaps livré (recherche « proche X,Y », issue n°7). */
   zaaps: ZaapCatalog;
-  /** Réglage « variante sélectionnée par défaut » (issue n°11). */
-  defaultVariant: VariantKind;
+  /**
+   * Lignes déjà fabriquées, par clé de ligne (cartes : clé de la destination, voir
+   * `searchPalette`). Une même destination redonne le MÊME objet d'une frappe à l'autre : les
+   * lignes mémoïsées de l'interface ne sont pas redessinées. Mémoire bornée par le catalogue.
+   */
+  cache: Map<string, CachedEntries>;
 }
 
 /** Début du sous-titre : catégorie, puis zone si renseignée (distingue deux noms identiques). */

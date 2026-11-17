@@ -1,7 +1,7 @@
 import { memo, type MouseEvent } from 'react';
 import type { FeedbackKind } from '../app/useCopyFeedback';
 import type { Destination } from '../features/catalog/schema';
-import { isTwoStep, type ClickButton, type PartIndex } from '../features/commands/cardParts';
+import { cardParts, partVariants, type CardPart, type ClickButton, type PartIndex } from '../features/commands/cardParts';
 import { CheckIcon, PencilIcon, StarIcon } from './icons';
 import { SplitCardArt } from './SplitCardArt';
 import { CardVisual } from './Thumb';
@@ -25,7 +25,12 @@ const STEP_LABELS: Record<PartIndex, string> = {
   2: 'étape 2 : sur place',
 };
 
-const COPY_HINT = 'clic gauche : sans Zaap · clic droit : complet';
+/**
+ * Infobulle d'une zone de copie, exacte pour sa commande : deux variantes seulement si les deux
+ * clics copient des textes différents (`partVariants`, mêmes règles que la copie).
+ */
+const copyHint = (part: CardPart | undefined) =>
+  part && partVariants(part).length === 2 ? 'Clic gauche : sans Zaap · clic droit : avec Zaap' : 'Clic : copier';
 
 /** Nom en surimpression : le conteneur porte le dégradé, le texte est coupé à deux lignes. */
 export function CardName({ name }: { name: string }) {
@@ -57,7 +62,8 @@ export const CompactCard = memo(function CompactCard({
   onEdit,
 }: Props) {
   const isFarm = d.category === 'farm';
-  const split = isTwoStep(d);
+  const parts = cardParts(d);
+  const split = parts.length === 2;
 
   const contextMenu = (part: PartIndex) => (e: MouseEvent) => {
     e.preventDefault(); // jamais de menu contextuel parasite (invariant 8)
@@ -100,7 +106,7 @@ export const CompactCard = memo(function CompactCard({
             key={p}
             type="button"
             className={`card__zone card__zone--${p}`}
-            title={`${d.name} — ${STEP_LABELS[p]} · ${COPY_HINT}`}
+            title={`${d.name} — ${STEP_LABELS[p]}\n${copyHint(parts[p - 1])}`}
             aria-label={`Copier l'étape ${p} de ${d.name}`}
             onClick={() => onAction(d, p, 'left')}
             onContextMenu={contextMenu(p)}
@@ -120,14 +126,14 @@ export const CompactCard = memo(function CompactCard({
     );
   }
 
-  const hint = isFarm ? 'ouvrir le parcours' : COPY_HINT;
+  const hint = isFarm ? 'Clic : ouvrir le parcours' : copyHint(parts[0]);
 
   return (
     <div className={`card${feedback ? ` is-${feedback}` : ''}`} data-id={d.id}>
       <button
         type="button"
         className="card__main"
-        title={`${d.name} — ${hint}`}
+        title={`${d.name}\n${hint}`}
         onClick={() => onAction(d, 1, 'left')}
         onContextMenu={contextMenu(1)}
       >

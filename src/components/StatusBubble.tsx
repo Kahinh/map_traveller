@@ -1,6 +1,13 @@
+/** Contenu de la bulle : message, texte copié éventuel, détail technique en infobulle. */
+export interface StatusMessage {
+  text: string;
+  command?: string;
+  detail?: string;
+}
+
 interface Props {
   /** Message affiché ; `null` : aucune bulle. */
-  text: string | null;
+  message: StatusMessage | null;
   warning?: boolean;
 }
 
@@ -9,8 +16,20 @@ interface Props {
  * existe en permanence : un message qui y apparaît est annoncé par les lecteurs d'écran, ce
  * qui n'est pas garanti pour une région insérée avec son contenu.
  */
-export function StatusBubble({ text, warning = false }: Props) {
+export function StatusBubble({ message, warning = false }: Props) {
   return (
-    <div role="status">{text !== null && <div className={`status${warning ? ' is-warning' : ''}`}>{text}</div>}</div>
+    <div role="status">
+      {message !== null && (
+        <div className={`status${warning ? ' is-warning' : ''}`} title={message.detail}>
+          {message.text}
+          {message.command !== undefined && (
+            <>
+              {' : '}
+              <code className="status__cmd">{message.command}</code>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

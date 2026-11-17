@@ -5,8 +5,9 @@ import type { Destination } from '../features/catalog/schema';
 import { filterDestinations, type ViewFilter } from '../features/catalog/search';
 
 /**
- * Vue de la grille : onglet, recherche, destinations visibles et nombre par onglet. Un seul
- * moteur de recherche (`filterDestinations`) pour tout.
+ * Vue de la grille : onglet, recherche, destinations visibles, nombre par onglet et résultats
+ * dans « Tout » quand l'onglet courant n'en a aucun. Un seul moteur de recherche
+ * (`filterDestinations`) pour tout.
  */
 export function useCatalogView(
   destinations: readonly Destination[],
@@ -23,6 +24,26 @@ export function useCatalogView(
     () => filterDestinations(destinations, view, deferredQuery, favorites, dictionary),
     [destinations, view, deferredQuery, favorites, dictionary],
   );
+
+  // Aucun résultat dans l'onglet courant : combien la même recherche en trouve dans « Tout ».
+  // Calculé seulement hors de « Tout » et pour une recherche non vide.
+  const allMatches = useMemo(
+    () =>
+      view !== 'all' && deferredQuery.trim() !== '' && visible.length === 0
+        ? filterDestinations(destinations, 'all', deferredQuery, favorites, dictionary).length
+        : 0,
+    [view, deferredQuery, visible.length, destinations, favorites, dictionary],
+  );
+
+  /**
+   * Première destination de la vue pour la requête TAPÉE (Entrée dans la recherche) : si le
+   * filtrage différé est en retard sur la frappe, la recherche est refaite tout de suite.
+   */
+  const firstMatch = (): Destination | undefined => {
+    if (query.trim() === '') return undefined;
+    if (query === deferredQuery) return visible[0];
+    return filterDestinations(destinations, view, query, favorites, dictionary)[0];
+  };
 
   // Nombre de destinations par onglet, hors recherche : même filtre que la grille, requête vide.
   const counts = useMemo(
@@ -45,5 +66,5 @@ export function useCatalogView(
     setQuery('');
   };
 
-  return { view, setView, query, setQuery, deferredQuery, visible, counts, showDestination };
+  return { view, setView, query, setQuery, deferredQuery, visible, counts, allMatches, firstMatch, showDestination };
 }

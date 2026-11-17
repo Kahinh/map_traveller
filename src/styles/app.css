@@ -366,6 +366,52 @@ button {
   }
 }
 
+/* Rangée qui déborde encore (zoom, rubriques longues) : le bord où du contenu est caché se
+   fond, signe qu'elle défile. `data-fade` est posé par `overflowFade`. */
+.tabs[data-fade='end'] {
+  mask-image: linear-gradient(to right, var(--mt-mask-solid) calc(100% - var(--mt-fade-w)), var(--mt-mask-clear));
+}
+
+.tabs[data-fade='start'] {
+  mask-image: linear-gradient(to left, var(--mt-mask-solid) calc(100% - var(--mt-fade-w)), var(--mt-mask-clear));
+}
+
+.tabs[data-fade='both'] {
+  mask-image: linear-gradient(
+    to right,
+    var(--mt-mask-clear),
+    var(--mt-mask-solid) var(--mt-fade-w),
+    var(--mt-mask-solid) calc(100% - var(--mt-fade-w)),
+    var(--mt-mask-clear)
+  );
+}
+
+/* Fenêtre étroite (minimum 360) : les onglets tiennent sans défiler. Compteurs masqués, Favoris
+   réduit à son étoile (nom gardé par `aria-label` et l'infobulle), rubriques plus serrées. */
+@media (max-width: 439px) {
+  .toolbar .tab__count {
+    display: none;
+  }
+
+  .tab[aria-label] .tab__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .settings__tabs .tab {
+    padding: 0 var(--mt-space-1);
+  }
+
+  .settings__tabs .tab::after {
+    left: var(--mt-space-1);
+    right: var(--mt-space-1);
+  }
+}
+
 /* ---------- Grille ---------- */
 .grid-scroll {
   flex: 1;
@@ -1041,6 +1087,17 @@ button {
 .status.is-warning {
   border-color: var(--mt-warning);
   color: var(--mt-warning);
+}
+
+/* Échec avec détail technique : la bulle reçoit le survol pour montrer son infobulle. */
+.status[title] {
+  pointer-events: auto;
+}
+
+/* Texte copié : à chasse fixe, comme partout où une commande est affichée. */
+.status__cmd {
+  font-family: var(--mt-font-mono);
+  font-size: inherit;
 }
 
 /* ---------- Panneau (Farm, formulaire, Paramètres) ----------

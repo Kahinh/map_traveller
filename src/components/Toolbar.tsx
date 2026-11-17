@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { KeyboardEvent, RefObject } from 'react';
 import type { ViewFilter } from '../features/catalog/search';
 import { CategoryTabs } from './CategoryTabs';
 import { Keys } from './Keys';
@@ -8,6 +8,8 @@ interface Props {
   searchRef: RefObject<HTMLInputElement | null>;
   query: string;
   onQueryChange: (query: string) => void;
+  /** ↓ et Entrée dans le champ de recherche. */
+  onSearchKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
   view: ViewFilter;
   onViewChange: (view: ViewFilter) => void;
   counts?: Readonly<Record<ViewFilter, number>>;
@@ -27,6 +29,7 @@ export function Toolbar({
   searchRef,
   query,
   onQueryChange,
+  onSearchKeyDown,
   view,
   onViewChange,
   counts,
@@ -49,9 +52,10 @@ export function Toolbar({
           placeholder="Rechercher"
           aria-label="Rechercher une destination"
           aria-controls={gridId}
-          title="Tapez directement pour rechercher · Échap pour effacer"
+          title="Tapez directement pour rechercher · Flèche bas : aller aux cartes · Entrée : copier la première · Échap : effacer"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
+          onKeyDown={onSearchKeyDown}
           spellCheck={false}
           autoComplete="off"
         />

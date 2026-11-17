@@ -210,8 +210,8 @@ export function zaapTripCommand(zaap: Zaap, target: MapPosition): string {
   return `${zaap.command};/travel ${target.x} ${target.y}`;
 }
 
-/** « sur place », « 1 carte », « 12 cartes ». */
+/** « Sur place », « À 1 carte », « À 12 cartes » : en tête du sous-titre d'une ligne de palette. */
 export function formatDistance(distance: number): string {
-  if (distance === 0) return 'sur place';
-  return distance === 1 ? 'à 1 carte' : `à ${distance} cartes`;
+  if (distance === 0) return 'Sur place';
+  return distance === 1 ? 'À 1 carte' : `À ${distance} cartes`;
 }

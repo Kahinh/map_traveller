@@ -102,7 +102,7 @@ function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry {
     destinationId: zaap.id,
     title: zaap.name,
     step: null,
-    subtitle: `Zaap ${zaap.x},${zaap.y} · ${zaap.zone} · ${formatDistance(distance)}`,
+    subtitle: `${formatDistance(distance)} · Zaap ${zaap.x},${zaap.y} · ${zaap.zone}`,
     image: null,
     favorite: false,
     variants:

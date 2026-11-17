@@ -95,9 +95,9 @@ describe('distance (Manhattan, en cartes)', () => {
   });
 
   it('libellés', () => {
-    expect(formatDistance(0)).toBe('sur place');
-    expect(formatDistance(1)).toBe('à 1 carte');
-    expect(formatDistance(12)).toBe('à 12 cartes');
+    expect(formatDistance(0)).toBe('Sur place');
+    expect(formatDistance(1)).toBe('À 1 carte');
+    expect(formatDistance(12)).toBe('À 12 cartes');
   });
 });
 
@@ -200,7 +200,7 @@ describe('palette : « proche X,Y »', () => {
     expect(entries.map((e) => e.title)).toEqual(['Bravo', 'Alpha', 'Charlie']);
     expect(entries[0]).toMatchObject({
       kind: 'zaap',
-      subtitle: 'Zaap 10,0 · Zone · à 3 cartes',
+      subtitle: 'À 3 cartes · Zaap 10,0 · Zone',
       variants: [
         { kind: 'trip', text: '/zaap 10 0;/travel 8 1' },
         { kind: 'zaapOnly', text: '/zaap 10 0' },

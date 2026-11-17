@@ -23,7 +23,7 @@ interface Props {
 
 /**
  * Barre d'actions fixée en bas du formulaire. Les confirmations (abandon, suppression) s'y
- * affichent à la place des actions, jamais dans un dialogue natif ; « Continuer » et « Annuler »
+ * affichent à la place des actions, jamais dans un dialogue natif ; « Reprendre » et « Annuler »
  * y prennent le focus.
  */
 export function FormActions({
@@ -55,7 +55,7 @@ export function FormActions({
             Abandonner
           </button>
           <button type="button" className="btn" autoFocus onClick={onBack}>
-            Continuer
+            Reprendre
           </button>
         </>
       )}

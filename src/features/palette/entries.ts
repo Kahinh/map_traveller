@@ -9,7 +9,7 @@ import { EMPTY_DICTIONARY, type AliasDictionary } from '../aliases/aliases';
 import type { Destination } from '../catalog/schema';
 import { queryWords } from '../catalog/search';
 import { buildSearchIndex, searchIndexRank } from '../catalog/searchIndex';
-import { cardParts, partCommand, type PartIndex } from '../commands/cardParts';
+import { cardParts, orderVariants, partVariants, type PartIndex, type VariantKind } from '../commands/cardParts';
 import { parseFarmRoute, type FarmRoute } from '../farm/farmRoute';
 import {
   farmPositionEntries,
@@ -18,7 +18,7 @@ import {
   formatPosition,
   parsePaletteQuery,
 } from './farmQuery';
-import { paletteKey, subtitleBase, type PaletteEntry, type PaletteIndex } from './types';
+import { paletteKey, subtitleBase, type PaletteEntry, type PaletteIndex, type PaletteVariantKind } from './types';
 import {
   DEFAULT_WORLD,
   EMPTY_ZAAPS,
@@ -32,16 +32,19 @@ import {
   type ZaapCatalog,
 } from '../zaaps/zaaps';
 
-export type { PaletteChoice, PaletteEntry, PaletteEntryKind, PaletteIndex } from './types';
+export type { PaletteEntry, PaletteEntryKind, PaletteIndex, PaletteStep, PaletteVariant, PaletteVariantKind } from './types';
 
 /** Nombre maximal de lignes affichées (pas de virtualisation). */
 export const PALETTE_LIMIT = 50;
 
-/** Libellés des étapes d'une carte à deux étapes : le passage entre les deux reste manuel. */
-export const STEP_HINTS: Record<PartIndex, string> = {
-  1: 'Étape 1 : accès',
-  2: 'Étape 2 : sur place',
+/** Nom de chaque étape d'une carte à deux étapes, en fin de sous-titre. */
+export const STEP_NAMES: Record<PartIndex, string> = {
+  1: 'accès',
+  2: 'sur place',
 };
+
+/** Variante sélectionnée par défaut (réglage absent) : le comportement d'avant l'issue n°11. */
+export const DEFAULT_VARIANT: VariantKind = 'withoutZaap';
 
 /**
  * Index de la palette : destinations actives seulement, index de recherche construit avec le
@@ -53,6 +56,7 @@ export function buildPaletteIndex(
   favorites: ReadonlySet<string>,
   dictionary: AliasDictionary = EMPTY_DICTIONARY,
   zaaps: ZaapCatalog = EMPTY_ZAAPS,
+  defaultVariant: VariantKind = DEFAULT_VARIANT,
 ): PaletteIndex {
   const search = buildSearchIndex(destinations, dictionary);
   const active = search.docs;
@@ -60,36 +64,34 @@ export function buildPaletteIndex(
   for (const d of active) {
     if (d.category === 'farm') routes.set(d.id, parseFarmRoute(d.command));
   }
-  return { destinations: active, favorites, search, routes, zaaps };
+  return { destinations: active, favorites, search, routes, zaaps, defaultVariant };
 }
 
 /**
- * Ligne d'une carte PNJ / Donjon / Lieu-dit : un choix par zone de copie (`cardParts`),
- * donc une seule ligne et deux choix pour une carte à deux étapes.
+ * Lignes d'une carte PNJ / Donjon / Lieu-dit (issue n°11) : UNE LIGNE PAR ÉTAPE (`cardParts`),
+ * dans l'ordre. Chaque ligne porte ses propres variantes (`partVariants`), la variante préférée
+ * en premier. Le nombre d'étapes vient des données, jamais d'une constante.
  */
-export function cardEntry(d: Destination, favorite: boolean): PaletteEntry {
+export function cardEntries(d: Destination, favorite: boolean, defaultVariant: VariantKind = DEFAULT_VARIANT): PaletteEntry[] {
   const parts = cardParts(d);
   const split = parts.length > 1;
-  return {
-    key: paletteKey(d.id, 'card'),
+  return parts.map((part) => ({
+    key: split ? paletteKey(d.id, 'card', part.index) : paletteKey(d.id, 'card'),
     kind: 'card',
     destinationId: d.id,
     title: d.name,
-    subtitle: subtitleBase(d),
+    step: split ? { index: part.index, count: parts.length } : null,
+    subtitle: split ? `${subtitleBase(d)} · ${STEP_NAMES[part.index]}` : subtitleBase(d),
     image: d.image,
     favorite,
-    choices: parts.map((part) => ({
-      label: split ? String(part.index) : '',
-      hint: split ? STEP_HINTS[part.index] : '',
-      primary: partCommand(part, 'left'),
-      secondary: partCommand(part, 'right'),
-    })),
-  };
+    variants: orderVariants(partVariants(part), defaultVariant),
+  }));
 }
 
 /**
- * Ligne d'un zaap proposé pour la position tapée. Entrée / clic gauche : trajet complet (zaap
- * puis `/travel` vers la position) ; Ctrl+Entrée / clic droit : la commande du zaap seule.
+ * Ligne d'un zaap proposé pour la position tapée. Deux variantes, dans cet ordre quel que soit
+ * le réglage : le trajet complet (zaap puis `/travel` vers la position), puis la commande du
+ * zaap seule. Position sur le zaap : une seule variante.
  */
 export function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry {
   const { zaap, distance } = near;
@@ -99,10 +101,17 @@ export function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry 
     kind: 'zaap',
     destinationId: zaap.id,
     title: zaap.name,
+    step: null,
     subtitle: `Zaap ${zaap.x},${zaap.y} · ${zaap.zone} · ${formatDistance(distance)}`,
     image: null,
     favorite: false,
-    choices: [{ label: '', hint: '', primary: trip, secondary: zaap.command }],
+    variants:
+      trip === zaap.command
+        ? [{ kind: 'withZaap', text: trip }]
+        : [
+            { kind: 'withZaap', text: trip },
+            { kind: 'zaapOnly', text: zaap.command },
+          ],
   };
 }
 
@@ -127,6 +136,25 @@ export function searchNearestZaap(zaaps: ZaapCatalog, query: string): PaletteSea
     return { entries: [], notice: `Aucun zaap répertorié dans ${name}` };
   }
   return { entries: found.map((n) => zaapEntry(n, near.position)), notice: null };
+}
+
+/** Libellé d'une variante (infobulle, lecteur d'écran, pied d'aide). */
+const VARIANT_LABELS: Record<PaletteVariantKind, string> = {
+  withoutZaap: 'Sans Zaap : trajet seul',
+  withZaap: 'Avec Zaap : commande complète',
+  zaapOnly: 'Zaap seul',
+};
+
+/** Sur une ligne « zaap le plus proche », la commande complète est le trajet. */
+export function variantLabel(entry: Pick<PaletteEntry, 'kind'>, kind: PaletteVariantKind): string {
+  if (entry.kind === 'zaap' && kind === 'withZaap') return 'Trajet complet : zaap puis déplacement';
+  return VARIANT_LABELS[kind];
+}
+
+/** Libellé court du pied d'aide (« avec Zaap », « sans Zaap », « zaap seul », « trajet complet »). */
+export function variantShortLabel(entry: Pick<PaletteEntry, 'kind'>, kind: PaletteVariantKind): string {
+  if (entry.kind === 'zaap' && kind === 'withZaap') return 'trajet complet';
+  return kind === 'withoutZaap' ? 'sans Zaap' : kind === 'withZaap' ? 'avec Zaap' : 'zaap seul';
 }
 
 export interface PaletteSearchResult {
@@ -177,7 +205,7 @@ export function searchPalette(
   const textEntries: PaletteEntry[] = [];
   for (const d of textMatches) {
     if (d.category !== 'farm') {
-      textEntries.push(cardEntry(d, isFav(d)));
+      textEntries.push(...cardEntries(d, isFav(d), index.defaultVariant));
       continue;
     }
     const route = routes.get(d.id);

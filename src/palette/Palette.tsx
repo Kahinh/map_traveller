@@ -11,10 +11,12 @@ import {
 import { ArrowIcon, SearchIcon } from '../components/icons';
 import { buildDictionary, EMPTY_DICTIONARY, type AliasDictionary } from '../features/aliases/aliases';
 import type { Destination } from '../features/catalog/schema';
-import type { ClickButton } from '../features/commands/cardParts';
+import type { VariantKind } from '../features/commands/cardParts';
 import {
   buildPaletteIndex,
+  DEFAULT_VARIANT,
   PALETTE_LIMIT,
+  variantShortLabel,
   searchPalette,
   type PaletteEntry,
   type PaletteSearchResult,
@@ -27,6 +29,7 @@ import { hidePalette, onPaletteShown, setPaletteHeight } from '../lib/tauri/pale
 import {
   DEFAULT_ALIASES,
   loadFavorites,
+  loadSettings,
   parseAliasesText,
   parseCatalogText,
   readStoreText,
@@ -61,8 +64,9 @@ function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
 }
 
 /**
- * Palette de recherche globale. Le focus reste toujours dans le champ ; Entrée / clic gauche
- * copie sans le `/zaap` initial, Ctrl+Entrée / clic droit copie la commande complète. Copie
+ * Palette de recherche globale. Le focus reste toujours dans le champ. Une ligne par étape ;
+ * sur une ligne à deux variantes (avec / sans Zaap, issue n°11), ←/→ choisissent la variante,
+ * Entrée / clic gauche copie la variante active, Ctrl+Entrée / clic droit l'autre. Copie
  * d'abord, masque ensuite, et seulement si la copie a réussi. Aucun minuteur : au repos, rien
  * ne tourne.
  *
@@ -74,6 +78,8 @@ export function Palette() {
   const [destinations, setDestinations] = useState<readonly Destination[]>([]);
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set());
   const [dictionary, setDictionary] = useState<AliasDictionary>(EMPTY_DICTIONARY);
+  /** Réglage « variante sélectionnée par défaut » (issue n°11), relu à chaque affichage. */
+  const [defaultVariant, setDefaultVariant] = useState<VariantKind>(DEFAULT_VARIANT);
   const [loaded, setLoaded] = useState(false);
   /** Catalogue invalide : conservée tant que le texte du fichier ne change pas. */
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -98,15 +104,16 @@ export function Palette() {
   // Index construit une fois par catalogue ou dictionnaire chargé (ni à chaque affichage, ni
   // quand seuls les favoris changent) ; à chaque frappe, seul le dernier mot tapé est recherché.
   const index = useMemo(
-    () => buildPaletteIndex(destinations, NO_FAVORITES, dictionary, DEFAULT_ZAAPS),
-    [destinations, dictionary],
+    () => buildPaletteIndex(destinations, NO_FAVORITES, dictionary, DEFAULT_ZAAPS, defaultVariant),
+    [destinations, dictionary, defaultVariant],
   );
   const hasQuery = query.trim() !== '';
   const { entries, notice } = useMemo(
     () => (hasQuery ? searchPalette(index, query, PALETTE_LIMIT, favorites) : NO_RESULT),
     [index, query, favorites, hasQuery],
   );
-  const choiceCounts = useMemo(() => entries.map((e) => e.choices.length), [entries]);
+  // Une case par variante ; une ligne sans variante compte une case (rien à copier).
+  const choiceCounts = useMemo(() => entries.map((e) => Math.max(1, e.variants.length)), [entries]);
   /** Catégorie par destination, pour l'icône des vignettes sans image : une fois par catalogue. */
   const categoryOf = useMemo(() => new Map(destinations.map((d) => [d.id, d.category])), [destinations]);
 
@@ -132,10 +139,11 @@ export function Palette() {
   const reload = useCallback(async () => {
     const seq = ++loadSeq.current;
     try {
-      const [catalogText, aliasesText, favs] = await Promise.all([
+      const [catalogText, aliasesText, favs, settings] = await Promise.all([
         readStoreText('catalog'),
         readStoreText('aliases'),
         loadFavorites(),
+        loadSettings(),
         initImages(),
       ]);
       if (seq !== loadSeq.current) return;
@@ -155,6 +163,7 @@ export function Palette() {
         setDictionary(buildDictionary(DEFAULT_ALIASES, parseAliasesText(aliasesText).user));
       }
       setFavorites((prev) => (sameSet(prev, favs) ? prev : favs));
+      setDefaultVariant(settings.palette.defaultVariant);
       setReadError(null);
     } catch (e) {
       if (seq === loadSeq.current) setReadError(`Chargement impossible : ${String(e)}`);
@@ -207,13 +216,18 @@ export function Palette() {
     document.getElementById(optionId(nav.index))?.scrollIntoView({ block: 'nearest' });
   }, [nav.index, entries]);
 
-  /** Copie la commande de la case `choice` de la ligne `i`, puis masque la palette. */
+  /**
+   * Copie la variante `choice` de la ligne `i` (l'autre variante si `alternate` : Ctrl+Entrée,
+   * clic droit sur la ligne), puis masque la palette.
+   */
   const activate = useCallback(
-    async (i: number, choice: number, button: ClickButton) => {
+    async (i: number, choice: number, alternate: boolean) => {
       const entry = entries[i];
       if (!entry) return;
-      const c = entry.choices[choice] ?? entry.choices[0];
-      const text = c ? (button === 'left' ? c.primary : c.secondary) : null;
+      const { variants } = entry;
+      let idx = Math.min(Math.max(0, choice), Math.max(0, variants.length - 1));
+      if (alternate && variants.length === 2) idx = 1 - idx;
+      const text = variants[idx]?.text ?? null;
       if (text === null) {
         setStatus({
           kind: 'warning',
@@ -255,8 +269,8 @@ export function Palette() {
   );
 
   const onActivate = useCallback(
-    (i: number, choice: number, button: ClickButton) => {
-      void activate(i, choice, button);
+    (i: number, choice: number, alternate: boolean) => {
+      void activate(i, choice, alternate);
     },
     [activate],
   );
@@ -288,15 +302,15 @@ export function Palette() {
         return;
       case 'ArrowLeft':
       case 'ArrowRight':
-        // Interceptées uniquement sur une ligne à deux étapes (sinon : curseur de texte).
-        if (modified || !selected || selected.choices.length < 2) return;
+        // Interceptées uniquement sur une ligne à deux variantes (sinon : curseur de texte).
+        if (modified || !selected || selected.variants.length < 2) return;
         e.preventDefault();
         dispatch({ type: e.key === 'ArrowRight' ? 'choice-next' : 'choice-prev' });
         return;
       case 'Enter':
         e.preventDefault();
         if (nav.index < 0) return;
-        void activate(nav.index, nav.choice, e.ctrlKey || e.metaKey ? 'right' : 'left');
+        void activate(nav.index, nav.choice, e.ctrlKey || e.metaKey);
         return;
       case 'Escape':
         e.preventDefault();
@@ -310,10 +324,12 @@ export function Palette() {
     }
   };
 
-  const showSteps = selected !== undefined && selected.choices.length > 1;
-  const showZaapHint = selected?.choices.some((c) => c.primary !== c.secondary) ?? false;
-  // Ligne « zaap le plus proche » : Entrée copie le trajet complet, Ctrl+Entrée le zaap seul.
-  const zaapRow = selected?.kind === 'zaap';
+  // Ligne à deux variantes : ←/→ et Ctrl+Entrée, libellés de la variante active et de l'autre.
+  const variants = selected?.variants ?? [];
+  const twoVariants = selected !== undefined && variants.length === 2;
+  const activeIdx = twoVariants ? Math.min(nav.choice, 1) : 0;
+  const enterLabel = twoVariants ? variantShortLabel(selected, variants[activeIdx]!.kind) : 'copier';
+  const otherLabel = twoVariants ? variantShortLabel(selected, variants[1 - activeIdx]!.kind) : '';
   const loadError = readError ?? catalogError;
   const trimmed = query.trim();
 
@@ -398,7 +414,7 @@ export function Palette() {
                 </kbd>{' '}
                 naviguer
               </span>
-              {showSteps && (
+              {twoVariants && (
                 <span>
                   <kbd title="Flèche gauche">
                     <ArrowIcon className="palette__arrow palette__arrow--left" />
@@ -406,15 +422,15 @@ export function Palette() {
                   <kbd title="Flèche droite">
                     <ArrowIcon className="palette__arrow palette__arrow--right" />
                   </kbd>{' '}
-                  étape
+                  variante
                 </span>
               )}
               <span>
-                <kbd>Entrée</kbd> {zaapRow ? 'trajet complet' : 'copier'}
+                <kbd>Entrée</kbd> {enterLabel}
               </span>
-              {showZaapHint && (
+              {twoVariants && (
                 <span>
-                  <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> {zaapRow ? 'zaap seul' : 'avec Zaap'}
+                  <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> {otherLabel}
                 </span>
               )}
               <span>

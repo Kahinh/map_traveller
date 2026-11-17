@@ -7,6 +7,7 @@ import { Panel } from './Panel';
 import { AliasesSection } from './settings/AliasesSection';
 import { DataSection } from './settings/DataSection';
 import { DisplaySection } from './settings/DisplaySection';
+import { PaletteSection } from './settings/PaletteSection';
 import { ShortcutsSection } from './settings/ShortcutsSection';
 import type { SettingsSectionProps } from './settings/types';
 import { UpdatesSection } from './settings/UpdatesSection';
@@ -25,6 +26,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'updates', label: 'Mises à jour', render: UpdatesSection },
   { id: 'data', label: 'Données', render: DataSection },
   { id: 'display', label: 'Affichage', render: DisplaySection },
+  { id: 'palette', label: 'Palette', render: PaletteSection },
   { id: 'aliases', label: 'Alias', render: AliasesSection },
   { id: 'shortcuts', label: 'Raccourcis', render: ShortcutsSection },
 ] as const satisfies readonly SectionDef[];

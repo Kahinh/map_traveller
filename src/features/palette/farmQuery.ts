@@ -9,7 +9,11 @@
  */
 import type { Destination } from '../catalog/schema';
 import { farmResumeCommand, farmStartCommand, type FarmRoute, type FarmStep } from '../farm/farmRoute';
-import { paletteKey, subtitleBase, type PaletteEntry } from './types';
+import { paletteKey, subtitleBase, type PaletteEntry, type PaletteVariant } from './types';
+
+/** Ligne Farm : une seule variante (aucune case latérale), ou aucune s'il n'y a rien à copier. */
+const single = (command: string | null): PaletteVariant[] =>
+  command === null ? [] : [{ kind: 'withoutZaap', text: command }];
 
 export interface QueryPosition {
   x: number;
@@ -71,10 +75,11 @@ export function farmStartEntry(d: Destination, route: FarmRoute, favorite: boole
     kind: 'farm-start',
     destinationId: d.id,
     title: d.name,
+    step: null,
     subtitle: withIssues(`${subtitleBase(d)} · parcours complet`, route),
     image: d.image,
     favorite,
-    choices: [{ label: '', hint: '', primary: command, secondary: command }],
+    variants: single(command),
   };
 }
 
@@ -92,10 +97,11 @@ export function farmStepEntry(d: Destination, route: FarmRoute, stepIndex: numbe
     kind: 'farm-step',
     destinationId: d.id,
     title: d.name,
+    step: null,
     subtitle: withIssues(`${subtitleBase(d)} · ${where}${end}`, route),
     image: d.image,
     favorite,
-    choices: [{ label: '', hint: '', primary: command, secondary: command }],
+    variants: single(command),
   };
 }
 

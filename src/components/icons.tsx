@@ -47,6 +47,22 @@ export const MarkIcon = ({ className }: { className?: string }) => (
   </Icon>
 );
 
+/** Variante « avec Zaap » : un portail (anneau et cœur). */
+export const ZaapIcon = () => (
+  <Icon>
+    <circle cx="8" cy="8" r="5.5" />
+    <circle cx="8" cy="8" r="2.25" />
+  </Icon>
+);
+
+/** Variante « sans Zaap » : un trajet direct, d'un point à une flèche. */
+export const TravelIcon = () => (
+  <Icon>
+    <circle cx="3.5" cy="12.5" r="1.25" fill="currentColor" stroke="none" />
+    <path d="M5 11 11.75 4.25M7.5 4.25h4.25V8.5" />
+  </Icon>
+);
+
 export const PinIcon = ({ filled }: { filled: boolean }) => (
   <Icon filled={filled}>
     <path d="M6 2h4l-.6 4 2.1 2v1.5h-7V8l2.1-2L6 2z" />

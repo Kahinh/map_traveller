@@ -21,6 +21,11 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
+### 2026-11-17 — `non-vérifié` — Palette : étapes en lignes et variantes avec / sans Zaap (issue n°11)
+Vérifié dans Chrome (`palette.html`, catalogue de contrôle) : « temple » donne deux lignes, cases sur la ligne sélectionnée avec Zaap seulement, ←/→ changent l'aperçu et le pied, Entrée et Ctrl+Entrée copient les bonnes variantes (presse-papiers du navigateur), réglage « Avec Zaap » enregistré puis relu par la palette, nom long tronqué avec « — Étape N » visible.
+Non vérifié : palette devant le jeu, réglage changé dans la fenêtre principale puis palette rouverte dans l'application installée (lecture de `settings.json` par la palette).
+**Garde-fou :** liste dans le commentaire de clôture de l'issue n°11.
+
 ### 2026-11-17 — `outil-trompeur` — « cargo ne compile pas en local » n'était pas une fatalité
 Les notes précédentes concluaient que le Rust ne pouvait pas être compilé dans le conteneur (bibliothèques système absentes). Il suffit de les installer : `apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev`, puis `cargo test` et `cargo clippy` passent dans `src-tauri/` (sous Linux : le code `cfg(windows)` reste vérifié par la CI seulement).
 **Garde-fou :** cette note. Tenter l'installation avant de déclarer le Rust « non compilé ».

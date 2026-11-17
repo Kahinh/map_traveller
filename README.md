@@ -87,16 +87,17 @@ Le formulaire :
 | Touche | Effet |
 |---|---|
 | `↑` / `↓` | changer de ligne |
-| `Entrée` ou clic | copier, comme un **clic gauche** (sans le `/zaap` initial) |
-| `Ctrl+Entrée` ou clic droit | copier la commande **complète** |
-| `←` / `→` | sur une carte à deux étapes, choisir l'étape 1 ou 2 |
+| `Entrée` ou clic | copier la **variante sélectionnée** |
+| `Ctrl+Entrée` ou clic droit | copier **l'autre variante** |
+| `←` / `→` | sur une ligne à deux variantes, passer de « sans Zaap » à « avec Zaap » |
 | `Échap` | fermer sans copier |
 
 - **Compacte** : à l'ouverture, seule la barre de recherche est affichée. Les résultats apparaissent dessous dès la première lettre, et la fenêtre prend exactement leur hauteur (8 lignes visibles au plus, puis défilement). Sans résultat, elle se réduit à la barre, qui ne change jamais de place.
 - **Recherche** : par nom, alias, tag, zone ou catégorie (« donjon … », « farm … »). Elle ignore les accents, les majuscules, la ponctuation, les tirets, les mots de liaison (« de », « des », « du », « l' »… sauf s'ils sont seuls dans la recherche) et l'ordre des mots : `bijoutier bonta` et `bonta bijoutier` donnent le même résultat. Le meilleur résultat est présélectionné.
 - **Alias** : un acronyme du dictionnaire (`hdv` pour « hôtel des ventes ») trouve toutes les destinations concernées ; un mot de plus affine (`hdv bonta`). Voir [Paramètres](#paramètres).
 - **Fautes de frappe** : si rien ne correspond exactement, la recherche tolère une faute (deux à partir de 8 lettres) sur les mots de 4 lettres et plus. Un résultat approximatif n'apparaît jamais quand un résultat exact existe.
-- **Carte à deux étapes** : une seule ligne, avec les cases **1** et **2** sur la ligne sélectionnée.
+- **Une ligne par étape** : une carte à deux étapes donne deux lignes, « — Étape 1 » (accès) et « — Étape 2 » (sur place), toujours l'une sous l'autre.
+- **Avec ou sans Zaap** : sur une ligne dont la commande commence par `/zaap`, deux cases apparaissent à droite, *sans Zaap* (icône de trajet : la suite sans le `/zaap` initial) et *avec Zaap* (icône de portail : la commande complète). La case en surbrillance est celle qu'`Entrée` copie ; un clic sur une case copie la sienne. Sur les autres lignes, ces mêmes icônes atténuées signalent un Zaap. Une ligne sans `/zaap`, ou réduite à un `/zaap`, n'a pas de case : elle se copie directement. Les parcours Farm n'en ont pas non plus.
 - **Parcours Farm** : le nom du parcours liste « parcours complet » puis chaque position. Le nom suivi d'une position reprend directement la suite : avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`. Si le parcours repasse par la même position, une ligne par passage est proposée.
 - **Zaap le plus proche** : `proche -20,-20` (ou `proche -20 -20`, `proche [-20,-20]`) liste les trois zaaps les plus proches de cette position, du plus proche au plus lointain, avec leurs coordonnées, leur zone et la distance. `Entrée` copie le **trajet complet** (`/zaap …;/travel -20 -20`, ou le zaap seul si la position est celle du zaap) ; `Ctrl+Entrée` copie **le zaap seul**. `proche incarnam 2,-4` cherche parmi les zaaps d'Incarnam, qui ont leurs propres coordonnées et ne sont jamais comparés au Monde des Douze. La distance est comptée **en cartes** (horizontal + vertical, distance de Manhattan), à vol d'oiseau : la mer, les obstacles et les accès ne sont pas pris en compte, le zaap le plus proche n'est donc pas toujours le trajet le plus court. Ex aequo : ordre alphabétique. « proche » suivi de mots sans chiffre reste une recherche normale.
 - **Limite** : la palette s'affiche devant le jeu en mode fenêtré ou sans bordure. En plein écran exclusif, Windows peut l'empêcher d'apparaître.
@@ -108,6 +109,7 @@ L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enre
 - **Mises à jour** : la version installée, le mode, Manuel (par défaut : rien n'est contacté sans votre action) ou Automatique, et le bouton « Rechercher des mises à jour ». Détails dans [Mises à jour](#mises-à-jour).
 - **Données** : l'emplacement réel de vos données, avec « Ouvrir le dossier » et « Copier le chemin ». Pour sauvegarder vos données, copiez ce dossier. Fermez l'application avant de modifier ces fichiers à la main.
 - **Affichage** : toujours au premier plan (même réglage que l'épingle) ; **Réduire dans la zone de notification** (activé par défaut), voir ci-dessous.
+- **Palette** : la variante sélectionnée par défaut, *Sans Zaap* (comme avant) ou *Avec Zaap*. Elle fixe la première case et ce que copie `Entrée` ; `Ctrl+Entrée` copie l'autre. La palette relit ce réglage à chaque ouverture.
 - **Alias** : le dictionnaire de la recherche, commun à la fenêtre et à la palette. Un alias remplace un mot de la recherche par sa signification, pour toutes les destinations : il se saisit **une seule fois** ici, pas carte par carte. Les alias fournis avec l'application (`hdv`, `rdv`) peuvent être désactivés ou remplacés ; les vôtres s'ajoutent, se modifient et se suppriment. Chaque ligne indique combien de destinations l'alias trouve.
 - **Raccourcis** : les deux raccourcis globaux.
 
@@ -182,7 +184,7 @@ Tout est stocké dans `%APPDATA%\MapTraveller\` :
 | `catalog.json` | vos destinations (éditable) |
 | `catalog.json.bak` | version précédente, restaurable |
 | `favorites.json` | identifiants des favoris |
-| `settings.json` | préférences (premier plan, réduction dans la zone de notification `tray.minimizeToTray`, raccourcis, mode de mise à jour et date de la dernière vérification…) |
+| `settings.json` | préférences (premier plan, réduction dans la zone de notification `tray.minimizeToTray`, variante par défaut de la palette `palette.defaultVariant`, raccourcis, mode de mise à jour et date de la dernière vérification…) |
 | `aliases.json` | vos alias de recherche et les alias fournis que vous avez désactivés (créé à la première personnalisation). Ce que l'application ne comprend pas dans ce fichier est conservé tel quel ; un fichier illisible ou d'une version plus récente n'est jamais réécrit |
 | `images/` | images importées par le formulaire, renommées `img-….png/jpg/webp` (chemins relatifs dans le JSON), et leurs vignettes `img-….thumb.webp` |
 

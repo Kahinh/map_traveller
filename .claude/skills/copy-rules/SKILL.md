@@ -26,7 +26,7 @@ Source de vérité : cahier des charges §4 et §5 (`docs/cahier-des-charges.md`
 
 ## Palette
 
-`src/features/palette/` : `cardEntry` = un choix par zone de `cardParts` (primary = `partCommand(part, 'left')`, secondary = `partCommand(part, 'right')`). Lignes Farm : `farm-start` = `farmStartCommand`, `farm-step` i = `farmResumeCommand(route, i)` (dernière étape → `null`). `parsePaletteQuery` ne lit qu'une position en fin de requête (`1-1` = `1,1`, `1 -1` = négatif) ; aucune commande n'est construite à partir de ces nombres.
+`src/features/palette/` (issue n°11) : `cardEntries` = **une ligne par zone** de `cardParts` (étape 1, étape 2), chacune avec ses variantes `partVariants(part)` (déduites de `partCommand(part, 'left' | 'right')` : vide → aucune, sans Zaap → une, `/zaap` seul → une, sinon sans / avec Zaap), la variante préférée (`settings.palette.defaultVariant`, `orderVariants`) en premier. Entrée / clic gauche = variante active, Ctrl+Entrée / clic droit sur la ligne = l'autre ; clic sur une case = sa variante. Lignes « proche X,Y » (n°7) : trajet complet puis zaap seul, ordre fixe. Lignes Farm : `farm-start` = `farmStartCommand`, `farm-step` i = `farmResumeCommand(route, i)` (dernière étape → `null`). `parsePaletteQuery` ne lit qu'une position en fin de requête (`1-1` = `1,1`, `1 -1` = négatif) ; aucune commande n'est construite à partir de ces nombres.
 
 ## Procédure
 

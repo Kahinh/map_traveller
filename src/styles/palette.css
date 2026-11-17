@@ -41,7 +41,7 @@ button {
   /* Dimensions propres à la palette (pas de couleur ici). */
   --pal-row-h: 40px;
   --pal-thumb: 28px;
-  --pal-steps-w: 52px;
+  --pal-variants-w: 52px;
 
   /* Lignes visibles avant défilement. */
   --pal-max-rows: 8;
@@ -188,7 +188,7 @@ button {
   cursor: default;
 }
 
-.palette__row.is-empty > :not(.palette__steps) {
+.palette__row.is-empty > :not(.palette__variants) {
   opacity: 0.5;
 }
 
@@ -283,45 +283,62 @@ button {
   color: var(--mt-text);
 }
 
-/* ---------- Cases 1 / 2 (carte à deux étapes) ---------- */
-.palette__steps {
+/* ---------- Cases « avec / sans Zaap » (issue n°11) ---------- */
+/* Largeur fixe, présente seulement sur les lignes à deux variantes : rien ne saute. */
+.palette__variants {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: var(--mt-space-1);
-  width: var(--pal-steps-w);
+  width: var(--pal-variants-w);
 }
 
-.palette__steps-hint {
-  font-size: var(--mt-font-size-xs);
-  color: var(--mt-text-muted);
-  white-space: nowrap;
-}
-
-.palette__step {
+.palette__variant {
+  display: grid;
+  place-items: center;
   width: var(--mt-control-h);
   height: var(--mt-control-h);
   border-radius: var(--mt-radius-sm);
   border: 1px solid var(--mt-card-border);
   background: var(--mt-bg-raised);
   color: var(--mt-text-muted);
-  font-size: var(--mt-font-size-sm);
-  font-weight: var(--mt-font-weight-semibold);
   transition:
     background-color var(--mt-dur-fast) var(--mt-ease),
     color var(--mt-dur-fast) var(--mt-ease);
 }
 
-.palette__step.is-active {
+.palette__variant svg {
+  width: var(--mt-icon-md);
+  height: var(--mt-icon-md);
+}
+
+.palette__variant.is-active {
   border-color: var(--mt-accent);
   background: var(--mt-accent);
   color: var(--mt-accent-ink);
 }
 
-.palette__step.is-empty {
+/* Autres lignes : mêmes icônes, atténuées, sans cadre. Elles signalent les lignes à Zaap. */
+.palette__variant.is-idle {
+  border-color: transparent;
+  background: none;
   opacity: 0.45;
-  cursor: default;
+  cursor: inherit;
+}
+
+@media (hover: hover) {
+  .palette__variant:not(.is-active, .is-idle):hover {
+    color: var(--mt-text);
+  }
+}
+
+/* Numéro d'étape : toujours visible, même quand le nom est tronqué. */
+.palette__step-tag {
+  flex: none;
+  color: var(--mt-text-muted);
+  font-weight: var(--mt-font-weight-regular);
+  white-space: nowrap;
 }
 
 /* ---------- Pied : aide ou état de la copie ---------- */

@@ -214,7 +214,10 @@ describe('palette : « proche X,Y »', () => {
     expect(entries[0]).toMatchObject({
       kind: 'zaap',
       subtitle: 'Zaap 10,0 · Zone · à 3 cartes',
-      choices: [{ primary: '/zaap 10 0;/travel 8 1', secondary: '/zaap 10 0' }],
+      variants: [
+        { kind: 'withZaap', text: '/zaap 10 0;/travel 8 1' },
+        { kind: 'zaapOnly', text: '/zaap 10 0' },
+      ],
     });
   });
 
@@ -244,6 +247,6 @@ describe('palette : « proche X,Y »', () => {
     const shipped = buildPaletteIndex([], new Set(), undefined, DEFAULT_ZAAPS);
     const [first] = searchPalette(shipped, 'proche -20,-20', PALETTE_LIMIT).entries;
     expect(first?.title).toBe('Routes Rocailleuses');
-    expect(first?.choices[0]?.primary).toBe('/zaap -20 -20');
+    expect(first?.variants).toEqual([{ kind: 'withZaap', text: '/zaap -20 -20' }]);
   });
 });

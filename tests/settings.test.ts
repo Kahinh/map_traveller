@@ -60,7 +60,7 @@ describe('mergeSettings', () => {
       shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P', autre: 'x' },
     };
     const merged = mergeSettings(raw, { ...DEFAULT_SETTINGS, alwaysOnTop: false });
-    expect(merged).toEqual({ ...raw, alwaysOnTop: false, tray: { minimizeToTray: true } });
+    expect(merged).toEqual({ ...raw, alwaysOnTop: false, tray: { minimizeToTray: true }, palette: { defaultVariant: 'withoutZaap' } });
     // L'objet lu n'est pas modifié.
     expect(raw.alwaysOnTop).toBe(true);
   });
@@ -70,18 +70,21 @@ describe('mergeSettings', () => {
       alwaysOnTop: true,
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
+      palette: { defaultVariant: 'withoutZaap' },
       shortcuts: { toggleMain: 'Ctrl+Alt+Z', palette: 'Ctrl+Alt+Y' },
     };
     expect(mergeSettings({ alwaysOnTop: false }, settings)).toEqual({
       alwaysOnTop: true,
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
+      palette: { defaultVariant: 'withoutZaap' },
     });
     expect(mergeSettings({ shortcuts: { palette: 'Ctrl+Alt+P' } }, settings)).toEqual({
       shortcuts: { palette: 'Ctrl+Alt+P' },
       alwaysOnTop: true,
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
+      palette: { defaultVariant: 'withoutZaap' },
     });
   });
 
@@ -91,6 +94,7 @@ describe('mergeSettings', () => {
         alwaysOnTop: true,
         updates: { mode: 'manual' },
         tray: { minimizeToTray: true },
+        palette: { defaultVariant: 'withoutZaap' },
       });
     }
   });
@@ -102,6 +106,7 @@ describe('mergeSettings', () => {
       alwaysOnTop: false,
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
+      palette: { defaultVariant: 'withoutZaap' },
       shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
     });
   });
@@ -233,6 +238,7 @@ describe('applySettingsPatch', () => {
     alwaysOnTop: true,
     updates: { mode: 'manual' },
     tray: { minimizeToTray: true },
+    palette: { defaultVariant: 'withoutZaap' },
     shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
   };
 
@@ -256,6 +262,7 @@ describe('applySettingsPatch', () => {
       alwaysOnTop: true,
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
+      palette: { defaultVariant: 'withoutZaap' },
       shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
     });
     expect(next.shortcuts).toEqual(base.shortcuts);
@@ -304,5 +311,39 @@ describe('réglage de la zone de notification (tray.minimizeToTray)', () => {
   it('relecture : ce qui est écrit se relit à l’identique', () => {
     const next = applySettingsPatch(DEFAULT_SETTINGS, { tray: { minimizeToTray: false } });
     expect(parseSettings(mergeSettings({ tray: { futur: 1 } }, next)).tray).toEqual(next.tray);
+  });
+});
+
+describe('réglage de la palette (issue n°11)', () => {
+  it('variante par défaut : sans Zaap si absente ou invalide', () => {
+    expect(DEFAULT_SETTINGS.palette.defaultVariant).toBe('withoutZaap');
+    expect(parseSettings({}).palette.defaultVariant).toBe('withoutZaap');
+    for (const value of [null, 'avec', 1, true, {}]) {
+      expect(parseSettings({ palette: { defaultVariant: value } }).palette.defaultVariant).toBe('withoutZaap');
+    }
+    expect(parseSettings({ palette: 'x' }).palette.defaultVariant).toBe('withoutZaap');
+    expect(parseSettings({ palette: { defaultVariant: 'withZaap' } }).palette.defaultVariant).toBe('withZaap');
+  });
+
+  it('un ancien fichier reste valide, sans la clé', () => {
+    expect(parseSettings({ alwaysOnTop: false, updates: { mode: 'auto' } }).palette).toEqual({
+      defaultVariant: 'withoutZaap',
+    });
+  });
+
+  it('écriture : clés inconnues de « palette » conservées, relecture à l’identique', () => {
+    const raw = { palette: { defaultVariant: 'withoutZaap', futur: 3 }, shortcuts: { palette: 'Ctrl+Alt+P' } };
+    const next = applySettingsPatch(parseSettings(raw), { palette: { defaultVariant: 'withZaap' } });
+    const written = mergeSettings(raw, next);
+    expect(written.palette).toEqual({ defaultVariant: 'withZaap', futur: 3 });
+    expect(written.shortcuts).toEqual(raw.shortcuts);
+    expect(parseSettings(written).palette.defaultVariant).toBe('withZaap');
+    expect(raw.palette.defaultVariant).toBe('withoutZaap');
+  });
+
+  it('patch sans palette : réglage inchangé', () => {
+    const s = applySettingsPatch(DEFAULT_SETTINGS, { palette: { defaultVariant: 'withZaap' } });
+    expect(applySettingsPatch(s, { alwaysOnTop: false }).palette.defaultVariant).toBe('withZaap');
+    expect(applySettingsPatch(s, { palette: {} }).palette.defaultVariant).toBe('withZaap');
   });
 });

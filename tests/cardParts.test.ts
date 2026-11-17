@@ -1,7 +1,7 @@
 // Coordonnées FICTIVES : elles illustrent les règles, ce ne sont pas des trajets réels.
 import { describe, expect, it } from 'vitest';
 import type { Destination } from '../src/features/catalog/schema';
-import { cardParts, isTwoStep, partCommand } from '../src/features/commands/cardParts';
+import { cardParts, isTwoStep, orderVariants, partCommand, partVariants } from '../src/features/commands/cardParts';
 import { leftClickCommand, rightClickCommand } from '../src/features/commands/copyRules';
 
 function dest(partial: Partial<Destination>): Destination {
@@ -81,5 +81,51 @@ describe('carte à deux étapes', () => {
       expect(isTwoStep(d)).toBe(false);
       expect(cardParts(d)).toHaveLength(1);
     }
+  });
+});
+
+describe('partVariants (issue n°11) : déduites de partCommand, aucune règle réécrite', () => {
+  const part = (command: string, index: 1 | 2 = 1) => ({ index, command });
+
+  it('Zaap puis plusieurs /travel : deux variantes, textes exacts', () => {
+    expect(partVariants(part('/zaap 5 -18;/travel 1 1;/travel 2 2'))).toEqual([
+      { kind: 'withoutZaap', text: '/travel 1 1;/travel 2 2' },
+      { kind: 'withZaap', text: '/zaap 5 -18;/travel 1 1;/travel 2 2' },
+    ]);
+  });
+
+  it('sans Zaap : une variante, la commande octet pour octet', () => {
+    const command = ' /travel 1 1 ;/travel  2 2';
+    expect(partVariants(part(command))).toEqual([{ kind: 'withoutZaap', text: command }]);
+  });
+
+  it('Zaap seul : une variante, la commande complète', () => {
+    expect(partVariants(part('/zaap 1 1'))).toEqual([{ kind: 'withZaap', text: '/zaap 1 1' }]);
+  });
+
+  it('vide ou blanche : aucune variante', () => {
+    expect(partVariants(part(''))).toEqual([]);
+    expect(partVariants(part('   '))).toEqual([]);
+  });
+
+  it('« /zaapi » n\'est pas un Zaap ; un /zaap au milieu n\'est pas retiré', () => {
+    expect(partVariants(part('/zaapi 1 1;/travel 2 2'))).toHaveLength(1);
+    expect(partVariants(part('/travel 1 1;/zaap 2 2'))).toEqual([{ kind: 'withoutZaap', text: '/travel 1 1;/zaap 2 2' }]);
+  });
+
+  it('étape 2 avec Zaap', () => {
+    expect(partVariants(part('/zaap 3 3;/travel 4 4', 2)).map((v) => v.text)).toEqual([
+      '/travel 4 4',
+      '/zaap 3 3;/travel 4 4',
+    ]);
+  });
+
+  it('orderVariants : la préférée d\'abord, sans copie des textes ni effet sur une seule variante', () => {
+    const two = partVariants(part('/zaap 1 1;/travel 2 2'));
+    expect(orderVariants(two, 'withZaap').map((v) => v.kind)).toEqual(['withZaap', 'withoutZaap']);
+    expect(orderVariants(two, 'withoutZaap')).toEqual(two);
+    const one = partVariants(part('/travel 2 2'));
+    expect(orderVariants(one, 'withZaap')).toEqual(one);
+    expect(two.map((v) => v.kind)).toEqual(['withoutZaap', 'withZaap']);
   });
 });

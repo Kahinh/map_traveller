@@ -10,9 +10,13 @@
  * - `tray.minimizeToTray` (issue n°14) : écrit par l'interface, LU par Rust au moment de réduire
  *   (`src-tauri/src/main_window.rs`) ; `true` si absent ou invalide, comme côté Rust. Les autres
  *   clés de `tray` sont conservées.
+ * - `palette.defaultVariant` (issue n°11) : écrit par la fenêtre principale, LU par la palette à
+ *   chaque affichage ; `withoutZaap` si absent ou invalide (comportement d'avant). Les autres clés
+ *   de `palette` sont conservées.
  * - `shortcuts` appartient à Rust (`set_shortcut`) : l'interface le lit mais ne l'écrit jamais ;
  *   `mergeSettings` le reprend tel quel du fichier, et Rust le protège de son côté (`save_store`).
  */
+import { VARIANT_KINDS, type VariantKind } from '../commands/cardParts';
 import { DEFAULT_SHORTCUTS, normalizeAccelerator, type ShortcutAction } from './accelerator';
 
 /** Manuel : rien n'est contacté sans action de l'utilisateur. Automatique : vérification au lancement. */
@@ -36,10 +40,17 @@ export interface TraySettings {
   minimizeToTray: boolean;
 }
 
+/** Palette de recherche (issue n°11). */
+export interface PaletteSettings {
+  /** Variante sélectionnée par défaut sur une ligne qui a un `/zaap` initial (première case). */
+  defaultVariant: VariantKind;
+}
+
 export interface Settings {
   alwaysOnTop: boolean;
   updates: UpdateSettings;
   tray: TraySettings;
+  palette: PaletteSettings;
   /** Lecture seule côté interface : modifié uniquement par les commandes Rust. */
   shortcuts: Record<ShortcutAction, string>;
 }
@@ -49,6 +60,7 @@ export interface SettingsPatch {
   alwaysOnTop?: boolean;
   updates?: Partial<UpdateSettings>;
   tray?: Partial<TraySettings>;
+  palette?: Partial<PaletteSettings>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -57,6 +69,8 @@ export const DEFAULT_SETTINGS: Settings = {
   updates: { mode: 'manual' },
   // Activé par défaut (décision 6 de l'issue n°14) : le bouton fermer, lui, quitte toujours.
   tray: { minimizeToTray: true },
+  // Sans Zaap : ce que faisait Entrée avant l'issue n°11, rien ne change pour une installation existante.
+  palette: { defaultVariant: 'withoutZaap' },
   shortcuts: { ...DEFAULT_SHORTCUTS },
 };
 
@@ -66,6 +80,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 export function isUpdateMode(v: unknown): v is UpdateMode {
   return UPDATE_MODES.includes(v as UpdateMode);
+}
+
+export function isVariantKind(v: unknown): v is VariantKind {
+  return VARIANT_KINDS.includes(v as VariantKind);
 }
 
 /** Horodatage plausible : entier positif ou nul ; sinon `undefined`. */
@@ -106,14 +124,15 @@ export function parseSettings(input: unknown): Settings {
   const data = isRecord(input) ? input : {};
   const shortcuts = isRecord(data.shortcuts) ? data.shortcuts : {};
   let toggleMain = normalizeAccelerator(shortcuts.toggleMain) ?? DEFAULT_SHORTCUTS.toggleMain;
-  let palette = normalizeAccelerator(shortcuts.palette) ?? DEFAULT_SHORTCUTS.palette;
+  let paletteShortcut = normalizeAccelerator(shortcuts.palette) ?? DEFAULT_SHORTCUTS.palette;
   // Même règle que Rust : deux actions sur le même raccourci → valeurs par défaut.
-  if (toggleMain === palette) {
+  if (toggleMain === paletteShortcut) {
     toggleMain = DEFAULT_SHORTCUTS.toggleMain;
-    palette = DEFAULT_SHORTCUTS.palette;
+    paletteShortcut = DEFAULT_SHORTCUTS.palette;
   }
   const updates = isRecord(data.updates) ? data.updates : {};
   const tray = isRecord(data.tray) ? data.tray : {};
+  const palette = isRecord(data.palette) ? data.palette : {};
   return {
     // Comportement historique : seul `false` désactive le premier plan.
     alwaysOnTop: data.alwaysOnTop !== false,
@@ -123,7 +142,12 @@ export function parseSettings(input: unknown): Settings {
       minimizeToTray:
         typeof tray.minimizeToTray === 'boolean' ? tray.minimizeToTray : DEFAULT_SETTINGS.tray.minimizeToTray,
     },
-    shortcuts: { toggleMain, palette },
+    palette: {
+      defaultVariant: isVariantKind(palette.defaultVariant)
+        ? palette.defaultVariant
+        : DEFAULT_SETTINGS.palette.defaultVariant,
+    },
+    shortcuts: { toggleMain, palette: paletteShortcut },
   };
 }
 
@@ -137,6 +161,7 @@ export function applySettingsPatch(settings: Settings, patch: SettingsPatch): Se
     alwaysOnTop: patch.alwaysOnTop ?? settings.alwaysOnTop,
     updates: { ...settings.updates, ...definedUpdateFields(patch.updates ?? {}) },
     tray: { minimizeToTray: patch.tray?.minimizeToTray ?? settings.tray.minimizeToTray },
+    palette: { defaultVariant: patch.palette?.defaultVariant ?? settings.palette.defaultVariant },
   };
 }
 
@@ -151,10 +176,12 @@ export function mergeSettings(raw: unknown, settings: Settings): Record<string, 
   const base = isRecord(raw) ? raw : {};
   const updates = isRecord(base.updates) ? base.updates : {};
   const tray = isRecord(base.tray) ? base.tray : {};
+  const palette = isRecord(base.palette) ? base.palette : {};
   return {
     ...base,
     alwaysOnTop: settings.alwaysOnTop,
     updates: { ...updates, ...definedUpdateFields(settings.updates), mode: settings.updates.mode },
     tray: { ...tray, minimizeToTray: settings.tray.minimizeToTray },
+    palette: { ...palette, defaultVariant: settings.palette.defaultVariant },
   };
 }

@@ -35,3 +35,40 @@ export function cardParts(d: Destination): CardPart[] {
 export function partCommand(part: CardPart, button: ClickButton): string | null {
   return button === 'left' ? leftClickCommand(part.command) : rightClickCommand(part.command);
 }
+
+/** Variante de copie d'une zone : sans le `/zaap` initial, ou commande complète. */
+export type VariantKind = 'withoutZaap' | 'withZaap';
+
+export const VARIANT_KINDS: readonly VariantKind[] = ['withoutZaap', 'withZaap'];
+
+export interface CopyVariant {
+  kind: VariantKind;
+  /** Texte exact à copier. */
+  text: string;
+}
+
+/**
+ * Variantes distinctes d'une zone, dans l'ordre canonique (sans Zaap, puis avec Zaap).
+ * Déduites des seuls résultats de `partCommand` : aucune règle Zaap n'est réécrite ici.
+ * - commande vide : aucune variante ;
+ * - pas de `/zaap` initial : une seule, la commande intacte ;
+ * - `/zaap` seul : une seule, la commande complète ;
+ * - sinon : les deux.
+ */
+export function partVariants(part: CardPart): CopyVariant[] {
+  const full = partCommand(part, 'right');
+  if (full === null) return [];
+  const short = partCommand(part, 'left');
+  if (short === null) return [{ kind: 'withZaap', text: full }];
+  if (short === full) return [{ kind: 'withoutZaap', text: full }];
+  return [
+    { kind: 'withoutZaap', text: short },
+    { kind: 'withZaap', text: full },
+  ];
+}
+
+/** Variantes dans l'ordre d'affichage : la variante préférée d'abord quand il y en a deux. */
+export function orderVariants<T extends { kind: string }>(variants: readonly T[], preferred: VariantKind): T[] {
+  if (variants.length !== 2 || variants[0]?.kind === preferred) return [...variants];
+  return [variants[1]!, variants[0]!];
+}

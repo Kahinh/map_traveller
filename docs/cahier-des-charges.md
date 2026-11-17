@@ -81,6 +81,8 @@ Les coordonnées illustrent la règle, elles ne sont pas des trajets vérifiés.
 
 **Implémentation prudente :** identifier uniquement le premier segment (jusqu'au premier `;`) et reconnaître `/zaap` avec une frontière de commande ; ne pas faire de remplacement global de la chaîne `/zaap`. Le comportement d'une commande multi-ligne ou contenant des commandes inhabituelles doit être testé ; ne jamais perdre du texte silencieusement.
 
+**Addendum (issue n°11) : palette de recherche.** Les règles ci-dessus ne changent pas ; la palette les présente autrement. Une carte à deux étapes y donne **une ligne par étape** (« — Étape 1 », « — Étape 2 »). Sur une ligne dont la commande commence par `/zaap`, deux cases latérales proposent les deux variantes, *sans Zaap* (résultat du clic gauche) et *avec Zaap* (résultat du clic droit). Le réglage « Variante par défaut » (Paramètres → Palette, *Sans Zaap* par défaut) fixe la première case et ce que copie Entrée ; ←/→ changent de variante, Ctrl+Entrée et le clic droit sur la ligne copient l'autre, un clic sur une case copie la sienne. Une commande sans `/zaap`, ou réduite à un `/zaap`, n'a qu'une variante et pas de case ; les lignes Farm non plus. Les cartes de la fenêtre principale ne changent pas.
+
 ## 5. Catégorie Farm : parcours à reprise immédiate
 
 ### 5.1 Ouverture

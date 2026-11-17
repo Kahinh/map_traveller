@@ -4,10 +4,10 @@ import type { Destination } from '../src/features/catalog/schema';
 import { farmResumeCommand, parseFarmRoute } from '../src/features/farm/farmRoute';
 import {
   buildPaletteIndex,
-  cardEntry,
+  cardEntries,
   PALETTE_LIMIT,
   searchPalette,
-  STEP_HINTS,
+  STEP_NAMES,
   type PaletteEntry,
 } from '../src/features/palette/entries';
 
@@ -35,19 +35,33 @@ const search = (list: Destination[], query: string, favorites: string[] = [], li
 const subtitles = (entries: PaletteEntry[]) => entries.map((e) => `${e.title} | ${e.subtitle}`);
 
 describe('cartes dans la palette', () => {
-  it('carte avec Zaap : primary sans Zaap, secondary intégrale', () => {
-    const e = cardEntry(dest({ id: 'a', name: 'A', command: '/zaap 1 2;/travel 3 4' }), false);
-    expect(e.kind).toBe('card');
-    expect(e.choices).toEqual([{ label: '', hint: '', primary: '/travel 3 4', secondary: '/zaap 1 2;/travel 3 4' }]);
+  it('carte avec Zaap : deux variantes, sans Zaap d\'abord par défaut, textes exacts', () => {
+    const [e, ...rest] = cardEntries(dest({ id: 'a', name: 'A', command: '/zaap 1 2;/travel 3 4;/travel 5 6' }), false);
+    expect(rest).toEqual([]);
+    expect(e!.kind).toBe('card');
+    expect(e!.step).toBeNull();
+    expect(e!.key).toBe(JSON.stringify(['a', 'card']));
+    expect(e!.variants).toEqual([
+      { kind: 'withoutZaap', text: '/travel 3 4;/travel 5 6' },
+      { kind: 'withZaap', text: '/zaap 1 2;/travel 3 4;/travel 5 6' },
+    ]);
   });
 
-  it('carte sans Zaap : primary et secondary identiques, texte intact', () => {
+  it('préférence « avec Zaap » : ordre inversé, textes inchangés', () => {
+    const [e] = cardEntries(dest({ id: 'a', name: 'A', command: '/zaap 1 2;/travel 3 4' }), false, 'withZaap');
+    expect(e!.variants.map((v) => v.kind)).toEqual(['withZaap', 'withoutZaap']);
+    expect(e!.variants[0]!.text).toBe('/zaap 1 2;/travel 3 4');
+  });
+
+  it('carte sans Zaap : une seule variante, texte intact octet pour octet', () => {
     const command = '/travel  3 , 4 ;/travel 5 6';
-    const e = cardEntry(dest({ id: 'a', name: 'A', command }), false);
-    expect(e.choices[0]).toMatchObject({ primary: command, secondary: command });
+    for (const pref of ['withoutZaap', 'withZaap'] as const) {
+      const [e] = cardEntries(dest({ id: 'a', name: 'A', command }), false, pref);
+      expect(e!.variants).toEqual([{ kind: 'withoutZaap', text: command }]);
+    }
   });
 
-  it('carte à deux étapes : UNE ligne, deux choix explicites, commandes exactes', () => {
+  it('carte à deux étapes : DEUX lignes, dans l\'ordre, variantes propres à chaque étape', () => {
     const d = dest({
       id: 'dj',
       name: 'Antre fictive',
@@ -55,34 +69,63 @@ describe('cartes dans la palette', () => {
       zone: 'Zone fictive',
       twoStep: true,
       command: '/zaap 5 -18;/travel 1 1',
-      command2: '/zaap 7 7;/travel 2 2;/travel 3 3',
+      command2: '/travel 2 2;/travel 3 3',
     });
     const { entries } = search([d], 'antre');
-    expect(entries).toHaveLength(1);
-    const [e] = entries;
-    expect(e!.subtitle).toBe('Donjons · Zone fictive');
-    expect(e!.choices).toEqual([
-      { label: '1', hint: STEP_HINTS[1], primary: '/travel 1 1', secondary: '/zaap 5 -18;/travel 1 1' },
-      {
-        label: '2',
-        hint: STEP_HINTS[2],
-        primary: '/travel 2 2;/travel 3 3',
-        secondary: '/zaap 7 7;/travel 2 2;/travel 3 3',
-      },
+    expect(entries.map((e) => e.key)).toEqual([
+      JSON.stringify(['dj', 'card', 1]),
+      JSON.stringify(['dj', 'card', 2]),
     ]);
-    expect(STEP_HINTS).toEqual({ 1: 'Étape 1 : accès', 2: 'Étape 2 : sur place' });
+    expect(entries.map((e) => e.title)).toEqual(['Antre fictive', 'Antre fictive']);
+    expect(entries.map((e) => e.step)).toEqual([
+      { index: 1, count: 2 },
+      { index: 2, count: 2 },
+    ]);
+    expect(entries.map((e) => e.subtitle)).toEqual(['Donjons · Zone fictive · accès', 'Donjons · Zone fictive · sur place']);
+    expect(entries[0]!.variants).toEqual([
+      { kind: 'withoutZaap', text: '/travel 1 1' },
+      { kind: 'withZaap', text: '/zaap 5 -18;/travel 1 1' },
+    ]);
+    // Étape 2 sans Zaap : une seule variante, donc aucune case.
+    expect(entries[1]!.variants).toEqual([{ kind: 'withoutZaap', text: '/travel 2 2;/travel 3 3' }]);
+    expect(STEP_NAMES).toEqual({ 1: 'accès', 2: 'sur place' });
   });
 
-  it('deux étapes cochées hors PNJ / Donjons : une seule zone', () => {
-    const e = cardEntry(dest({ id: 'p', name: 'P', twoStep: true, command2: '/travel 8 8' }), false);
-    expect(e.choices).toHaveLength(1);
+  it('étapes contiguës même entourées d\'autres résultats', () => {
+    const list = [
+      dest({ id: 'x', name: 'Temple ancien', command: '/travel 1 1' }),
+      dest({ id: 't', name: 'Temple en deux temps', category: 'npc', twoStep: true, command: '/travel 2 2', command2: '/travel 3 3' }),
+    ];
+    const keys = search(list, 'temple').entries.map((e) => e.key);
+    const i = keys.indexOf(JSON.stringify(['t', 'card', 1]));
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(keys[i + 1]).toBe(JSON.stringify(['t', 'card', 2]));
   });
 
-  it('commande vide : primary null', () => {
-    const e = cardEntry(dest({ id: 'v', name: 'Vide', command: '   ' }), false);
-    expect(e.choices[0]).toMatchObject({ primary: null, secondary: null });
-    const zaapOnly = cardEntry(dest({ id: 'z', name: 'Zaap seul', command: '/zaap 1 1' }), false);
-    expect(zaapOnly.choices[0]).toMatchObject({ primary: null, secondary: '/zaap 1 1' });
+  it('deux étapes cochées hors PNJ / Donjons : une seule ligne', () => {
+    const entries = cardEntries(dest({ id: 'p', name: 'P', twoStep: true, command2: '/travel 8 8' }), false);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.step).toBeNull();
+  });
+
+  it('commande vide : aucune variante ; Zaap seul : une variante, la commande complète', () => {
+    const [e] = cardEntries(dest({ id: 'v', name: 'Vide', command: '   ' }), false);
+    expect(e!.variants).toEqual([]);
+    const [zaapOnly] = cardEntries(dest({ id: 'z', name: 'Zaap seul', command: '/zaap 1 1' }), false);
+    expect(zaapOnly!.variants).toEqual([{ kind: 'withZaap', text: '/zaap 1 1' }]);
+  });
+
+  it('étape 2 vide : ligne présente, rien à copier', () => {
+    const d = dest({ id: 'd', name: 'D', category: 'npc', twoStep: true, command: '/travel 1 1', command2: '' });
+    const entries = cardEntries(d, false);
+    expect(entries).toHaveLength(2);
+    expect(entries[1]!.variants).toEqual([]);
+  });
+
+  it('préférence de l\'index appliquée à la recherche', () => {
+    const list = [dest({ id: 'a', name: 'Alpha', command: '/zaap 1 2;/travel 3 4' })];
+    const index = buildPaletteIndex(list, new Set(), undefined, undefined, 'withZaap');
+    expect(searchPalette(index, 'alpha', PALETTE_LIMIT).entries[0]!.variants[0]!.kind).toBe('withZaap');
   });
 
   it('destination désactivée absente', () => {
@@ -157,8 +200,8 @@ describe('parcours Farm dans la palette', () => {
     const { entries, notice } = search([tremble, other, card], 'farm tremble 2 2');
     expect(notice).toBeNull();
     expect(entries[0]!.subtitle).toBe('Farm · je suis en 2,2 (étape 2/5)');
-    expect(entries[0]!.choices[0]!.primary).toBe(farmResumeCommand(parseFarmRoute(TREMBLE), 1));
-    expect(entries[0]!.choices[0]!.primary).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
+    expect(entries[0]!.variants[0]?.text ?? null).toBe(farmResumeCommand(parseFarmRoute(TREMBLE), 1));
+    expect(entries[0]!.variants[0]?.text ?? null).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
     // Seule l'étape à cette position : pas d'autres étapes ni d'autres parcours.
     expect(entries).toHaveLength(1);
   });
@@ -182,7 +225,7 @@ describe('parcours Farm dans la palette', () => {
     const { entries, notice } = search([tremble], 'farm tremble 9 9');
     expect(notice).toBe('Position 9,9 absente du parcours');
     expect(entries.map((e) => e.kind)).toEqual(['farm-start']);
-    expect(entries[0]!.choices[0]!.primary).toBe(TREMBLE);
+    expect(entries[0]!.variants[0]?.text ?? null).toBe(TREMBLE);
   });
 
   it('position répétée : une ligne par occurrence, première en tête', () => {
@@ -193,12 +236,12 @@ describe('parcours Farm dans la palette', () => {
       command: '/travel 1 1;/travel 2 2;/travel 1 1;/travel 3 3',
     });
     const { entries } = search([loop], 'boucle 1 1');
-    expect(entries.map((e) => e.choices[0]!.primary)).toEqual(['/travel 2 2;/travel 1 1;/travel 3 3', '/travel 3 3']);
+    expect(entries.map((e) => e.variants[0]?.text ?? null)).toEqual(['/travel 2 2;/travel 1 1;/travel 3 3', '/travel 3 3']);
   });
 
   it('dernière étape tapée : ligne sans rien à copier', () => {
     const { entries } = search([tremble], 'tremble 5 5');
-    expect(entries[0]!.choices[0]!.primary).toBeNull();
+    expect(entries[0]!.variants[0]?.text ?? null).toBeNull();
   });
 
   it('nom avec chiffres et parcours : les deux interprétations sont fusionnées', () => {
@@ -240,7 +283,10 @@ describe('recherche tolérante dans la palette (issue n°10)', () => {
 
   it('les commandes copiées ne changent pas : texte brut, mêmes règles', () => {
     const [entry] = searchPalette(buildPaletteIndex(list, new Set(), dictionary), 'hdv bonta', PALETTE_LIMIT).entries;
-    expect(entry?.choices).toEqual([{ label: '', hint: '', primary: '/travel 2 2', secondary: '/zaap 1 1;/travel 2 2' }]);
+    expect(entry?.variants).toEqual([
+      { kind: 'withoutZaap', text: '/travel 2 2' },
+      { kind: 'withZaap', text: '/zaap 1 1;/travel 2 2' },
+    ]);
   });
 
   it('faute de frappe et mots de liaison', () => {
@@ -251,14 +297,14 @@ describe('recherche tolérante dans la palette (issue n°10)', () => {
   it('parcours Farm avec une faute et une position : la reprise reste trouvée par indice', () => {
     const { entries } = searchPalette(buildPaletteIndex(list, new Set(), dictionary), 'farm tremle 2 2', PALETTE_LIMIT);
     expect(entries[0]?.kind).toBe('farm-step');
-    expect(entries[0]?.choices[0]?.primary).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
+    expect(entries[0]?.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
   });
 
   it('un PNJ au nom proche n\'empêche pas de retrouver le parcours à une faute près', () => {
     const withNpc = [...list, dest({ id: 'pnj', name: 'Tremlbe garde', category: 'npc', command: '/travel 9 9' })];
     const { entries } = searchPalette(buildPaletteIndex(withNpc, new Set(), dictionary), 'tremlbe 2 2', PALETTE_LIMIT);
     expect(entries[0]?.kind).toBe('farm-step');
-    expect(entries[0]?.choices[0]?.primary).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
+    expect(entries[0]?.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
   });
 
   it('favoris fournis à la recherche : l\'index n\'a pas à être reconstruit quand ils changent', () => {

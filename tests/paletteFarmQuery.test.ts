@@ -96,24 +96,24 @@ describe('lignes Farm', () => {
 
   it('parcours complet avec Zaap ; reprises sans Zaap ; textes exacts des fonctions Farm', () => {
     const [start, first] = farmRouteEntries(tremble, route, false, true);
-    expect(start!.choices).toEqual([
-      { label: '', hint: '', primary: farmStartCommand(route), secondary: farmStartCommand(route) },
+    expect(start!.variants).toEqual([
+      { kind: 'withoutZaap', text: farmStartCommand(route) },
     ]);
-    expect(start!.choices[0]!.primary).toBe(tremble.command);
-    expect(first!.choices[0]!.primary).toBe('/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5');
-    expect(first!.choices[0]!.primary).not.toContain('/zaap');
+    expect(start!.variants[0]?.text).toBe(tremble.command);
+    expect(first!.variants[0]?.text).toBe('/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5');
+    expect(first!.variants[0]?.text).not.toContain('/zaap');
   });
 
   it('dernière étape : rien à copier', () => {
     const last = farmStepEntry(tremble, route, 4, false);
-    expect(last.choices[0]).toMatchObject({ primary: null, secondary: null });
+    expect(last.variants).toEqual([]);
   });
 
   it('position : la commande est exactement farmResumeCommand(route, i)', () => {
     const lines = farmPositionEntries(tremble, route, false, { x: 2, y: 2 });
     expect(lines).toHaveLength(1);
-    expect(lines[0]!.choices[0]!.primary).toBe(farmResumeCommand(route, 1));
-    expect(lines[0]!.choices[0]!.primary).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
+    expect(lines[0]!.variants[0]?.text).toBe(farmResumeCommand(route, 1));
+    expect(lines[0]!.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
   });
 
   it('position absente : aucune ligne', () => {
@@ -128,7 +128,7 @@ describe('lignes Farm', () => {
       'Farm · je suis en 1,1 (étape 1/4)',
       'Farm · je suis en 1,1 (étape 3/4)',
     ]);
-    expect(lines.map((l) => l.choices[0]!.primary)).toEqual(['/travel 2 2;/travel 1 1;/travel 3 3', '/travel 3 3']);
+    expect(lines.map((l) => l.variants[0]?.text)).toEqual(['/travel 2 2;/travel 1 1;/travel 3 3', '/travel 3 3']);
     expect(new Set(lines.map((l) => l.key)).size).toBe(2);
   });
 
@@ -143,7 +143,7 @@ describe('lignes Farm', () => {
     const lines = farmRouteEntries(bad, r, false, true);
     expect(lines).toHaveLength(3);
     expect(lines.every((l) => l.subtitle.endsWith('parcours à vérifier'))).toBe(true);
-    expect(lines[1]!.choices[0]!.primary).toBe(farmResumeCommand(r, 0));
+    expect(lines[1]!.variants[0]?.text).toBe(farmResumeCommand(r, 0));
   });
 
   it('zone dans le sous-titre ; clés JSON distinctes', () => {

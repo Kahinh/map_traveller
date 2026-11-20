@@ -2,6 +2,17 @@
 
 Les numéros entre parenthèses renvoient aux issues et pull requests du dépôt. Seules les versions taguées ont une Release téléchargeable ; 0.7.0 et 0.8.0 ont été numérotées sans être taguées : leur contenu est arrivé aux utilisateurs avec la 0.9.0.
 
+## 1.1.0 — 2026-11-20
+
+**Pour l'utilisateur**
+
+- Parcours Farm (#30) : le jeu n'enchaîne pas plusieurs `/travel`. Une carte Farm ouvre désormais une petite fenêtre toujours au premier plan, une case par position ; chaque case copie son seul `/travel`. « Début » (parcours qui commence par un `/zaap`) copie le Zaap et la première position. La dernière case cliquée reste en évidence tant que l'application tourne, même après fermeture de la fenêtre, dont la position et la taille sont retenues.
+- Palette : un parcours Farm n'a plus qu'une ligne ; `Entrée` ou un clic ouvre sa fenêtre.
+
+**Sous le capot**
+
+- Fenêtre `farm` (`farm_window.rs`, `farm.html`) avec sa capability minimale ; `store:changed` émis aussi vers elle ; budget JS de la nouvelle page.
+
 ## 1.0.0 — 2026-11-17
 
 Revue complète avant la 1.0, en six lots (A à F). Aucun changement de format des fichiers : les données des versions 0.x sont lues telles quelles.

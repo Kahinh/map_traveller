@@ -15,12 +15,14 @@ export default defineConfig({
   build: {
     target: 'chrome105',
     sourcemap: false,
-    // Deux pages : la fenêtre principale et la palette (paquet séparé, sans la grille).
+    // Trois pages : la fenêtre principale, la palette et la fenêtre d'un parcours Farm (paquets
+    // séparés : ni la palette ni la fenêtre Farm n'embarquent la grille).
     // Chemins relatifs à la racine du projet, d'où sont lancés npm et Tauri.
     rolldownOptions: {
       input: {
         main: 'index.html',
         palette: 'palette.html',
+        farm: 'farm.html',
       },
       // Code commun aux deux pages dans des fichiers nommés d'après leur contenu : React d'une
       // part, nos modules partagés d'autre part. Sans ces groupes, le morceau commun prend le nom

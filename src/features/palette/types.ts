@@ -11,10 +11,10 @@ import type { ZaapCatalog } from '../zaaps/zaaps';
 /**
  * Genre d'une variante copiable. Sur une carte : sans ou avec le `/zaap` initial
  * (`partVariants`). Sur une ligne « zaap le plus proche » (issue n°7) : `trip` = zaap puis
- * `/travel` vers la position tapée, `zaapOnly` = la commande du zaap seule. Sur une ligne Farm :
- * `route` = parcours complet ou suite du parcours, copié tel quel.
+ * `/travel` vers la position tapée, `zaapOnly` = la commande du zaap seule. Une ligne Farm n'a
+ * aucune variante : elle ouvre la fenêtre du parcours.
  */
-export type PaletteVariantKind = VariantKind | 'trip' | 'zaapOnly' | 'route';
+export type PaletteVariantKind = VariantKind | 'trip' | 'zaapOnly';
 
 /** Libellés d'un genre : `long` pour l'infobulle et le lecteur d'écran, `short` pour le pied d'aide. */
 export const VARIANT_LABELS: Readonly<Record<PaletteVariantKind, { long: string; short: string }>> = {
@@ -22,7 +22,6 @@ export const VARIANT_LABELS: Readonly<Record<PaletteVariantKind, { long: string;
   withZaap: { long: 'Avec Zaap : commande complète', short: 'avec Zaap' },
   trip: { long: 'Trajet complet : zaap puis déplacement', short: 'trajet complet' },
   zaapOnly: { long: 'Zaap seul', short: 'zaap seul' },
-  route: { long: 'Parcours Farm', short: 'parcours' },
 };
 
 export interface PaletteVariant {
@@ -37,7 +36,8 @@ export interface PaletteStep {
   count: number;
 }
 
-export type PaletteEntryKind = 'card' | 'farm-start' | 'farm-step' | 'zaap';
+/** `farm` : un parcours Farm, une seule ligne, qui ouvre la fenêtre du parcours au lieu de copier. */
+export type PaletteEntryKind = 'card' | 'farm' | 'zaap';
 
 export interface PaletteEntry {
   /** Clé React stable : `[destinationId, kind]` ou `[destinationId, kind, indiceÉtape]` en JSON. */
@@ -49,7 +49,7 @@ export interface PaletteEntry {
   title: string;
   /** Étape d'un trajet à plusieurs étapes (une ligne par étape) ; `null` pour une ligne simple. */
   step: PaletteStep | null;
-  /** « Donjons · Zone », « Farm · parcours complet », « Farm · je suis en 2,2 (étape 2/6) ». */
+  /** « Donjons · Zone », « Farm · 6 positions ». */
   subtitle: string;
   /** Chemin relatif, résolu par `imageSrc()`. */
   image: string | null;

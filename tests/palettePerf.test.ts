@@ -79,12 +79,12 @@ describe('performance de la palette', () => {
     next.entries.forEach((e, i) => expect(e).toBe(first.entries[i]));
   });
 
-  it('un parcours trouvé seul n\'est déplié que jusqu\'au plafond', () => {
+  it('un long parcours ne donne qu\'une ligne', () => {
     const route = Array.from({ length: 400 }, (_, s) => `/travel ${s % 90} ${-(s % 90)}`).join(';');
     const index = buildPaletteIndex([dest(1, { name: 'Long parcours', category: 'farm', command: route })]);
     const { entries } = searchPalette(index, 'long parcours', { limit: PALETTE_LIMIT });
-    expect(entries).toHaveLength(PALETTE_LIMIT);
-    expect(index.cache.size).toBe(PALETTE_LIMIT);
+    expect(entries).toHaveLength(1);
+    expect(index.cache.size).toBe(1);
   });
 
   it('6 500 destinations (catalogue visé par l\'issue n°8) : index construit une fois, alias et fautes compris', () => {

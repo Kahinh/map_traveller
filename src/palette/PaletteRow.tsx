@@ -68,7 +68,8 @@ export const PaletteRow = memo(function PaletteRow({
   const current = selected && activeChoice !== null && activeChoice < variants.length ? activeChoice : 0;
   const active = variants[current];
   const preview = active?.text ?? null;
-  const empty = preview === null;
+  // Une ligne Farm n'a rien à copier mais reste active : elle ouvre la fenêtre du parcours.
+  const empty = preview === null && entry.kind !== 'farm';
 
   // Sélection sur `mousemove` et non `mouseenter` : une liste qui défile au clavier sous un
   // pointeur immobile ne doit pas déplacer la sélection.
@@ -122,7 +123,7 @@ export const PaletteRow = memo(function PaletteRow({
         </span>
       </span>
       <span className="palette__preview" title={preview ?? undefined}>
-        {preview ?? (entry.kind === 'farm-step' ? 'fin de parcours, rien à copier' : 'rien à copier')}
+        {preview ?? (entry.kind === 'farm' ? 'ouvrir le parcours' : 'rien à copier')}
       </span>
       {two && active && (
         <>

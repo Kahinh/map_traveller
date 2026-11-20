@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { buildDictionary } from '../src/features/aliases/aliases';
 import type { Destination } from '../src/features/catalog/schema';
 import { makeDestination } from './helpers/destination';
-import { farmResumeCommand, parseFarmRoute } from '../src/features/farm/farmRoute';
 import {
   buildPaletteIndex,
   cardEntries,
@@ -167,90 +166,35 @@ describe('parcours Farm dans la palette', () => {
   const other = dest({ id: 'chene', name: 'Chêne', category: 'farm', command: '/travel 2 2;/travel 6 6' });
   const card = dest({ id: 'pnj', name: 'Garde fictif', category: 'npc', command: '/travel 2 2' });
 
-  it('« farm tremble » : parcours complet puis toutes les positions, dans l\'ordre', () => {
+  it('« farm tremble » : une seule ligne, qui ne copie rien (elle ouvre la fenêtre du parcours)', () => {
     const { entries, notice } = search([tremble, other, card], 'farm tremble');
     expect(notice).toBeNull();
-    expect(subtitles(entries)).toEqual([
-      'Tremble | Farm · parcours complet',
-      'Tremble | Farm · je suis en 1,1 (étape 1/5)',
-      'Tremble | Farm · je suis en 2,2 (étape 2/5)',
-      'Tremble | Farm · je suis en 3,3 (étape 3/5)',
-      'Tremble | Farm · je suis en 4,4 (étape 4/5)',
-      'Tremble | Farm · je suis en 5,5 (étape 5/5) · fin de parcours',
-    ]);
+    expect(subtitles(entries)).toEqual(['Tremble | Farm · 5 positions']);
+    expect(entries[0]).toMatchObject({ kind: 'farm', destinationId: 'tremble', key: JSON.stringify(['tremble', 'farm']) });
+    expect(entries[0]!.variants).toEqual([]);
   });
 
-  it('plusieurs parcours sans position : une ligne « parcours complet » par parcours', () => {
+  it('plusieurs parcours : une ligne par parcours', () => {
     const { entries } = search([tremble, other, card], 'farm');
-    expect(subtitles(entries)).toEqual(['Chêne | Farm · parcours complet', 'Tremble | Farm · parcours complet']);
+    expect(subtitles(entries)).toEqual(['Chêne | Farm · 2 positions', 'Tremble | Farm · 5 positions']);
   });
 
-  it('requête vide : parcours non dépliés', () => {
-    const { entries } = search([tremble], '');
-    expect(entries.map((e) => e.kind)).toEqual(['farm-start']);
+  it('requête vide : une ligne par parcours', () => {
+    expect(search([tremble], '').entries.map((e) => e.kind)).toEqual(['farm']);
   });
 
-  it('« farm tremble 2 2 » : la reprise en premier, commande exacte', () => {
-    const { entries, notice } = search([tremble, other, card], 'farm tremble 2 2');
+  it('une position tapée ne déplie plus le parcours', () => {
+    const { entries, notice } = search([tremble], 'tremble 2 2');
     expect(notice).toBeNull();
-    expect(entries[0]!.subtitle).toBe('Farm · je suis en 2,2 (étape 2/5)');
-    expect(entries[0]!.variants[0]?.text ?? null).toBe(farmResumeCommand(parseFarmRoute(TREMBLE), 1));
-    expect(entries[0]!.variants[0]?.text ?? null).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
-    // Seule l'étape à cette position : pas d'autres étapes ni d'autres parcours.
-    expect(entries).toHaveLength(1);
+    expect(entries.every((e) => e.kind === 'farm')).toBe(true);
   });
 
-  it('écritures de la position équivalentes', () => {
-    for (const q of ['tremble 2,2', 'tremble 2;2', 'tremble 2-2']) {
-      expect(search([tremble], q).entries[0]!.subtitle).toBe('Farm · je suis en 2,2 (étape 2/5)');
-    }
+  it('segments non reconnus : sous-titre « parcours à vérifier »', () => {
+    const odd = dest({ id: 'o', name: 'Bizarre', category: 'farm', command: '/travel 1 1;/foo' });
+    expect(search([odd], 'bizarre').entries[0]!.subtitle).toBe('Farm · 1 position · parcours à vérifier');
   });
 
-  it('« farm tremble 2 » : positions dont l\'abscisse vaut 2', () => {
-    const route = dest({ id: 'r', name: 'Tremble', category: 'farm', command: '/travel 2 1;/travel 3 3;/travel 2 5' });
-    const { entries } = search([route], 'farm tremble 2');
-    expect(entries.map((e) => e.subtitle)).toEqual([
-      'Farm · je suis en 2,1 (étape 1/3)',
-      'Farm · je suis en 2,5 (étape 3/3) · fin de parcours',
-    ]);
-  });
-
-  it('« farm tremble 9 9 » : message, « parcours complet » toujours proposé', () => {
-    const { entries, notice } = search([tremble], 'farm tremble 9 9');
-    expect(notice).toBe('Position 9,9 absente du parcours');
-    expect(entries.map((e) => e.kind)).toEqual(['farm-start']);
-    expect(entries[0]!.variants[0]?.text ?? null).toBe(TREMBLE);
-  });
-
-  it('position répétée : une ligne par occurrence, première en tête', () => {
-    const loop = dest({
-      id: 'boucle',
-      name: 'Boucle',
-      category: 'farm',
-      command: '/travel 1 1;/travel 2 2;/travel 1 1;/travel 3 3',
-    });
-    const { entries } = search([loop], 'boucle 1 1');
-    expect(entries.map((e) => e.variants[0]?.text ?? null)).toEqual(['/travel 2 2;/travel 1 1;/travel 3 3', '/travel 3 3']);
-  });
-
-  it('dernière étape tapée : ligne sans rien à copier', () => {
-    const { entries } = search([tremble], 'tremble 5 5');
-    expect(entries[0]!.variants[0]?.text ?? null).toBeNull();
-  });
-
-  it('nom avec chiffres et parcours : les deux interprétations sont fusionnées', () => {
-    const zone2 = dest({ id: 'z2', name: 'Zone 2', category: 'place' });
-    const zoneFarm = dest({ id: 'zf', name: 'Zone boisée', category: 'farm', command: '/travel 2 4;/travel 5 5' });
-    const { entries, notice } = search([zone2, zoneFarm], 'zone 2');
-    // (a) l'étape d'abscisse 2 du parcours passe en tête, (b) la carte « Zone 2 » reste trouvée.
-    expect(entries.map((e) => e.key)).toEqual([
-      JSON.stringify(['zf', 'farm-step', 0]),
-      JSON.stringify(['z2', 'card']),
-    ]);
-    expect(notice).toBeNull();
-  });
-
-  it('favori : marqué sur ses lignes', () => {
+  it('favori : marqué sur sa ligne', () => {
     const { entries } = search([tremble], 'tremble', ['tremble']);
     expect(entries.every((e) => e.favorite)).toBe(true);
   });
@@ -288,17 +232,9 @@ describe('recherche tolérante dans la palette (issue n°10)', () => {
     expect(titles('donjon de la meulou')).toEqual(['Donjon du Meulou']);
   });
 
-  it('parcours Farm avec une faute et une position : la reprise reste trouvée par indice', () => {
-    const { entries } = searchPalette(buildPaletteIndex(list, dictionary), 'farm tremle 2 2', { limit: PALETTE_LIMIT });
-    expect(entries[0]?.kind).toBe('farm-step');
-    expect(entries[0]?.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
-  });
-
-  it('un PNJ au nom proche n\'empêche pas de retrouver le parcours à une faute près', () => {
-    const withNpc = [...list, dest({ id: 'pnj', name: 'Tremlbe garde', category: 'npc', command: '/travel 9 9' })];
-    const { entries } = searchPalette(buildPaletteIndex(withNpc, dictionary), 'tremlbe 2 2', { limit: PALETTE_LIMIT });
-    expect(entries[0]?.kind).toBe('farm-step');
-    expect(entries[0]?.variants[0]?.text).toBe('/travel 3 3;/travel 4 4;/travel 5 5');
+  it('parcours Farm avec une faute : retrouvé', () => {
+    const { entries } = searchPalette(buildPaletteIndex(list, dictionary), 'farm tremle', { limit: PALETTE_LIMIT });
+    expect(entries[0]).toMatchObject({ kind: 'farm', title: 'Tremble' });
   });
 
   it('favoris fournis à la recherche : l\'index n\'a pas à être reconstruit quand ils changent', () => {
@@ -322,16 +258,14 @@ describe('libellés des variantes', () => {
       withZaap: { long: 'Avec Zaap : commande complète', short: 'avec Zaap' },
       trip: { long: 'Trajet complet : zaap puis déplacement', short: 'trajet complet' },
       zaapOnly: { long: 'Zaap seul', short: 'zaap seul' },
-      route: { long: 'Parcours Farm', short: 'parcours' },
     });
     expect(variantLabel('trip')).toBe('Trajet complet : zaap puis déplacement');
     expect(variantShortLabel('withZaap')).toBe('avec Zaap');
   });
 
-  it('lignes Farm : genre « parcours », jamais « sans Zaap »', () => {
+  it('lignes Farm : aucune variante, jamais « sans Zaap »', () => {
     const tremble = dest({ id: 't', name: 'Tremble', category: 'farm', command: TREMBLE });
-    const kinds = search([tremble], 'tremble').entries.flatMap((e) => e.variants.map((v) => v.kind));
-    expect(new Set(kinds)).toEqual(new Set(['route']));
+    expect(search([tremble], 'tremble').entries.flatMap((e) => e.variants)).toEqual([]);
   });
 });
 

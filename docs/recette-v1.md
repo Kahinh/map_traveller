@@ -24,6 +24,16 @@ Préparer : un Windows 11 propre (ou un compte neuf), le jeu en mode fenêtré, 
 - [ ] Vignette `img-….thumb.webp` fabriquée à l'import ; supprimée à la main, elle est refaite au prochain affichage ; l'original n'est jamais modifié.
 - [ ] Affichage des images par le protocole `asset:` dans la grille, le formulaire et la palette ; retour à l'original quand la vignette manque.
 
+## Fenêtre d'un parcours Farm
+
+- [ ] Clic sur une carte Farm (grille) et `Entrée` sur sa ligne de palette : la petite fenêtre s'ouvre devant le jeu, la palette se masque.
+- [ ] Chaque case copie son seul `/travel` ; « Début » (parcours avec `/zaap`) copie le Zaap et la première position ; la commande collée fonctionne en jeu.
+- [ ] Dernière case cliquée en évidence ; fermer (croix, `Échap`, Alt+F4) puis rouvrir le même parcours : elle l'est toujours.
+- [ ] Ouvrir un autre parcours pendant que la fenêtre est ouverte : elle passe au nouveau parcours.
+- [ ] Déplacer la fenêtre par sa barre, la redimensionner : position et taille retrouvées au relancement.
+- [ ] Réduire la fenêtre principale dans la zone de notification : la fenêtre du parcours reste ; fermer la fenêtre principale quitte tout.
+- [ ] Parcours modifié dans le formulaire pendant que sa fenêtre est ouverte : les cases suivent.
+
 ## Fenêtre principale
 
 - [ ] Toujours au premier plan devant le jeu ; épingle et Paramètres › Affichage synchronisés et mémorisés.

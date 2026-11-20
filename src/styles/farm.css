@@ -1,0 +1,19 @@
+/* Fenêtre d'un parcours Farm (`farm.html`) : barre de titre de la fenêtre principale, puis les
+   cases du parcours (`.grid--steps`, `.step` de app.css). Couleurs : tokens.css uniquement. */
+
+.farm-window .titlebar {
+  gap: var(--mt-space-1);
+}
+
+/* Le nombre d'étapes (ou la position courante) se lit sur l'aplat de la barre. */
+.farm-window .farm-panel__progress {
+  padding-right: var(--mt-space-1);
+}
+
+.farm-panel__progress.is-warning {
+  color: var(--mt-warning);
+}
+
+.farm-window .grid-scroll {
+  padding-top: var(--mt-space-2);
+}

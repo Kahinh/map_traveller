@@ -7,8 +7,8 @@
  * émet `palette:hidden`, comme le ferait Rust. Même principe pour `store:changed` (`onStoreChanged`).
  */
 import { invoke } from '@tauri-apps/api/core';
-import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { IS_TAURI } from './env';
+import { subscribe } from './events';
 import { STORE_CHANGED_EVENT, type StoreName } from './storeRead';
 
 /** Commande Rust qui masque (sans la détruire) la fenêtre palette. */
@@ -24,34 +24,6 @@ export const PALETTE_HIDDEN_EVENT = 'palette:hidden';
 export async function hidePalette(): Promise<void> {
   if (IS_TAURI) await invoke(HIDE_PALETTE_COMMAND);
   else window.dispatchEvent(new Event(PALETTE_HIDDEN_EVENT));
-}
-
-/**
- * Abonne `callback` à un événement de la palette : événement Tauri émis par Rust, ou événement
- * DOM de `window` dans le navigateur. Renvoie la fonction de désabonnement, sûre même si
- * l'abonnement Tauri n'est pas encore établi.
- */
-function subscribe<T = unknown>(event: string, callback: (payload: T) => void): () => void {
-  if (!IS_TAURI) {
-    const onEvent = (e: Event) => callback((e as CustomEvent<T>).detail);
-    window.addEventListener(event, onEvent);
-    return () => window.removeEventListener(event, onEvent);
-  }
-  let disposed = false;
-  let unlisten: UnlistenFn | null = null;
-  listen<T>(event, (e) => {
-    if (!disposed) callback(e.payload);
-  })
-    .then((fn) => {
-      if (disposed) fn();
-      else unlisten = fn;
-    })
-    .catch((e: unknown) => console.error(`Écoute de ${event} impossible`, e));
-  return () => {
-    disposed = true;
-    unlisten?.();
-    unlisten = null;
-  };
 }
 
 /**

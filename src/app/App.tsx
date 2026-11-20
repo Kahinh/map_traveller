@@ -15,8 +15,11 @@ import {
 import { CATEGORIES, type Category, type Destination } from '../features/catalog/schema';
 import type { ViewFilter } from '../features/catalog/search';
 import { cardParts, partCommand, partVariants, type ClickButton, type PartIndex } from '../features/commands/cardParts';
-import { farmResumeCommand, farmStartCommand, parseFarmRoute } from '../features/farm/farmRoute';
+import { farmStartCommand, farmStepCommand, parseFarmRoute } from '../features/farm/farmRoute';
 import { describeUpdateState } from '../features/updates/types';
+import { errorText } from '../lib/errors';
+import { IS_TAURI } from '../lib/tauri/env';
+import { openFarm } from '../lib/tauri/farm';
 import { setMainBusy } from '../lib/tauri/window';
 import { useAliases } from './useAliases';
 import { useAppKeyboard } from './useAppKeyboard';
@@ -144,7 +147,10 @@ export function App() {
   const onCardAction = useCallback(
     (d: Destination, part: PartIndex, button: ClickButton) => {
       if (d.category === 'farm') {
-        openPanel({ type: 'farm', id: d.id }); // V1 : clic gauche et droit ouvrent le parcours
+        // Clic gauche et droit ouvrent le parcours : dans sa propre fenêtre, toujours au premier
+        // plan ; dans le panneau en mode navigateur.
+        if (IS_TAURI) openFarm(d.id).catch((e: unknown) => warn(`Ouverture du parcours impossible : ${errorText(e)}`));
+        else openPanel({ type: 'farm', id: d.id });
         return;
       }
       const parts = cardParts(d);
@@ -157,7 +163,7 @@ export function App() {
         label,
       });
     },
-    [copy, openPanel],
+    [copy, openPanel, warn],
   );
 
   /**
@@ -228,6 +234,7 @@ export function App() {
   const farm = useMemo(() => destinations.find((d) => d.id === farmId) ?? null, [destinations, farmId]);
   const farmRoute = useMemo(() => (farm ? parseFarmRoute(farm.command) : null), [farm]);
   const farmStep = farm ? farmProgress.stepOf(farm.id) : -1;
+  const farmStart = farmRoute ? farmStartCommand(farmRoute) : null;
 
   const statusMessage: StatusMessage | null = feedback ?? (updateIndicator === null ? null : { text: updateIndicator });
 
@@ -283,16 +290,18 @@ export function App() {
         <FarmPanel
           name={farm.name}
           route={farmRoute}
+          hasStart={farmStart !== null}
           currentStep={farmStep >= 0 ? farmStep : null}
           feedbackKey={feedback?.key.startsWith(FARM_KEY) ? feedback.key.slice(FARM_KEY.length) : null}
           onClose={closePanel}
           onStart={() => {
-            farmProgress.setStep(farm.id, -1);
-            void copy(`${FARM_KEY}start`, farmStartCommand(farmRoute), 'Parcours vide');
+            // « Début » mène à la première position : c'est elle qui devient la position courante.
+            farmProgress.setStep(farm.id, 0);
+            void copy(`${FARM_KEY}start`, farmStart, NOTHING_TO_COPY);
           }}
           onStep={(i) => {
             farmProgress.setStep(farm.id, i);
-            void copy(`${FARM_KEY}${i}`, farmResumeCommand(farmRoute, i), 'Fin de parcours : rien à copier');
+            void copy(`${FARM_KEY}${i}`, farmStepCommand(farmRoute, i), NOTHING_TO_COPY);
           }}
         />
       )}

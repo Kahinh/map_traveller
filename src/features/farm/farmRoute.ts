@@ -1,12 +1,12 @@
 /**
- * Parcours Farm : analyse d'une commande brute en étapes et calcul de la reprise.
+ * Parcours Farm : analyse d'une commande brute en étapes et texte copié par chaque case.
  * Invariant 3 de `CLAUDE.md`. Fonctions pures.
  *
- * Chaque étape représente la DERNIÈRE POSITION ATTEINTE. Un clic sur l'étape i copie
- * le texte original qui suit son segment. La reprise se fait par
- * INDICE d'étape, jamais par recherche de coordonnées (les coordonnées peuvent se répéter).
+ * Le jeu n'enchaîne pas plusieurs `/travel` dans une même commande : un clic sur l'étape i
+ * copie son seul segment, tel que saisi. Les étapes sont repérées par INDICE, jamais par
+ * coordonnées (une position peut se répéter).
  */
-import { isEmptyCommand, rightClickCommand, splitLeadingZaap } from '../commands/copyRules';
+import { isEmptyCommand, splitLeadingZaap } from '../commands/copyRules';
 
 /** `/travel X Y` (entiers relatifs, séparateur espace et/ou virgule). */
 const TRAVEL_SEGMENT = /^\s*\/travel\s+(-?\d+)\s*[,\s]\s*(-?\d+)\s*$/i;
@@ -80,21 +80,25 @@ export function isValidFarmRoute(route: FarmRoute): boolean {
   return route.steps.length > 0 && route.issues.length === 0;
 }
 
-/** Bouton « Début » du panneau Farm : commande complète, Zaap initial compris. `null` si vide. */
+/**
+ * Case « Début » de la fenêtre du parcours : le Zaap initial et la première position, tels que
+ * saisis (texte brut de la commande jusqu'à la fin du premier segment `/travel`). `null` si le
+ * parcours ne commence pas par un `/zaap` ou n'a aucune étape : la case n'apparaît pas, la
+ * première position suffit.
+ */
 export function farmStartCommand(route: FarmRoute): string | null {
-  return rightClickCommand(route.command);
+  const first = route.steps[0];
+  if (route.zaapPrefix === null || !first) return null;
+  return route.command.slice(0, first.end).trim();
 }
 
 /**
- * Clic sur l'étape `stepIndex` (dernière position atteinte) : le texte brut qui suit son
- * segment, tel quel (segments non reconnus, espaces et `;` final compris), sans les blancs ni
- * `;` de tête. On découpe la commande au lieu de recoller les étapes : rien de ce que
- * l'utilisateur a saisi après cette étape ne peut disparaître.
- * Retourne `null` pour la dernière étape (fin de parcours), un indice invalide ou une suite vide.
+ * Clic sur l'étape `stepIndex` : son segment `/travel` seul, tel que saisi (blancs de bord
+ * retirés). Le jeu n'enchaîne pas plusieurs `/travel` : chaque position se copie une à une.
+ * `null` pour un indice invalide.
  */
-export function farmResumeCommand(route: FarmRoute, stepIndex: number): string | null {
-  if (!Number.isInteger(stepIndex) || stepIndex < 0 || stepIndex >= route.steps.length - 1) return null;
-  const step = route.steps[stepIndex] as FarmStep;
-  const rest = route.command.slice(step.end + 1).replace(/^[\s;]+/, '');
-  return rest === '' ? null : rest;
+export function farmStepCommand(route: FarmRoute, stepIndex: number): string | null {
+  if (!Number.isInteger(stepIndex)) return null;
+  const step = route.steps[stepIndex];
+  return step ? step.segment.trim() : null;
 }

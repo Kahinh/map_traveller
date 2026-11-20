@@ -2,16 +2,14 @@
  * Palette de recherche : index et lignes de résultats. Fonctions pures.
  *
  * Aucune règle de copie n'est réécrite ici : les cartes passent par `cardParts` /
- * `partCommand`, les parcours Farm par `parseFarmRoute`, `farmStartCommand` et
- * `farmResumeCommand` (via `farmQuery.ts`). Les commandes sont du texte brut, jamais modifié.
+ * `partCommand`. Un parcours Farm donne UNE ligne, qui ne copie rien : elle ouvre la fenêtre du
+ * parcours, où chaque position se copie une à une. Les commandes sont du texte brut, jamais modifié.
  */
 import { EMPTY_DICTIONARY, type AliasDictionary } from '../aliases/aliases';
 import type { Destination } from '../catalog/schema';
 import { buildSearchIndex, searchIndexRank } from '../catalog/searchIndex';
-import { queryTokens } from '../catalog/searchText';
 import { cardParts, orderVariants, partVariants, type PartIndex, type VariantKind } from '../commands/cardParts';
 import { parseFarmRoute, type FarmRoute } from '../farm/farmRoute';
-import { farmStartEntry, farmStepEntry, formatPosition, parsePaletteQuery, stepsAtPosition } from './farmQuery';
 import {
   paletteKey,
   subtitleBase,
@@ -178,17 +176,31 @@ function cachedEntries(
 }
 
 /**
- * Recherche classée. Deux interprétations sont lancées puis fusionnées :
- * (b) la requête entière comme texte (recherche normale, classée par `searchIndexRank`) ;
- * (a) si la requête finit par une position (« farm tremble 2 2 ») et qu'un texte la précède,
- *     les étapes des parcours Farm correspondant au texte qui sont à cette position.
- * Si (a) trouve au moins une étape, ses lignes passent en tête.
- *
- * Parcours Farm en (b) : requête vide ou plusieurs parcours trouvés → une ligne « parcours
- * complet » par parcours ; un seul parcours trouvé → « parcours complet » puis chaque position.
- *
- * Les lignes sont fabriquées dans l'ordre d'affichage, sans doublon, et la fabrication s'arrête
- * au plafond `limit` : une requête d'une lettre ne construit pas les lignes de tout le catalogue.
+ * Ligne d'un parcours Farm : aucune variante à copier, son activation ouvre la fenêtre du
+ * parcours (`Palette`). Le sous-titre donne le nombre de positions.
+ */
+export function farmEntry(d: Destination, route: FarmRoute, favorite: boolean): PaletteEntry {
+  const n = route.steps.length;
+  const count = n === 0 ? 'aucune position' : `${n} position${n > 1 ? 's' : ''}`;
+  const check = route.issues.length > 0 ? ' · parcours à vérifier' : '';
+  return {
+    key: paletteKey(d.id, 'farm'),
+    kind: 'farm',
+    destinationId: d.id,
+    title: d.name,
+    step: null,
+    subtitle: `${subtitleBase(d)} · ${count}${check}`,
+    image: d.image,
+    favorite,
+    variants: [],
+  };
+}
+
+/**
+ * Recherche classée (`searchIndexRank`) : une ligne par étape pour une carte, une seule ligne
+ * par parcours Farm. Les lignes sont fabriquées dans l'ordre d'affichage, sans doublon, et la
+ * fabrication s'arrête au plafond `limit` : une requête d'une lettre ne construit pas les lignes
+ * de tout le catalogue.
  */
 export function searchPalette(index: PaletteIndex, query: string, options: PaletteSearchOptions): PaletteSearchResult {
   const limit = Math.max(0, options.limit);
@@ -201,61 +213,16 @@ export function searchPalette(index: PaletteIndex, query: string, options: Palet
 
   const { routes } = index;
   const entries: PaletteEntry[] = [];
-  const seen = new Set<string>();
-  const full = () => entries.length >= limit;
   const add = (lines: readonly PaletteEntry[]) => {
     for (const e of lines) {
-      if (full()) return;
-      if (seen.has(e.key)) continue;
-      seen.add(e.key);
+      if (entries.length >= limit) return;
       entries.push(e);
     }
   };
   const isFav = (d: Destination) => favorites.has(d.id);
-  const startLine = (d: Destination, route: FarmRoute) =>
-    cachedEntries(index, paletteKey(d.id, 'farm-start'), isFav(d), null, () => [farmStartEntry(d, route, isFav(d))]);
-  const stepLine = (d: Destination, route: FarmRoute, i: number) =>
-    cachedEntries(index, paletteKey(d.id, 'farm-step', i), isFav(d), null, () => [farmStepEntry(d, route, i, isFav(d))]);
 
-  // (a) Position en fin de requête, précédée d'un texte : ses étapes passent en tête.
-  const { text, position } = parsePaletteQuery(query);
-  const restart: Destination[] = [];
-  let notice: string | null = null;
-  if (position && queryTokens(text).length > 0) {
-    // Restreint aux parcours AVANT la seconde passe : une destination d'une autre catégorie qui
-    // correspond exactement ne doit pas empêcher de retrouver un parcours à une faute près.
-    const farms = searchIndexRank(index.search, text, favorites, (d) => d.category === 'farm');
-    let found = false;
-    for (const d of farms) {
-      const route = routes.get(d.id);
-      if (!route) continue;
-      const steps = stepsAtPosition(route, position);
-      // Position absente de ce parcours : « parcours complet » reste proposé, en fin de liste.
-      if (steps.length === 0) restart.push(d);
-      found ||= steps.length > 0;
-      for (const s of steps) {
-        if (full()) break;
-        add(stepLine(d, route, s.index));
-      }
-    }
-    if (farms.length > 0 && !found) {
-      const several = farms.length > 1;
-      notice =
-        position.y === undefined
-          ? `Aucune position ${formatPosition(position)},… dans ${several ? 'les parcours' : 'le parcours'}`
-          : `Position ${formatPosition(position)} absente ${several ? 'des parcours' : 'du parcours'}`;
-    }
-  }
-
-  // (b) Requête entière prise comme texte. Un seul parcours trouvé : déplié (compté jusqu'à 2).
-  const textMatches = searchIndexRank(index.search, query, favorites);
-  let farmCount = 0;
-  if (queryTokens(query).length > 0) {
-    for (const d of textMatches) if (d.category === 'farm' && ++farmCount > 1) break;
-  }
-  const expand = farmCount === 1;
-  for (const d of textMatches) {
-    if (full()) break;
+  for (const d of searchIndexRank(index.search, query, favorites)) {
+    if (entries.length >= limit) break;
     if (d.category !== 'farm') {
       add(cachedEntries(index, paletteKey(d.id, 'card'), isFav(d), defaultVariant, () =>
         cardEntries(d, isFav(d), defaultVariant),
@@ -263,19 +230,7 @@ export function searchPalette(index: PaletteIndex, query: string, options: Palet
       continue;
     }
     const route = routes.get(d.id);
-    if (!route) continue;
-    add(startLine(d, route));
-    if (!expand) continue;
-    for (const s of route.steps) {
-      if (full()) break;
-      add(stepLine(d, route, s.index));
-    }
+    if (route) add(cachedEntries(index, paletteKey(d.id, 'farm'), isFav(d), null, () => [farmEntry(d, route, isFav(d))]));
   }
-
-  for (const d of restart) {
-    if (full()) break;
-    const route = routes.get(d.id);
-    if (route) add(startLine(d, route));
-  }
-  return { entries, notice };
+  return { entries, notice: null };
 }

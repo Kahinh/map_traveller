@@ -1,13 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "palette",
-  "description": "Fenêtre palette uniquement, strict minimum (invariant 9). Commandes de l'application (build.rs) : load_store et data_dir pour relire catalogue, alias, favoris et réglages et afficher les images, hide_palette pour se masquer, set_palette_height pour que la fenêtre suive la hauteur de son contenu (valeur bornée en Rust). Aucune commande d'écriture : la palette n'écrit jamais. core:event:allow-listen et core:event:allow-unlisten : écouter puis cesser d'écouter palette:shown et palette:hidden, émis par Rust à chaque affichage et masquage, et store:changed, émis après chaque écriture d'un fichier de stockage pour que la palette le relise (issue n°24). clipboard-manager:allow-write-text : copier la commande choisie. Aucune permission de fenêtre, pas de raccourci global, pas de dialog, pas de mise à jour ni de processus, pas de fs, pas de shell, pas de http.",
+  "description": "Fenêtre palette uniquement, strict minimum (invariant 9). Commandes de l'application (build.rs) : load_store et data_dir pour relire catalogue, alias, favoris et réglages et afficher les images, hide_palette pour se masquer, set_palette_height pour que la fenêtre suive la hauteur de son contenu (valeur bornée en Rust), open_farm pour ouvrir la fenêtre d'un parcours Farm (identifiant contrôlé en Rust). Aucune commande d'écriture : la palette n'écrit jamais. core:event:allow-listen et core:event:allow-unlisten : écouter puis cesser d'écouter palette:shown et palette:hidden, émis par Rust à chaque affichage et masquage, et store:changed, émis après chaque écriture d'un fichier de stockage pour que la palette le relise (issue n°24). clipboard-manager:allow-write-text : copier la commande choisie. Aucune permission de fenêtre, pas de raccourci global, pas de dialog, pas de mise à jour ni de processus, pas de fs, pas de shell, pas de http.",
   "windows": ["palette"],
   "permissions": [
     "allow-load-store",
     "allow-data-dir",
     "allow-hide-palette",
     "allow-set-palette-height",
+    "allow-open-farm",
     "core:event:allow-listen",
     "core:event:allow-unlisten",
     "clipboard-manager:allow-write-text"

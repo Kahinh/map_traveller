@@ -1228,11 +1228,6 @@ button {
   color: var(--mt-accent-ink);
 }
 
-.step.is-warning {
-  border-color: var(--mt-warning);
-  color: var(--mt-warning);
-}
-
 @media (hover: hover) {
   .step:hover {
     border-color: var(--mt-card-border-hover);

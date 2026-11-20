@@ -22,6 +22,9 @@ Ce fichier garde la trace des frictions rencontrées pendant le développement, 
 
 ## Notes
 
+### 2026-11-20 — `correction-humaine` — Le jeu n'enchaîne pas plusieurs `/travel`
+Depuis la V1, un parcours Farm copiait toute la suite (`/travel 1,1; /travel 2,2…`) : ce format ne fonctionne pas en jeu, ce que l'utilisateur a signalé. Une hypothèse sur le comportement du jeu était devenue un invariant (n°3) sans jamais avoir été vérifiée. **Règle :** chaque case copie son seul segment (`farmStepCommand`), dans une fenêtre dédiée toujours au premier plan (`src/farm/`, `farm_window.rs`) ; invariants 3, 12 et 15 réécrits. Ce qui suppose un comportement du jeu se range dans la recette (`recette-v1.md`), jamais seulement dans un test.
+
 ### 2026-11-17 — `correction-humaine` — Palette ouverte au-dessus du centre de l'écran
 `center_on_primary` centrait la fenêtre comme si elle avait sa hauteur maximale (430 px) : la barre seule (48 px) apparaissait environ 190 px au-dessus du centre. L'utilisateur la veut centrée. C'est désormais la barre qui est centrée ; les résultats se développent vers le bas, la barre ne bouge pas.
 **Garde-fou :** position non testable hors Windows ; à contrôler sur l'application installée.

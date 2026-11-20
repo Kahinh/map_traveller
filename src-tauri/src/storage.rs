@@ -32,6 +32,7 @@ use serde_json::{Map, Value};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::farm_window::FARM_LABEL;
 use crate::palette::PALETTE_LABEL;
 
 const APP_DIR: &str = "MapTraveller";
@@ -339,12 +340,14 @@ fn write_store(path: &Path, store: &Store, value: Value, json: &str) -> Result<(
     }
 }
 
-/// Prévient la palette qu'un fichier vient d'être écrit (verrou du fichier déjà relâché). Un
-/// échec n'annule pas l'écriture, déjà faite : la palette relira de toute façon les fichiers à
-/// son prochain affichage.
+/// Prévient la palette et la fenêtre de parcours Farm qu'un fichier vient d'être écrit (verrou
+/// du fichier déjà relâché). Un échec n'annule pas l'écriture, déjà faite : la palette relira de
+/// toute façon les fichiers à son prochain affichage, la fenêtre Farm à sa prochaine ouverture.
 fn notify_store_changed(app: &AppHandle, name: &str) {
-    if let Err(e) = app.emit_to(PALETTE_LABEL, STORE_CHANGED_EVENT, name) {
-        eprintln!("Événement {STORE_CHANGED_EVENT} non émis : {e}");
+    for label in [PALETTE_LABEL, FARM_LABEL] {
+        if let Err(e) = app.emit_to(label, STORE_CHANGED_EVENT, name) {
+            eprintln!("Événement {STORE_CHANGED_EVENT} non émis : {e}");
+        }
     }
 }
 

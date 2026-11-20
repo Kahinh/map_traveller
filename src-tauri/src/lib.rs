@@ -7,8 +7,10 @@
 //! Durée de vie (issue n°14) : le processus vit tant qu'on ne quitte pas EXPLICITEMENT (bouton
 //! fermer de la fenêtre principale, « Quitter » de la zone de notification, relance après une
 //! mise à jour). Réduire dans la zone de notification détruit la fenêtre principale
-//! (`main_window.rs`) ; l'icône (`tray.rs`), les raccourcis et la palette masquée restent.
+//! (`main_window.rs`) ; l'icône (`tray.rs`), les raccourcis, la palette masquée et la fenêtre d'un
+//! parcours Farm (`farm_window.rs`) restent.
 
+mod farm_window;
 mod images;
 mod main_window;
 mod palette;
@@ -113,6 +115,10 @@ pub fn run() {
                     // Alt+F4 sur la palette : masquée, jamais détruite.
                     api.prevent_close();
                     palette::on_close_requested(window);
+                } else if window.label() == farm_window::FARM_LABEL {
+                    // Alt+F4 sur la fenêtre d'un parcours Farm : masquée, jamais détruite.
+                    api.prevent_close();
+                    farm_window::on_close_requested(window);
                 }
             }
             WindowEvent::Focused(false) => palette::on_focus_lost(window),
@@ -145,6 +151,9 @@ pub fn run() {
             images::save_thumbnail,
             palette::hide_palette,
             palette::set_palette_height,
+            farm_window::open_farm,
+            farm_window::get_farm_id,
+            farm_window::hide_farm,
             main_window::minimize_main,
             main_window::set_main_busy,
             shortcuts::get_shortcuts,

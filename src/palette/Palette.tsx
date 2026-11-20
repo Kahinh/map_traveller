@@ -25,6 +25,7 @@ import { DEFAULT_ZAAPS } from '../features/zaaps/defaultZaaps';
 import { errorText } from '../lib/errors';
 import { copyText } from '../lib/tauri/clipboard';
 import { forgetMissingThumbs } from '../lib/tauri/images';
+import { openFarm } from '../lib/tauri/farm';
 import { hidePalette, onPaletteHidden, onPaletteShown, setPaletteHeight } from '../lib/tauri/palette';
 import { perf } from './perf';
 import { PaletteRow } from './PaletteRow';
@@ -207,11 +208,27 @@ export function Palette() {
    * seconde Entrée ou un double clic pendant la copie ne copie rien de plus.
    */
   const copyChoice = useCallback(async ({ entry, text }: CopyChoice) => {
+    if (entry.kind === 'farm') {
+      // Parcours Farm : rien à copier ici, sa fenêtre s'ouvre (toujours au premier plan).
+      if (!copyGate.acquire()) return;
+      try {
+        await openFarm(entry.destinationId);
+      } catch (e) {
+        copyGate.release();
+        setStatus({ kind: 'warning', text: 'Ouverture du parcours impossible', detail: errorText(e) });
+        return;
+      }
+      try {
+        await hidePalette();
+      } catch (e) {
+        setStatus({ kind: 'warning', text: 'Parcours ouvert, mais fermeture impossible', detail: errorText(e) });
+      } finally {
+        copyGate.release();
+      }
+      return;
+    }
     if (text === null) {
-      setStatus({
-        kind: 'warning',
-        text: entry.kind === 'farm-step' ? 'Fin de parcours : rien à copier' : 'Aucune commande à copier',
-      });
+      setStatus({ kind: 'warning', text: 'Aucune commande à copier' });
       return;
     }
     if (!copyGate.acquire()) return;
@@ -318,7 +335,11 @@ export function Palette() {
   const variants = selected?.variants ?? [];
   const twoVariants = selected !== undefined && variants.length === 2;
   const activeIdx = twoVariants ? Math.min(nav.choice, 1) : 0;
-  const enterLabel = twoVariants ? variantShortLabel(variants[activeIdx]!.kind) : 'copier';
+  const enterLabel = twoVariants
+    ? variantShortLabel(variants[activeIdx]!.kind)
+    : selected?.kind === 'farm'
+      ? 'ouvrir le parcours'
+      : 'copier';
   const otherLabel = twoVariants ? variantShortLabel(variants[1 - activeIdx]!.kind) : '';
   const trimmed = query.trim();
 

@@ -35,13 +35,9 @@ L'infobulle d'une carte dit ce que font ses clics : « Clic gauche : sans Zaap �
 
 **Cartes à deux étapes** (PNJ et Donjons). Pour un trajet qui demande un passage manuel (portail, PNJ, entrée d'une dimension), la carte est coupée en deux triangles par une diagonale : le triangle haut-gauche (repère « 1 ») copie le trajet jusqu'à l'accès, le triangle bas-droite (repère « 2 ») le trajet sur place. Chaque triangle suit les mêmes règles de clic. Franchir le passage reste à faire soi-même.
 
-**Parcours Farm.** Un clic (gauche ou droit) sur une carte Farm ouvre le parcours : une petite carte par position (`1,1`, `2,2`…).
+**Parcours Farm.** Le jeu n'enchaîne pas plusieurs `/travel` : un clic (gauche ou droit) sur une carte Farm ouvre une petite fenêtre, toujours au premier plan, avec une case par position (`1,1`, `2,2`…). Chaque case copie son seul `/travel` : on clique la première position, on s'y rend, puis la suivante, et ainsi de suite. La dernière case cliquée reste en évidence (et les précédentes estompées) tant que l'application tourne, même si l'on ferme la fenêtre. Si le parcours commence par un `/zaap`, une case « Début » copie le Zaap et la première position. La fenêtre se déplace par sa barre de titre et se ferme par sa croix ou `Échap`.
 
-- **Début** : copie le parcours complet, Zaap initial compris.
-- **Clic sur une position** : c'est la **dernière position atteinte** ; la suite du parcours est copiée aussitôt, sans second clic.
-- **Dernière position** : rien n'est copié, un message signale la fin du parcours.
-
-La position cliquée reste surlignée et les précédentes estompées, le temps de la session. La reprise se fait par numéro d'étape : un parcours qui repasse par les mêmes coordonnées fonctionne.
+Les positions sont repérées par leur numéro : un parcours qui repasse par les mêmes coordonnées fonctionne.
 
 ## Palette de recherche
 
@@ -61,7 +57,7 @@ La position cliquée reste surlignée et les précédentes estompées, le temps 
 - Les modifications du catalogue et des alias sont prises en compte dès l'enregistrement, sans redémarrer ni rouvrir la palette.
 - **Une ligne par étape** : une carte à deux étapes donne « — Étape 1 » et « — Étape 2 », l'une sous l'autre.
 - **Avec ou sans Zaap** : sur une ligne qui commence par `/zaap`, deux cases à droite, *sans Zaap* et *avec Zaap* ; la case en surbrillance est celle qu'`Entrée` copie, un clic sur une case copie la sienne. La case par défaut se règle dans Paramètres › Palette.
-- **Farm** : le nom du parcours donne « parcours complet » puis une ligne par position ; le nom suivi d'une position reprend la suite (avec un parcours fictif « Tremble », `farm tremble 2 2` copie les étapes après `2,2`).
+- **Farm** : une seule ligne par parcours ; `Entrée` ou un clic ouvre la fenêtre du parcours (voir plus haut) au lieu de copier.
 - **Zaap le plus proche** : `proche -20,-20` (ou `proche -20 -20`) liste les trois zaaps les plus proches de cette position. `Entrée` copie le zaap puis le trajet vers la position, `Ctrl+Entrée` le zaap seul. `proche incarnam 2,-4` cherche parmi les zaaps d'Incarnam. La distance est comptée en cartes, à vol d'oiseau : la mer et les obstacles ne sont pas pris en compte.
 
 ## Gérer ses destinations

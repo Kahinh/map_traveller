@@ -7,9 +7,11 @@
 import { describe, expect, it } from 'vitest';
 import buildRs from '../src-tauri/build.rs?raw';
 import libRs from '../src-tauri/src/lib.rs?raw';
+import farmRs from '../src-tauri/src/farm_window.rs?raw';
 import paletteRs from '../src-tauri/src/palette.rs?raw';
 import storageRs from '../src-tauri/src/storage.rs?raw';
 import { PALETTE_BAR_HEIGHT, PALETTE_VISIBLE_ROWS } from '../src/features/palette/windowHeight';
+import { FARM_OPEN_EVENT } from '../src/lib/tauri/farm';
 import { PALETTE_HIDDEN_EVENT, PALETTE_SHOWN_EVENT } from '../src/lib/tauri/palette';
 import { STORE_CHANGED_EVENT } from '../src/lib/tauri/storeRead';
 
@@ -65,6 +67,8 @@ describe('contrat interface ↔ Rust', () => {
     expect(rustConst(paletteRs, 'SHOWN_EVENT')).toBe(JSON.stringify(PALETTE_SHOWN_EVENT));
     expect(rustConst(paletteRs, 'HIDDEN_EVENT')).toBe(JSON.stringify(PALETTE_HIDDEN_EVENT));
     expect(rustConst(storageRs, 'STORE_CHANGED_EVENT')).toBe(JSON.stringify(STORE_CHANGED_EVENT));
+    expect(rustConst(farmRs, 'OPEN_EVENT')).toBe(JSON.stringify(FARM_OPEN_EVENT));
+    expect(rustConst(farmRs, 'FARM_LABEL')).toBe('"farm"');
   });
 });
 

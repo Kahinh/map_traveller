@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "farm",
+  "description": "Fenêtre d'un parcours Farm uniquement, strict minimum (invariant 9). Commandes de l'application (build.rs) : load_store pour lire le catalogue, get_farm_id pour connaître le parcours à afficher, hide_farm pour se masquer (jamais détruite). core:event:allow-listen et core:event:allow-unlisten : farm:open (parcours à afficher, émis par Rust à chaque ouverture) et store:changed (catalogue modifié). core:window:allow-start-dragging : déplacer la fenêtre sans décorations par son en-tête. clipboard-manager:allow-write-text : copier une position. Aucune commande d'écriture, pas de raccourci global, pas de dialog, pas de mise à jour ni de processus, pas de fs, pas de shell, pas de http.",
+  "windows": ["farm"],
+  "permissions": [
+    "allow-load-store",
+    "allow-get-farm-id",
+    "allow-hide-farm",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging",
+    "clipboard-manager:allow-write-text"
+  ]
+}

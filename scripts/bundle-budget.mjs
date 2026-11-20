@@ -16,6 +16,8 @@ const BUDGETS = {
   'palette.html': 300_000,
   // Mesuré : 417,8 Ko (React 218,8 + commun 30,6 + fenêtre principale 168,4).
   'index.html': 460_000,
+  // Mesuré : 253,4 Ko (React 218,8 + commun 32,0 + fenêtre Farm 2,6).
+  'farm.html': 280_000,
 };
 
 /** Fichiers JS chargés à l'ouverture d'une page : script d'entrée et modules préchargés. */

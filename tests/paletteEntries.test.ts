@@ -256,10 +256,9 @@ describe('libellés des variantes', () => {
     expect(VARIANT_LABELS).toEqual({
       withoutZaap: { long: 'Sans Zaap : trajet seul', short: 'sans Zaap' },
       withZaap: { long: 'Avec Zaap : commande complète', short: 'avec Zaap' },
-      trip: { long: 'Trajet complet : zaap puis déplacement', short: 'trajet complet' },
       zaapOnly: { long: 'Zaap seul', short: 'zaap seul' },
     });
-    expect(variantLabel('trip')).toBe('Trajet complet : zaap puis déplacement');
+    expect(variantLabel('zaapOnly')).toBe('Zaap seul');
     expect(variantShortLabel('withZaap')).toBe('avec Zaap');
   });
 

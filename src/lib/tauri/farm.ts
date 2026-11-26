@@ -5,7 +5,8 @@
  * la page lit le parcours à afficher par `get_farm_id`, puis le suit par `farm:open`.
  * Dans le navigateur (`npm run dev`, page `farm.html`) : le parcours vient de l'adresse
  * (`farm.html?id=<identifiant>`), et `farm:open` est un événement DOM de `window`
- * (`dispatchEvent(new CustomEvent('farm:open', { detail: 'id' }))`).
+ * (`dispatchEvent(new CustomEvent('farm:open', { detail: 'id' }))`), comme `farm:next`
+ * (`dispatchEvent(new CustomEvent('farm:next'))`, raccourci « position suivante »).
  */
 import { invoke } from '@tauri-apps/api/core';
 import { IS_TAURI } from './env';
@@ -16,6 +17,11 @@ const GET_FARM_ID_COMMAND = 'get_farm_id';
 const HIDE_FARM_COMMAND = 'hide_farm';
 /** Événement émis par Rust vers la fenêtre Farm à chaque ouverture (`farm_window::OPEN_EVENT`). */
 export const FARM_OPEN_EVENT = 'farm:open';
+/**
+ * Événement émis par Rust vers la fenêtre Farm, affichée, au raccourci global « position
+ * suivante » (`farm_window::NEXT_EVENT`), sans charge utile.
+ */
+export const FARM_NEXT_EVENT = 'farm:next';
 
 /**
  * Ouvre la fenêtre du parcours `id` (toujours au premier plan). Lève si Rust refuse.
@@ -40,4 +46,9 @@ export async function hideFarm(): Promise<void> {
 /** Appelle `callback` avec l'identifiant du parcours à chaque ouverture. Renvoie le désabonnement. */
 export function onFarmOpen(callback: (id: string) => void): () => void {
   return subscribe<string>(FARM_OPEN_EVENT, callback);
+}
+
+/** Appelle `callback` à chaque appui sur le raccourci « position suivante ». Renvoie le désabonnement. */
+export function onFarmNext(callback: () => void): () => void {
+  return subscribe<unknown>(FARM_NEXT_EVENT, () => callback());
 }

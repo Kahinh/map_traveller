@@ -27,7 +27,7 @@ export async function getShortcuts(): Promise<ShortcutsState> {
 
 /**
  * Change le raccourci d'une action. Rejette avec le message de Rust (en français) si la chaîne
- * est invalide, déjà utilisée par l'autre action ou refusée par le système ; l'ancien raccourci
+ * est invalide, déjà utilisée par une autre action ou refusée par le système ; l'ancien raccourci
  * reste alors actif.
  */
 export async function setShortcut(action: ShortcutAction, accelerator: string): Promise<ShortcutsState> {
@@ -35,7 +35,7 @@ export async function setShortcut(action: ShortcutAction, accelerator: string): 
   return toState(await invoke<unknown>('set_shortcut', { action, accelerator }));
 }
 
-/** Rétablit les deux raccourcis par défaut. */
+/** Rétablit les raccourcis par défaut. */
 export async function resetShortcuts(): Promise<ShortcutsState> {
   if (!IS_TAURI) throw new Error(INSTALLED_ONLY);
   return toState(await invoke<unknown>('reset_shortcuts'));

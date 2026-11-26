@@ -99,6 +99,7 @@ pub fn run() {
                     match shortcuts::action_for(app, shortcut) {
                         Some(shortcuts::Action::ToggleMain) => main_window::toggle(app),
                         Some(shortcuts::Action::Palette) => palette::toggle_palette(app),
+                        Some(shortcuts::Action::FarmNext) => farm_window::next_step(app),
                         None => {}
                     }
                 })

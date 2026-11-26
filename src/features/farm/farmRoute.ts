@@ -102,3 +102,34 @@ export function farmStepCommand(route: FarmRoute, stepIndex: number): string | n
   const step = route.steps[stepIndex];
   return step ? step.segment.trim() : null;
 }
+
+/** Ce que copie le raccourci « position suivante » : texte brut et nouvelle position courante. */
+export interface FarmNextCopy {
+  /** Indice de la position qui devient la position courante. */
+  step: number;
+  /** Texte brut copié (`farmStartCommand` ou `farmStepCommand`). */
+  text: string;
+  /** Vrai si c'est la case « Début » qui est copiée (aucune position cliquée jusque-là). */
+  start: boolean;
+}
+
+/**
+ * Raccourci global « position suivante » : la position qui suit `current` (dernière position
+ * cliquée, -1 si aucune). Aucune position encore : « Début » si le parcours commence par un
+ * `/zaap`, sinon la première position. Après la dernière : retour à la première (parcours en
+ * boucle). `null` si le parcours n'a aucune étape. Le texte vient toujours de `farmStartCommand`
+ * / `farmStepCommand` (invariant 3).
+ */
+export function farmNextCopy(route: FarmRoute, current: number): FarmNextCopy | null {
+  const count = route.steps.length;
+  if (count === 0) return null;
+  if (!Number.isInteger(current) || current < 0 || current >= count) {
+    const start = farmStartCommand(route);
+    if (start !== null) return { step: 0, text: start, start: true };
+    const first = farmStepCommand(route, 0);
+    return first === null ? null : { step: 0, text: first, start: false };
+  }
+  const step = (current + 1) % count;
+  const text = farmStepCommand(route, step);
+  return text === null ? null : { step, text, start: false };
+}

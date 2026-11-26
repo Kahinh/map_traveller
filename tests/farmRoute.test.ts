@@ -1,6 +1,6 @@
 // Coordonnées FICTIVES : elles illustrent les règles, ce ne sont pas des trajets réels.
 import { describe, expect, it } from 'vitest';
-import { farmStartCommand, farmStepCommand, isValidFarmRoute, parseFarmRoute } from '../src/features/farm/farmRoute';
+import { farmNextCopy, farmStartCommand, farmStepCommand, isValidFarmRoute, parseFarmRoute } from '../src/features/farm/farmRoute';
 
 const ROUTE = '/travel 1 1;/travel 2 2;/travel 3 3;/travel 4 4;/travel 5 5;/travel 6 6';
 
@@ -90,5 +90,39 @@ describe('parcours Farm (invariant 3)', () => {
     expect(isValidFarmRoute(r)).toBe(false);
     expect(farmStartCommand(r)).toBeNull();
     expect(farmStepCommand(r, 0)).toBeNull();
+  });
+});
+
+describe('farmNextCopy (raccourci « position suivante »)', () => {
+  const plain = parseFarmRoute('/travel 1 1;/travel 2,2;/travel 3 3');
+  const zaap = parseFarmRoute('/zaap 0 0;/travel 1 1;/travel 2 2');
+
+  it('après la position i : la position i + 1, segment brut', () => {
+    expect(farmNextCopy(plain, 0)).toEqual({ step: 1, text: '/travel 2,2', start: false });
+    expect(farmNextCopy(plain, 1)).toEqual({ step: 2, text: '/travel 3 3', start: false });
+  });
+
+  it('après la dernière : retour à la première (parcours en boucle), sans le zaap', () => {
+    expect(farmNextCopy(plain, 2)).toEqual({ step: 0, text: '/travel 1 1', start: false });
+    expect(farmNextCopy(zaap, 1)).toEqual({ step: 0, text: '/travel 1 1', start: false });
+  });
+
+  it('aucune position cliquée : « Début » si le parcours commence par un zaap, sinon la première', () => {
+    expect(farmNextCopy(zaap, -1)).toEqual({ step: 0, text: '/zaap 0 0;/travel 1 1', start: true });
+    expect(farmNextCopy(plain, -1)).toEqual({ step: 0, text: '/travel 1 1', start: false });
+  });
+
+  it('position mémorisée hors du parcours (parcours raccourci) : repart du début', () => {
+    expect(farmNextCopy(plain, 7)).toEqual({ step: 0, text: '/travel 1 1', start: false });
+  });
+
+  it('une position répétée est suivie par indice, pas par coordonnées', () => {
+    const loop = parseFarmRoute('/travel 1 1;/travel 2 2;/travel 1 1;/travel 3 3');
+    expect(farmNextCopy(loop, 2)).toEqual({ step: 3, text: '/travel 3 3', start: false });
+  });
+
+  it('parcours sans étape : rien', () => {
+    expect(farmNextCopy(parseFarmRoute(''), -1)).toBeNull();
+    expect(farmNextCopy(parseFarmRoute('/zaap 0 0'), 0)).toBeNull();
   });
 });

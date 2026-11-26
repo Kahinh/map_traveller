@@ -2,6 +2,17 @@
 
 Les numéros entre parenthèses renvoient aux issues et pull requests du dépôt. Seules les versions taguées ont une Release téléchargeable ; 0.7.0 et 0.8.0 ont été numérotées sans être taguées : leur contenu est arrivé aux utilisateurs avec la 0.9.0.
 
+## Non publié
+
+**Pour l'utilisateur**
+
+- Palette, `proche X,Y` : `Entrée` copie la commande du zaap seule. Le `/travel` vers la position tapée n'est plus ajouté (il ramenait à la position de départ).
+- Parcours Farm : nouveau raccourci global « Farm : position suivante » (`Ctrl+Alt+N`, réglable dans Paramètres › Raccourcis). Fenêtre du parcours affichée, il copie la position qui suit la dernière cliquée et la met en évidence ; après la dernière, il revient à la première.
+
+**Sous le capot**
+
+- `shortcuts.rs` gère trois actions (`farmNext` ajoutée ; en conflit au démarrage, elle seule revient à sa valeur par défaut). Événement `farm:next` émis vers la fenêtre `farm` affichée ; texte copié par `farmNextCopy` (pur, testé).
+
 ## 1.1.0 — 2026-11-20
 
 **Pour l'utilisateur**

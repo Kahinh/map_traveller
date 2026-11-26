@@ -201,9 +201,10 @@ export function parseNearQuery(query: string, worlds: readonly ZaapWorld[]): Nea
 }
 
 /**
- * Trajet complet : la commande du zaap, puis `/travel` vers la position tapée, dans la
- * convention des commandes de Map Traveller (`/travel X Y`). Position sur le zaap même :
- * la commande du zaap seule.
+ * Trajet complet : la commande du zaap, puis `/travel` vers la position, dans la convention des
+ * commandes de Map Traveller (`/travel X Y`). Position sur le zaap même : la commande du zaap
+ * seule. Sert au catalogue livré (zaap le plus proche puis trajet) ; la palette « proche X,Y »
+ * ne propose que le zaap seul.
  */
 export function zaapTripCommand(zaap: Zaap, target: MapPosition): string {
   if (mapDistance(zaap, target) === 0) return zaap.command;

@@ -30,7 +30,7 @@ interface Props {
 
 function VariantIcon({ kind }: { kind: PaletteVariantKind }) {
   if (kind === 'zaapOnly') return <MarkIcon />;
-  if (kind === 'withZaap' || kind === 'trip') return <ZaapIcon />;
+  if (kind === 'withZaap') return <ZaapIcon />;
   return <TravelIcon />;
 }
 

@@ -37,6 +37,8 @@ L'infobulle d'une carte dit ce que font ses clics : « Clic gauche : sans Zaap �
 
 **Parcours Farm.** Le jeu n'enchaîne pas plusieurs `/travel` : un clic (gauche ou droit) sur une carte Farm ouvre une petite fenêtre, toujours au premier plan, avec une case par position (`1,1`, `2,2`…). Chaque case copie son seul `/travel` : on clique la première position, on s'y rend, puis la suivante, et ainsi de suite. La dernière case cliquée reste en évidence (et les précédentes estompées) tant que l'application tourne, même si l'on ferme la fenêtre. Si le parcours commence par un `/zaap`, une case « Début » copie le Zaap et la première position. La fenêtre se déplace par sa barre de titre et se ferme par sa croix ou `Échap`.
 
+**Position suivante sans quitter le jeu** : tant que la fenêtre d'un parcours est affichée, le raccourci global `Ctrl+Alt+N` (réglable dans Paramètres › Raccourcis) copie la position qui suit la dernière cliquée et la met en évidence, comme un clic sur sa case. Après la dernière position, il revient à la première (son seul `/travel`) ; si aucune position n'a encore été cliquée, il copie « Début » (ou la première position). Fenêtre du parcours fermée : le raccourci ne copie rien.
+
 Les positions sont repérées par leur numéro : un parcours qui repasse par les mêmes coordonnées fonctionne.
 
 ## Palette de recherche
@@ -58,7 +60,7 @@ Les positions sont repérées par leur numéro : un parcours qui repasse par les
 - **Une ligne par étape** : une carte à deux étapes donne « — Étape 1 » et « — Étape 2 », l'une sous l'autre.
 - **Avec ou sans Zaap** : sur une ligne qui commence par `/zaap`, deux cases à droite, *sans Zaap* et *avec Zaap* ; la case en surbrillance est celle qu'`Entrée` copie, un clic sur une case copie la sienne. La case par défaut se règle dans Paramètres › Palette.
 - **Farm** : une seule ligne par parcours ; `Entrée` ou un clic ouvre la fenêtre du parcours (voir plus haut) au lieu de copier.
-- **Zaap le plus proche** : `proche -20,-20` (ou `proche -20 -20`) liste les trois zaaps les plus proches de cette position. `Entrée` copie le zaap puis le trajet vers la position, `Ctrl+Entrée` le zaap seul. `proche incarnam 2,-4` cherche parmi les zaaps d'Incarnam. La distance est comptée en cartes, à vol d'oiseau : la mer et les obstacles ne sont pas pris en compte.
+- **Zaap le plus proche** : `proche -20,-20` (ou `proche -20 -20`) liste les trois zaaps les plus proches de cette position. `Entrée` (ou un clic) copie la commande du zaap seule : aucun `/travel` vers la position tapée n'est ajouté. `proche incarnam 2,-4` cherche parmi les zaaps d'Incarnam. La distance est comptée en cartes, à vol d'oiseau : la mer et les obstacles ne sont pas pris en compte.
 
 ## Gérer ses destinations
 
@@ -77,7 +79,7 @@ L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enre
 3. **Affichage** : « Toujours au premier plan » (même réglage que l'épingle de la barre de titre) et « Réduire dans la zone de notification ».
 4. **Palette** : variante par défaut, *Sans Zaap* ou *Avec Zaap* (ce que copie `Entrée`).
 5. **Alias** : le dictionnaire de la recherche, commun à la fenêtre et à la palette. Les alias fournis (`hdv`, `rdv`) se désactivent ou se remplacent ; les vôtres s'ajoutent, se modifient et se suppriment.
-6. **Raccourcis** : les deux raccourcis globaux. Cliquer sur le champ, puis appuyer sur la combinaison (Ctrl ou Alt, plus une lettre, un chiffre, F1 à F12 ou Espace) ; « Rétablir par défaut » revient à l'origine. Un raccourci déjà pris par une autre application est refusé et l'ancien est conservé.
+6. **Raccourcis** : les trois raccourcis globaux (fenêtre, palette, Farm : position suivante). Cliquer sur le champ, puis appuyer sur la combinaison (Ctrl ou Alt, plus une lettre, un chiffre, F1 à F12 ou Espace) ; « Rétablir par défaut » revient à l'origine. Un raccourci déjà pris par une autre application est refusé et l'ancien est conservé.
 
 ## Raccourcis clavier
 
@@ -85,6 +87,7 @@ L'engrenage de la barre de titre ouvre les Paramètres. Chaque réglage est enre
 |---|---|---|
 | Partout (global, réglable dans Paramètres › Raccourcis) | `Ctrl+Alt+T` | afficher ou masquer la fenêtre |
 | Partout (global, réglable) | `Ctrl+Alt+Espace` | ouvrir ou fermer la palette |
+| Partout (global, réglable) | `Ctrl+Alt+N` | parcours Farm affiché : copier la position suivante |
 | Fenêtre | taper du texte | lance la recherche |
 | Fenêtre | `Ctrl+F` | place le curseur dans la recherche |
 | Recherche | `↓` | donne le focus à la première carte affichée (premier triangle d'une carte à deux étapes) ; `Tab` passe aux suivantes, `Entrée` copie comme un clic gauche |

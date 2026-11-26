@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useCopyFeedback } from '../app/useCopyFeedback';
 import { useFarmProgress } from '../app/useFarmProgress';
 import { farmProgressText, FarmSteps } from '../components/FarmSteps';
 import { CloseIcon, MarkIcon } from '../components/icons';
 import type { Destination } from '../features/catalog/schema';
-import { farmStartCommand, farmStepCommand, parseFarmRoute } from '../features/farm/farmRoute';
+import { farmNextCopy, farmStartCommand, farmStepCommand, parseFarmRoute } from '../features/farm/farmRoute';
 import { errorText } from '../lib/errors';
-import { getFarmId, hideFarm, onFarmOpen } from '../lib/tauri/farm';
+import { getFarmId, hideFarm, onFarmNext, onFarmOpen } from '../lib/tauri/farm';
 import { onStoreChanged } from '../lib/tauri/palette';
 import { parseCatalogText, readStoreText } from '../lib/tauri/storeRead';
 
@@ -94,6 +94,25 @@ export function FarmWindow() {
   const step = farm ? progress.stepOf(farm.id) : -1;
   const currentStep = step >= 0 ? step : null;
   const start = route ? farmStartCommand(route) : null;
+
+  // Raccourci global « position suivante » (Rust n'émet `farm:next` que fenêtre affichée) : la
+  // position qui suit la dernière cliquée devient la position courante et se copie. Lu par une
+  // référence : l'abonnement est pris une seule fois.
+  const nextRef = useRef<() => void>(() => undefined);
+  const { setStep } = progress;
+  useEffect(() => {
+    nextRef.current = () => {
+      if (!farm || !route) return;
+      const next = farmNextCopy(route, step);
+      if (next === null) {
+        void copy('next', null, NOTHING_TO_COPY);
+        return;
+      }
+      setStep(farm.id, next.step);
+      void copy(next.start ? 'start' : String(next.step), next.text, NOTHING_TO_COPY);
+    };
+  }, [farm, route, step, setStep, copy]);
+  useEffect(() => onFarmNext(() => nextRef.current()), []);
 
   let message: string | null = error;
   if (!message) {

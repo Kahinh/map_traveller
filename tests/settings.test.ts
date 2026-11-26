@@ -29,10 +29,12 @@ describe('parseSettings', () => {
     expect(parseSettings({ shortcuts: { toggleMain: 'alt+ctrl+m', palette: 'Ctrl+Alt+Space' } }).shortcuts).toEqual({
       toggleMain: 'Ctrl+Alt+M',
       palette: 'Ctrl+Alt+Space',
+      farmNext: 'Ctrl+Alt+N',
     });
-    expect(parseSettings({ shortcuts: { toggleMain: 42, palette: 'Ctrl+Shift+F5' } }).shortcuts).toEqual({
+    expect(parseSettings({ shortcuts: { toggleMain: 42, palette: 'Ctrl+Shift+F5', farmNext: 'alt+f2' } }).shortcuts).toEqual({
       toggleMain: 'Ctrl+Alt+T',
       palette: 'Ctrl+Shift+F5',
+      farmNext: 'Alt+F2',
     });
     expect(parseSettings({ shortcuts: { toggleMain: 'T' } }).shortcuts).toEqual(DEFAULT_SETTINGS.shortcuts);
     expect(parseSettings({ shortcuts: 'Ctrl+Alt+K' }).shortcuts).toEqual(DEFAULT_SETTINGS.shortcuts);
@@ -42,6 +44,12 @@ describe('parseSettings', () => {
     expect(parseSettings({ shortcuts: { toggleMain: 'Ctrl+Alt+K', palette: 'alt+ctrl+k' } }).shortcuts).toEqual(
       DEFAULT_SETTINGS.shortcuts,
     );
+  });
+
+  it('« position suivante » sur le raccourci d’une autre action → elle seule revient au défaut', () => {
+    expect(
+      parseSettings({ shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P', farmNext: 'alt+ctrl+p' } }).shortcuts,
+    ).toEqual({ toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P', farmNext: 'Ctrl+Alt+N' });
   });
 
   it('ne modifie pas la constante par défaut', () => {
@@ -71,7 +79,7 @@ describe('mergeSettings', () => {
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
       palette: { defaultVariant: 'withoutZaap' },
-      shortcuts: { toggleMain: 'Ctrl+Alt+Z', palette: 'Ctrl+Alt+Y' },
+      shortcuts: { toggleMain: 'Ctrl+Alt+Z', palette: 'Ctrl+Alt+Y', farmNext: 'Ctrl+Alt+X' },
     };
     expect(mergeSettings({ alwaysOnTop: false }, settings)).toEqual({
       alwaysOnTop: true,
@@ -107,7 +115,7 @@ describe('mergeSettings', () => {
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
       palette: { defaultVariant: 'withoutZaap' },
-      shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
+      shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P', farmNext: 'Ctrl+Alt+N' },
     });
   });
 });
@@ -239,7 +247,7 @@ describe('applySettingsPatch', () => {
     updates: { mode: 'manual' },
     tray: { minimizeToTray: true },
     palette: { defaultVariant: 'withoutZaap' },
-    shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
+    shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P', farmNext: 'Ctrl+Alt+N' },
   };
 
   it('change un seul réglage sans toucher aux autres', () => {
@@ -263,7 +271,7 @@ describe('applySettingsPatch', () => {
       updates: { mode: 'manual' },
       tray: { minimizeToTray: true },
       palette: { defaultVariant: 'withoutZaap' },
-      shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P' },
+      shortcuts: { toggleMain: 'Ctrl+Alt+M', palette: 'Ctrl+Alt+P', farmNext: 'Ctrl+Alt+N' },
     });
     expect(next.shortcuts).toEqual(base.shortcuts);
   });

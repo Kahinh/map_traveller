@@ -134,6 +134,7 @@ describe('parseShortcutsState', () => {
     const state = {
       toggleMain: { accelerator: 'Ctrl+Alt+T', registered: true },
       palette: { accelerator: 'Ctrl+Alt+Space', registered: false },
+      farmNext: { accelerator: 'Ctrl+Alt+N', registered: true },
     };
     expect(parseShortcutsState(state)).toEqual(state);
   });
@@ -153,6 +154,7 @@ describe('parseShortcutsState', () => {
     expect(defaultShortcutsState()).toEqual({
       toggleMain: { accelerator: 'Ctrl+Alt+T', registered: false },
       palette: { accelerator: 'Ctrl+Alt+Space', registered: false },
+      farmNext: { accelerator: 'Ctrl+Alt+N', registered: false },
     });
   });
 });

@@ -118,6 +118,10 @@ export function parseSettings(input: unknown): Settings {
     toggleMain = DEFAULT_SHORTCUTS.toggleMain;
     paletteShortcut = DEFAULT_SHORTCUTS.palette;
   }
+  // « Position suivante » (ajoutée après les deux autres) : en conflit, elle seule revient à sa
+  // valeur par défaut, sans toucher aux deux premières.
+  let farmNext = normalizeAccelerator(shortcuts.farmNext) ?? DEFAULT_SHORTCUTS.farmNext;
+  if (farmNext === toggleMain || farmNext === paletteShortcut) farmNext = DEFAULT_SHORTCUTS.farmNext;
   const updates = isRecord(data.updates) ? data.updates : {};
   const tray = isRecord(data.tray) ? data.tray : {};
   return {
@@ -130,7 +134,7 @@ export function parseSettings(input: unknown): Settings {
         typeof tray.minimizeToTray === 'boolean' ? tray.minimizeToTray : DEFAULT_SETTINGS.tray.minimizeToTray,
     },
     palette: parsePaletteSettings(data),
-    shortcuts: { toggleMain, palette: paletteShortcut },
+    shortcuts: { toggleMain, palette: paletteShortcut, farmNext },
   };
 }
 

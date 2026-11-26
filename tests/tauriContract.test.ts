@@ -9,9 +9,11 @@ import buildRs from '../src-tauri/build.rs?raw';
 import libRs from '../src-tauri/src/lib.rs?raw';
 import farmRs from '../src-tauri/src/farm_window.rs?raw';
 import paletteRs from '../src-tauri/src/palette.rs?raw';
+import shortcutsRs from '../src-tauri/src/shortcuts.rs?raw';
 import storageRs from '../src-tauri/src/storage.rs?raw';
+import { DEFAULT_SHORTCUTS, SHORTCUT_LABELS } from '../src/features/settings/accelerator';
 import { PALETTE_BAR_HEIGHT, PALETTE_VISIBLE_ROWS } from '../src/features/palette/windowHeight';
-import { FARM_OPEN_EVENT } from '../src/lib/tauri/farm';
+import { FARM_NEXT_EVENT, FARM_OPEN_EVENT } from '../src/lib/tauri/farm';
 import { PALETTE_HIDDEN_EVENT, PALETTE_SHOWN_EVENT } from '../src/lib/tauri/palette';
 import { STORE_CHANGED_EVENT } from '../src/lib/tauri/storeRead';
 
@@ -68,7 +70,15 @@ describe('contrat interface ↔ Rust', () => {
     expect(rustConst(paletteRs, 'HIDDEN_EVENT')).toBe(JSON.stringify(PALETTE_HIDDEN_EVENT));
     expect(rustConst(storageRs, 'STORE_CHANGED_EVENT')).toBe(JSON.stringify(STORE_CHANGED_EVENT));
     expect(rustConst(farmRs, 'OPEN_EVENT')).toBe(JSON.stringify(FARM_OPEN_EVENT));
+    expect(rustConst(farmRs, 'NEXT_EVENT')).toBe(JSON.stringify(FARM_NEXT_EVENT));
     expect(rustConst(farmRs, 'FARM_LABEL')).toBe('"farm"');
+  });
+
+  it('raccourcis : mêmes valeurs par défaut et mêmes libellés que Rust', () => {
+    expect(rustConst(shortcutsRs, 'DEFAULT_TOGGLE_MAIN')).toBe(JSON.stringify(DEFAULT_SHORTCUTS.toggleMain));
+    expect(rustConst(shortcutsRs, 'DEFAULT_PALETTE')).toBe(JSON.stringify(DEFAULT_SHORTCUTS.palette));
+    expect(rustConst(shortcutsRs, 'DEFAULT_FARM_NEXT')).toBe(JSON.stringify(DEFAULT_SHORTCUTS.farmNext));
+    for (const label of Object.values(SHORTCUT_LABELS)) expect(shortcutsRs).toContain(`=> "${label}"`);
   });
 });
 

@@ -7,6 +7,8 @@
 //! - Ouverture (`open_farm`, depuis la fenêtre principale ou la palette) : l'identifiant du
 //!   parcours est retenu ici (`get_farm_id`, lu par la page à son chargement), la fenêtre est
 //!   affichée, puis `farm:open` lui donne l'identifiant (page déjà chargée).
+//! - Raccourci global « position suivante » (`shortcuts.rs`) : `farm:next` émis vers la fenêtre
+//!   si elle est affichée ; la page copie la position qui suit la dernière cliquée.
 //! - Fermeture (bouton de la page par `hide_farm`, ou Alt+F4) : masquée, jamais détruite.
 //! - Sa position et sa taille sont mémorisées par le plugin `window-state`.
 
@@ -22,6 +24,10 @@ pub const FARM_LABEL: &str = "farm";
 /// Événement émis vers la fenêtre à chaque ouverture, charge utile = identifiant du parcours
 /// (écouté par `src/lib/tauri/farm.ts`).
 pub const OPEN_EVENT: &str = "farm:open";
+
+/// Événement émis vers la fenêtre, affichée, au raccourci « position suivante », sans charge
+/// utile (écouté par `src/lib/tauri/farm.ts`).
+pub const NEXT_EVENT: &str = "farm:next";
 
 /// Longueur maximale d'un identifiant accepté (octets) : borne ce qui est retenu et réémis.
 const MAX_ID_LEN: usize = 256;
@@ -65,6 +71,20 @@ pub fn hide_farm(app: AppHandle) -> Result<(), String> {
             .hide()
             .map_err(|e| format!("Masquage de la fenêtre du parcours impossible : {e}")),
         None => Ok(()),
+    }
+}
+
+/// Raccourci global « position suivante » : prévient la fenêtre du parcours, seulement si elle
+/// existe et est affichée (fermée, le raccourci ne copie rien). La copie se fait dans la page.
+pub fn next_step(app: &AppHandle) {
+    let Some(window) = app.get_webview_window(FARM_LABEL) else {
+        return;
+    };
+    if !window.is_visible().unwrap_or(false) {
+        return;
+    }
+    if let Err(e) = app.emit_to(FARM_LABEL, NEXT_EVENT, ()) {
+        eprintln!("Événement {NEXT_EVENT} non émis : {e}");
     }
 }
 

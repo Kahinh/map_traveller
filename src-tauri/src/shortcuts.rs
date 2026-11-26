@@ -1,6 +1,7 @@
 //! Raccourcis clavier globaux configurables (issue n°3).
 //!
-//! - Deux actions : afficher / masquer la fenêtre principale, ouvrir la palette.
+//! - Trois actions : afficher / masquer la fenêtre principale, ouvrir la palette, copier la
+//!   position suivante du parcours Farm affiché (`farm_window::next_step`).
 //! - Au démarrage : lecture TOLÉRANTE de `settings.json` (absent, illisible, clé manquante ou
 //!   invalide → valeur par défaut), puis enregistrement. Un échec n'empêche jamais le démarrage :
 //!   il est mémorisé (`registered: false`) et affiché dans les Paramètres.
@@ -26,34 +27,47 @@ use crate::storage::{
     SHORTCUTS_KEY,
 };
 
-/// Défauts : `Ctrl+Alt+T` (fenêtre principale), `Ctrl+Alt+Space` (palette). Éviter `Alt+Espace`
-/// (menu système de Windows) et `Ctrl+Espace` (changement de méthode de saisie).
+/// Défauts : `Ctrl+Alt+T` (fenêtre principale), `Ctrl+Alt+Space` (palette), `Ctrl+Alt+N`
+/// (position suivante d'un parcours Farm). Éviter `Alt+Espace` (menu système de Windows) et
+/// `Ctrl+Espace` (changement de méthode de saisie).
 const DEFAULT_TOGGLE_MAIN: &str = "Ctrl+Alt+T";
 const DEFAULT_PALETTE: &str = "Ctrl+Alt+Space";
+const DEFAULT_FARM_NEXT: &str = "Ctrl+Alt+N";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
     ToggleMain,
     Palette,
+    FarmNext,
 }
 
-const ACTIONS: [Action; 2] = [Action::ToggleMain, Action::Palette];
+/// Toutes les actions, dans l'ordre de priorité (un même raccourci désigne la première).
+const ACTIONS: [Action; 3] = [Action::ToggleMain, Action::Palette, Action::FarmNext];
 
 impl Action {
+    /// Rang dans `ACTIONS` et dans `Bindings`.
+    fn index(self) -> usize {
+        match self {
+            Action::ToggleMain => 0,
+            Action::Palette => 1,
+            Action::FarmNext => 2,
+        }
+    }
+
     /// Clé dans `settings.json` et dans les échanges avec l'interface.
     fn key(self) -> &'static str {
         match self {
             Action::ToggleMain => "toggleMain",
             Action::Palette => "palette",
+            Action::FarmNext => "farmNext",
         }
     }
 
     fn from_key(key: &str) -> Result<Action, String> {
-        match key {
-            "toggleMain" => Ok(Action::ToggleMain),
-            "palette" => Ok(Action::Palette),
-            other => Err(format!("Action de raccourci inconnue : {other}")),
-        }
+        ACTIONS
+            .into_iter()
+            .find(|action| action.key() == key)
+            .ok_or_else(|| format!("Action de raccourci inconnue : {key}"))
     }
 
     /// Libellé affiché dans les messages d'erreur (identique à l'interface).
@@ -61,13 +75,7 @@ impl Action {
         match self {
             Action::ToggleMain => "Afficher / masquer la fenêtre",
             Action::Palette => "Ouvrir la palette",
-        }
-    }
-
-    fn other(self) -> Action {
-        match self {
-            Action::ToggleMain => Action::Palette,
-            Action::Palette => Action::ToggleMain,
+            Action::FarmNext => "Farm : position suivante",
         }
     }
 
@@ -81,6 +89,10 @@ impl Action {
             Action::Palette => Accelerator {
                 text: DEFAULT_PALETTE.to_string(),
                 shortcut: Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::Space),
+            },
+            Action::FarmNext => Accelerator {
+                text: DEFAULT_FARM_NEXT.to_string(),
+                shortcut: Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyN),
             },
         }
     }
@@ -101,25 +113,17 @@ struct Binding {
     registered: bool,
 }
 
+/// Raccourci de chaque action, rangé par `Action::index`.
 #[derive(Debug, Clone)]
-struct Bindings {
-    toggle_main: Binding,
-    palette: Binding,
-}
+struct Bindings([Binding; 3]);
 
 impl Bindings {
     fn get(&self, action: Action) -> &Binding {
-        match action {
-            Action::ToggleMain => &self.toggle_main,
-            Action::Palette => &self.palette,
-        }
+        &self.0[action.index()]
     }
 
     fn set(&mut self, action: Action, binding: Binding) {
-        match action {
-            Action::ToggleMain => self.toggle_main = binding,
-            Action::Palette => self.palette = binding,
-        }
+        self.0[action.index()] = binding;
     }
 }
 
@@ -305,48 +309,53 @@ fn pick(settings: &Map<String, Value>, action: Action) -> Accelerator {
     }
 }
 
-/// Raccourcis de démarrage d'après le contenu de `settings.json` (objet vide si illisible).
-/// Si les deux actions ont le même raccourci, les deux reviennent aux valeurs par défaut.
-pub fn resolve(settings: &Map<String, Value>) -> (Accelerator, Accelerator) {
-    let toggle_main = pick(settings, Action::ToggleMain);
-    let palette = pick(settings, Action::Palette);
+/// Raccourcis de démarrage d'après le contenu de `settings.json` (objet vide si illisible),
+/// rangés par `Action::index`. Si la fenêtre et la palette ont le même raccourci, les deux
+/// reviennent aux valeurs par défaut. « Position suivante » (ajoutée ensuite) sur le raccourci de
+/// l'une d'elles : elle seule revient à sa valeur par défaut, sans toucher aux deux autres.
+pub fn resolve(settings: &Map<String, Value>) -> [Accelerator; 3] {
+    let mut toggle_main = pick(settings, Action::ToggleMain);
+    let mut palette = pick(settings, Action::Palette);
     if toggle_main.shortcut == palette.shortcut {
-        return (
-            Action::ToggleMain.default_accelerator(),
-            Action::Palette.default_accelerator(),
-        );
+        toggle_main = Action::ToggleMain.default_accelerator();
+        palette = Action::Palette.default_accelerator();
     }
-    (toggle_main, palette)
+    let mut farm_next = pick(settings, Action::FarmNext);
+    if farm_next.shortcut == toggle_main.shortcut || farm_next.shortcut == palette.shortcut {
+        farm_next = Action::FarmNext.default_accelerator();
+    }
+    [toggle_main, palette, farm_next]
 }
 
-/// Réglages existants avec les deux raccourcis remplacés ; toutes les autres clés, y compris
-/// d'éventuelles sous-clés inconnues de `shortcuts`, sont conservées.
-pub fn merge_shortcuts(settings: Map<String, Value>, toggle_main: &str, palette: &str) -> Map<String, Value> {
+/// Réglages existants avec les raccourcis des actions remplacés (`accelerators`, rangés par
+/// `Action::index`) ; toutes les autres clés, y compris d'éventuelles sous-clés inconnues de
+/// `shortcuts`, sont conservées.
+pub fn merge_shortcuts(settings: Map<String, Value>, accelerators: [&str; 3]) -> Map<String, Value> {
     let mut settings = settings;
     let mut shortcuts = match settings.remove(SHORTCUTS_KEY) {
         Some(Value::Object(map)) => map,
         _ => Map::new(),
     };
-    shortcuts.insert(
-        Action::ToggleMain.key().to_string(),
-        Value::String(toggle_main.to_string()),
-    );
-    shortcuts.insert(Action::Palette.key().to_string(), Value::String(palette.to_string()));
+    for action in ACTIONS {
+        shortcuts.insert(
+            action.key().to_string(),
+            Value::String(accelerators[action.index()].to_string()),
+        );
+    }
     settings.insert(SHORTCUTS_KEY.to_string(), Value::Object(shortcuts));
     settings
 }
 
 fn bindings_json(bindings: &Bindings) -> Value {
-    json!({
-        "toggleMain": {
-            "accelerator": bindings.toggle_main.accelerator,
-            "registered": bindings.toggle_main.registered,
-        },
-        "palette": {
-            "accelerator": bindings.palette.accelerator,
-            "registered": bindings.palette.registered,
-        },
-    })
+    let mut map = Map::new();
+    for action in ACTIONS {
+        let binding = bindings.get(action);
+        map.insert(
+            action.key().to_string(),
+            json!({ "accelerator": binding.accelerator, "registered": binding.registered }),
+        );
+    }
+    Value::Object(map)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -370,32 +379,44 @@ fn register_at_startup(app: &AppHandle, accelerator: Accelerator) -> Binding {
     }
 }
 
-/// Au démarrage (`setup`) : lit les réglages, enregistre les deux raccourcis, crée l'état.
+/// Au démarrage (`setup`) : lit les réglages, enregistre les raccourcis, crée l'état.
 /// Ne renvoie jamais d'erreur.
 pub fn init(app: &AppHandle) {
     // Lecture tolérante : un fichier absent ou illisible donne les raccourcis par défaut.
     let settings = app_data_dir(app)
         .map(|dir| read_json_object(&dir.join(SETTINGS_FILE)))
         .unwrap_or_default();
-    let (toggle_main, palette) = resolve(&settings);
+    let [toggle_main, palette, farm_next] = resolve(&settings);
     let toggle_main = register_at_startup(app, toggle_main);
     let palette = register_at_startup(app, palette);
+    // Défaut de « position suivante » déjà pris par l'une des deux autres : non enregistré
+    // (signalé dans les Paramètres), l'autre action garde son raccourci.
+    let farm_next = if farm_next.shortcut == toggle_main.shortcut || farm_next.shortcut == palette.shortcut {
+        Binding {
+            accelerator: farm_next.text,
+            shortcut: farm_next.shortcut,
+            registered: false,
+        }
+    } else {
+        register_at_startup(app, farm_next)
+    };
     app.manage(ShortcutStore {
-        bindings: Mutex::new(Bindings { toggle_main, palette }),
+        bindings: Mutex::new(Bindings([toggle_main, palette, farm_next])),
     });
+}
+
+/// Première action (ordre de `ACTIONS`) dont le raccourci est `shortcut`.
+fn find_action(bindings: &Bindings, shortcut: &Shortcut) -> Option<Action> {
+    ACTIONS
+        .into_iter()
+        .find(|action| bindings.get(*action).shortcut == *shortcut)
 }
 
 /// Action associée au raccourci reçu par le plugin, ou `None`.
 pub fn action_for(app: &AppHandle, shortcut: &Shortcut) -> Option<Action> {
     let store = app.try_state::<ShortcutStore>()?;
     let bindings = store.bindings.lock().unwrap_or_else(PoisonError::into_inner);
-    if bindings.toggle_main.shortcut == *shortcut {
-        Some(Action::ToggleMain)
-    } else if bindings.palette.shortcut == *shortcut {
-        Some(Action::Palette)
-    } else {
-        None
-    }
+    find_action(&bindings, shortcut)
 }
 
 /// Copie de l'état courant.
@@ -418,15 +439,12 @@ fn store_bindings(app: &AppHandle, next: Bindings) -> Result<(), String> {
     Ok(())
 }
 
-/// Écrit les deux raccourcis dans `settings.json` (écriture atomique, autres clés conservées).
+/// Écrit les raccourcis dans `settings.json` (écriture atomique, autres clés conservées).
 fn persist(app: &AppHandle, bindings: &Bindings) -> Result<(), String> {
     let path = app_data_dir(app)?.join(SETTINGS_FILE);
     let _guard = lock_settings();
-    let merged = merge_shortcuts(
-        read_json_object_for_write(&path)?,
-        &bindings.toggle_main.accelerator,
-        &bindings.palette.accelerator,
-    );
+    let accelerators = ACTIONS.map(|action| bindings.get(action).accelerator.as_str());
+    let merged = merge_shortcuts(read_json_object_for_write(&path)?, accelerators);
     let text = serde_json::to_string_pretty(&Value::Object(merged))
         .map_err(|e| format!("Réglages non sérialisables : {e}"))?;
     write_atomic(&path, &text)
@@ -437,7 +455,7 @@ fn persist_or_explain(app: &AppHandle, bindings: &Bindings) -> Result<(), String
 }
 
 /// Raccourcis effectifs et, pour chacun, s'il est actuellement enregistré :
-/// `{ "toggleMain": { "accelerator", "registered" }, "palette": { … } }`.
+/// `{ "toggleMain": { "accelerator", "registered" }, "palette": { … }, "farmNext": { … } }`.
 #[tauri::command]
 pub fn get_shortcuts(app: AppHandle) -> Result<Value, String> {
     let bindings = current_bindings(&app)?;
@@ -454,13 +472,15 @@ pub fn set_shortcut(app: AppHandle, action: String, accelerator: String) -> Resu
     let wanted = parse_accelerator(&accelerator)?;
     let mut bindings = current_bindings(&app)?;
     let current = bindings.get(action).clone();
-    let other = bindings.get(action.other()).clone();
 
-    if wanted.shortcut == other.shortcut {
+    if let Some(other) = ACTIONS
+        .into_iter()
+        .find(|other| *other != action && bindings.get(*other).shortcut == wanted.shortcut)
+    {
         return Err(format!(
             "{} est déjà le raccourci de « {} ».",
             wanted.text,
-            action.other().label()
+            other.label()
         ));
     }
 
@@ -497,7 +517,7 @@ pub fn set_shortcut(app: AppHandle, action: String, accelerator: String) -> Resu
     Ok(bindings_json(&bindings))
 }
 
-/// Rétablit les deux raccourcis par défaut. Les raccourcis actuels sont libérés d'abord (ce qui
+/// Rétablit les raccourcis par défaut. Les raccourcis actuels sont libérés d'abord (ce qui
 /// permet d'échanger deux raccourcis) ; un défaut indisponible reste signalé `registered: false`.
 /// Exécutée hors du fil principal (`async`) : l'enregistrement d'un raccourci repasse par le fil
 /// principal et ne doit pas l'attendre depuis lui-même.
@@ -565,10 +585,13 @@ mod tests {
             let standard = action.default_accelerator();
             assert_eq!(parse_accelerator(&standard.text), Ok(standard.clone()));
         }
-        assert_ne!(
-            Action::ToggleMain.default_accelerator().shortcut,
-            Action::Palette.default_accelerator().shortcut
-        );
+        for a in ACTIONS {
+            for b in ACTIONS {
+                if a != b {
+                    assert_ne!(a.default_accelerator().shortcut, b.default_accelerator().shortcut);
+                }
+            }
+        }
     }
 
     #[test]
@@ -617,10 +640,7 @@ mod tests {
 
     #[test]
     fn resolve_is_tolerant() {
-        let defaults = (
-            Action::ToggleMain.default_accelerator(),
-            Action::Palette.default_accelerator(),
-        );
+        let defaults = ACTIONS.map(Action::default_accelerator);
         // Fichier absent ou illisible.
         assert_eq!(resolve(&Map::new()), defaults);
         assert_eq!(resolve(&settings("")), defaults);
@@ -630,12 +650,16 @@ mod tests {
         assert_eq!(resolve(&settings(r#"{"alwaysOnTop":true}"#)), defaults);
         // Valeurs de mauvais type ou invalides : défaut, clé par clé.
         assert_eq!(resolve(&settings(r#"{"shortcuts":"Ctrl+Alt+K"}"#)), defaults);
-        let partial = resolve(&settings(r#"{"shortcuts":{"toggleMain":42,"palette":"ctrl+alt+k"}}"#));
-        assert_eq!(partial.0, Action::ToggleMain.default_accelerator());
-        assert_eq!(partial.1.text, "Ctrl+Alt+K");
-        let invalid = resolve(&settings(r#"{"shortcuts":{"toggleMain":"T","palette":"Ctrl+Alt+P"}}"#));
-        assert_eq!(invalid.0, Action::ToggleMain.default_accelerator());
-        assert_eq!(invalid.1.text, "Ctrl+Alt+P");
+        let [toggle, palette, farm] = resolve(&settings(
+            r#"{"shortcuts":{"toggleMain":42,"palette":"ctrl+alt+k","farmNext":"alt+f2"}}"#,
+        ));
+        assert_eq!(toggle, Action::ToggleMain.default_accelerator());
+        assert_eq!(palette.text, "Ctrl+Alt+K");
+        assert_eq!(farm.text, "Alt+F2");
+        let [toggle, palette, farm] = resolve(&settings(r#"{"shortcuts":{"toggleMain":"T","palette":"Ctrl+Alt+P"}}"#));
+        assert_eq!(toggle, Action::ToggleMain.default_accelerator());
+        assert_eq!(palette.text, "Ctrl+Alt+P");
+        assert_eq!(farm, Action::FarmNext.default_accelerator());
     }
 
     #[test]
@@ -643,34 +667,62 @@ mod tests {
         let both = resolve(&settings(
             r#"{"shortcuts":{"toggleMain":"Ctrl+Alt+K","palette":"alt+ctrl+k"}}"#,
         ));
-        assert_eq!(both.0, Action::ToggleMain.default_accelerator());
-        assert_eq!(both.1, Action::Palette.default_accelerator());
+        assert_eq!(both, ACTIONS.map(Action::default_accelerator));
+
+        // « Position suivante » sur le raccourci d'une autre action : elle seule revient au défaut.
+        let [toggle, palette, farm] = resolve(&settings(
+            r#"{"shortcuts":{"toggleMain":"Ctrl+Alt+M","palette":"Ctrl+Alt+P","farmNext":"alt+ctrl+p"}}"#,
+        ));
+        assert_eq!(toggle.text, "Ctrl+Alt+M");
+        assert_eq!(palette.text, "Ctrl+Alt+P");
+        assert_eq!(farm, Action::FarmNext.default_accelerator());
     }
 
     #[test]
     fn merge_keeps_other_keys() {
         let existing =
             settings(r#"{"alwaysOnTop":false,"futur":{"a":1},"shortcuts":{"toggleMain":"Ctrl+Alt+T","autre":"x"}}"#);
-        let merged = Value::Object(merge_shortcuts(existing, "Ctrl+Alt+M", "Ctrl+Alt+P"));
+        let merged = Value::Object(merge_shortcuts(existing, ["Ctrl+Alt+M", "Ctrl+Alt+P", "Ctrl+Alt+N"]));
         assert_eq!(merged["alwaysOnTop"], Value::Bool(false));
         assert_eq!(merged["futur"]["a"], Value::from(1));
         assert_eq!(merged["shortcuts"]["toggleMain"], Value::from("Ctrl+Alt+M"));
         assert_eq!(merged["shortcuts"]["palette"], Value::from("Ctrl+Alt+P"));
+        assert_eq!(merged["shortcuts"]["farmNext"], Value::from("Ctrl+Alt+N"));
         assert_eq!(merged["shortcuts"]["autre"], Value::from("x"));
 
         // `shortcuts` d'un type inattendu : remplacé par un objet propre.
         let mut odd = Map::new();
         odd.insert(SHORTCUTS_KEY.to_string(), Value::from(3));
-        let merged = Value::Object(merge_shortcuts(odd, "Ctrl+Alt+M", "Ctrl+Alt+P"));
+        let merged = Value::Object(merge_shortcuts(odd, ["Ctrl+Alt+M", "Ctrl+Alt+P", "Ctrl+Alt+N"]));
         assert_eq!(merged["shortcuts"]["palette"], Value::from("Ctrl+Alt+P"));
     }
 
     #[test]
     fn action_keys_round_trip() {
-        for action in ACTIONS {
+        for (i, action) in ACTIONS.into_iter().enumerate() {
             assert_eq!(Action::from_key(action.key()), Ok(action));
-            assert_eq!(action.other().other(), action);
+            assert_eq!(action.index(), i);
         }
         assert!(Action::from_key("autre").is_err());
+    }
+
+    #[test]
+    fn same_shortcut_goes_to_the_first_action() {
+        let binding = |accelerator: Accelerator| Binding {
+            accelerator: accelerator.text,
+            shortcut: accelerator.shortcut,
+            registered: true,
+        };
+        let bindings = Bindings(ACTIONS.map(|action| binding(action.default_accelerator())));
+        assert_eq!(find_action(&bindings, &ctrl_alt(Code::KeyN)), Some(Action::FarmNext));
+        assert_eq!(find_action(&bindings, &ctrl_alt(Code::KeyQ)), None);
+
+        // Défaut de « position suivante » déjà pris par la palette : la palette l'emporte.
+        let shared = Bindings([
+            binding(Action::ToggleMain.default_accelerator()),
+            binding(Action::FarmNext.default_accelerator()),
+            binding(Action::FarmNext.default_accelerator()),
+        ]);
+        assert_eq!(find_action(&shared, &ctrl_alt(Code::KeyN)), Some(Action::Palette));
     }
 }

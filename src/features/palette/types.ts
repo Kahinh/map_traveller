@@ -10,17 +10,16 @@ import type { ZaapCatalog } from '../zaaps/zaaps';
 
 /**
  * Genre d'une variante copiable. Sur une carte : sans ou avec le `/zaap` initial
- * (`partVariants`). Sur une ligne « zaap le plus proche » (issue n°7) : `trip` = zaap puis
- * `/travel` vers la position tapée, `zaapOnly` = la commande du zaap seule. Une ligne Farm n'a
- * aucune variante : elle ouvre la fenêtre du parcours.
+ * (`partVariants`). Sur une ligne « zaap le plus proche » (issue n°7) : `zaapOnly` = la commande
+ * du zaap seule, sans `/travel` vers la position tapée. Une ligne Farm n'a aucune variante : elle
+ * ouvre la fenêtre du parcours.
  */
-export type PaletteVariantKind = VariantKind | 'trip' | 'zaapOnly';
+export type PaletteVariantKind = VariantKind | 'zaapOnly';
 
 /** Libellés d'un genre : `long` pour l'infobulle et le lecteur d'écran, `short` pour le pied d'aide. */
 export const VARIANT_LABELS: Readonly<Record<PaletteVariantKind, { long: string; short: string }>> = {
   withoutZaap: { long: 'Sans Zaap : trajet seul', short: 'sans Zaap' },
   withZaap: { long: 'Avec Zaap : commande complète', short: 'avec Zaap' },
-  trip: { long: 'Trajet complet : zaap puis déplacement', short: 'trajet complet' },
   zaapOnly: { long: 'Zaap seul', short: 'zaap seul' },
 };
 

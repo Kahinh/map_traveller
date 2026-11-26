@@ -25,8 +25,6 @@ import {
   NEAR_EXAMPLE,
   nearestZaaps,
   parseNearQuery,
-  zaapTripCommand,
-  type MapPosition,
   type NearestZaap,
   type ZaapCatalog,
 } from '../zaaps/zaaps';
@@ -87,13 +85,12 @@ export function cardEntries(d: Destination, favorite: boolean, defaultVariant: V
 }
 
 /**
- * Ligne d'un zaap proposé pour la position tapée. Deux variantes, dans cet ordre quel que soit
- * le réglage : le trajet complet (zaap puis `/travel` vers la position), puis la commande du
- * zaap seule. Position sur le zaap : une seule variante.
+ * Ligne d'un zaap proposé pour la position tapée : une seule variante, la commande du zaap telle
+ * que livrée. Aucun `/travel` vers la position n'est ajouté : on veut se rendre au zaap, pas
+ * revenir à la position tapée.
  */
-function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry {
+function zaapEntry(near: NearestZaap): PaletteEntry {
   const { zaap, distance } = near;
-  const trip = zaapTripCommand(zaap, target);
   return {
     key: paletteKey(zaap.id, 'zaap'),
     kind: 'zaap',
@@ -103,13 +100,7 @@ function zaapEntry(near: NearestZaap, target: MapPosition): PaletteEntry {
     subtitle: `${formatDistance(distance)} · Zaap ${zaap.x},${zaap.y} · ${zaap.zone}`,
     image: null,
     favorite: false,
-    variants:
-      trip === zaap.command
-        ? [{ kind: 'trip', text: trip }]
-        : [
-            { kind: 'trip', text: trip },
-            { kind: 'zaapOnly', text: zaap.command },
-          ],
+    variants: [{ kind: 'zaapOnly', text: zaap.command }],
   };
 }
 
@@ -133,13 +124,13 @@ function searchNearestZaap(zaaps: ZaapCatalog, query: string): PaletteSearchResu
     const name = near.world?.name ?? zaaps.worlds.find((w) => w.id === world)?.name ?? world;
     return { entries: [], notice: `Aucun zaap répertorié dans ${name}` };
   }
-  return { entries: found.map((n) => zaapEntry(n, near.position)), notice: null };
+  return { entries: found.map(zaapEntry), notice: null };
 }
 
 /** Libellé d'une variante : infobulle et lecteur d'écran. */
 export const variantLabel = (kind: PaletteVariantKind): string => VARIANT_LABELS[kind].long;
 
-/** Libellé court d'une variante : pied d'aide (« sans Zaap », « trajet complet »…). */
+/** Libellé court d'une variante : pied d'aide (« sans Zaap », « zaap seul »…). */
 export const variantShortLabel = (kind: PaletteVariantKind): string => VARIANT_LABELS[kind].short;
 
 export interface PaletteSearchResult {

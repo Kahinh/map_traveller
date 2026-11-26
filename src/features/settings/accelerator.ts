@@ -7,18 +7,21 @@
  */
 import { isRecord } from '../shared/json';
 
-export type ShortcutAction = 'toggleMain' | 'palette';
+/** `farmNext` : copie la position suivante du parcours Farm affiché. */
+export type ShortcutAction = 'toggleMain' | 'palette' | 'farmNext';
 
-export const SHORTCUT_ACTIONS: readonly ShortcutAction[] = ['toggleMain', 'palette'];
+export const SHORTCUT_ACTIONS: readonly ShortcutAction[] = ['toggleMain', 'palette', 'farmNext'];
 
 export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   toggleMain: 'Afficher / masquer la fenêtre',
   palette: 'Ouvrir la palette',
+  farmNext: 'Farm : position suivante',
 };
 
 export const DEFAULT_SHORTCUTS: Readonly<Record<ShortcutAction, string>> = {
   toggleMain: 'Ctrl+Alt+T',
   palette: 'Ctrl+Alt+Space',
+  farmNext: 'Ctrl+Alt+N',
 };
 
 /** Raccourci effectif d'une action, tel que renvoyé par Rust. */
@@ -167,5 +170,6 @@ export function defaultShortcutsState(): ShortcutsState {
   return {
     toggleMain: { accelerator: DEFAULT_SHORTCUTS.toggleMain, registered: false },
     palette: { accelerator: DEFAULT_SHORTCUTS.palette, registered: false },
+    farmNext: { accelerator: DEFAULT_SHORTCUTS.farmNext, registered: false },
   };
 }
